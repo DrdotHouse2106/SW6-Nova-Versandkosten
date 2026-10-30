@@ -1,0 +1,16 @@
+{
+    "novaVersandkosten": {
+        "noVat": "ohne MwSt.",
+        "packages": "%count% Pakete",
+        "recommended": "empfohlen",
+        "delivery": "Zustellung voraussichtlich %dates%",
+        "freightOnRequest": "Ihr Warenkorb wird per Spedition geliefert. Den Preis nennen wir Ihnen auf Anfrage – oder wählen Sie Abholung.",
+        "tourRequest": "Lieferung per Tour anfragen",
+        "hint": {
+            "basicTracking": "mit Basis-Sendungsverfolgung",
+            "peak": "inkl. Saisonzuschlag von %carrier% (November/Dezember)",
+            "free": "versandkostenfrei",
+            "freightEstimated": "Preis geschätzt – wir bestätigen ihn vor dem Versand"
+        }
+    }
+}

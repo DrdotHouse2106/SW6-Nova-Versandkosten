@@ -1,0 +1,84 @@
+<?xml version="1.0" ?>
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+    <services>
+        <!-- Einstellungen, Tarife, Artikeldaten -->
+        <service id="Nova\Versandkosten\Service\Settings">
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <tag name="kernel.reset" method="reset"/>
+        </service>
+
+        <service id="Nova\Versandkosten\Service\TariffStore">
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <argument type="service" id="logger"/>
+            <tag name="kernel.reset" method="reset"/>
+        </service>
+
+        <service id="Nova\Versandkosten\Service\ProductClassifier">
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
+            <tag name="kernel.reset" method="reset"/>
+        </service>
+
+        <service id="Nova\Versandkosten\Service\CargoboardQuoteProvider">
+            <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
+            <argument type="service" id="cache.object"/>
+            <argument type="service" id="logger"/>
+        </service>
+
+        <service id="Nova\Versandkosten\Service\QuoteService">
+            <argument type="service" id="Nova\Versandkosten\Service\TariffStore"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
+            <argument type="service" id="Nova\Versandkosten\Service\ProductClassifier"/>
+            <argument type="service" id="Nova\Versandkosten\Service\CargoboardQuoteProvider"/>
+            <tag name="kernel.reset" method="reset"/>
+        </service>
+
+        <!-- Kasse: Preis setzen (nach Shopwares DeliveryProcessor -5000, vor Versand-Promotions -5100) -->
+        <service id="Nova\Versandkosten\Checkout\ShippingCostProcessor">
+            <argument type="service" id="Nova\Versandkosten\Service\QuoteService"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
+            <tag name="shopware.cart.processor" priority="-5050"/>
+        </service>
+
+        <service id="Nova\Versandkosten\Checkout\ShippingCartValidator">
+            <tag name="shopware.cart.validator"/>
+        </service>
+
+        <service id="Nova\Versandkosten\Checkout\ShippingMethodRouteDecorator"
+                 decorates="Shopware\Core\Checkout\Shipping\SalesChannel\ShippingMethodRoute"
+                 decoration-priority="-100"
+                 public="true">
+            <argument type="service" id="Nova\Versandkosten\Checkout\ShippingMethodRouteDecorator.inner"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
+        </service>
+
+        <service id="Nova\Versandkosten\Checkout\OrderSubscriber">
+            <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
+            <argument type="service" id="Shopware\Core\Content\Mail\Service\MailService"/>
+            <argument type="service" id="logger"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="Nova\Versandkosten\Storefront\CheckoutPageSubscriber">
+            <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <!-- Produktexport: {{ nova_versand_label(product, context) }} -->
+        <service id="Nova\Versandkosten\Twig\ShippingLabelExtension">
+            <argument type="service" id="Nova\Versandkosten\Service\ProductClassifier"/>
+            <tag name="twig.extension"/>
+        </service>
+
+        <!-- Administration -->
+        <service id="Nova\Versandkosten\Controller\AdminController" public="true">
+            <argument type="service" id="Nova\Versandkosten\Service\TariffStore"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+        </service>
+    </services>
+</container>

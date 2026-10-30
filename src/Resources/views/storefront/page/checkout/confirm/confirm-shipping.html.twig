@@ -1,0 +1,7 @@
+{% sw_extends '@Storefront/storefront/page/checkout/confirm/confirm-shipping.html.twig' %}
+
+{% block page_checkout_confirm_shipping_form %}
+    {{ parent() }}
+
+    {% sw_include '@Storefront/storefront/nova-versandkosten/request.html.twig' %}
+{% endblock %}

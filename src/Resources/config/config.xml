@@ -1,0 +1,474 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/shopware/trunk/src/Core/System/SystemConfig/Schema/config.xsd">
+    <!-- Tarife importiert man global unter Einstellungen → Erweiterungen → Nova Versandkosten (eigene Seite). -->
+
+    <card>
+        <title>Sales prices (gross)</title>
+        <title lang="de-DE">Verkaufspreise (brutto)</title>
+
+        <input-field type="float">
+            <name>priceWarenpost</name>
+            <label>Warenpost (domestic, per parcel)</label>
+            <label lang="de-DE">Warenpost (Inland, je Paket)</label>
+            <helpText>Fixed price in the home country. Empty = purchase price gross.</helpText>
+            <helpText lang="de-DE">Festpreis im Heimatland. Leer = Einkaufspreis brutto.</helpText>
+            <defaultValue>5.00</defaultValue>
+        </input-field>
+
+        <input-field type="float">
+            <name>priceKleinpaket</name>
+            <label>Small parcel (domestic, per parcel)</label>
+            <label lang="de-DE">Kleinpaket (Inland, je Paket)</label>
+            <defaultValue>7.50</defaultValue>
+        </input-field>
+
+        <input-field type="float">
+            <name>priceDpd</name>
+            <label>DPD parcel (domestic, per parcel)</label>
+            <label lang="de-DE">DPD Paket (Inland, je Paket)</label>
+            <helpText>Each further parcel costs the same again.</helpText>
+            <helpText lang="de-DE">Jedes weitere Paket kostet noch einmal diesen Preis.</helpText>
+            <defaultValue>7.50</defaultValue>
+        </input-field>
+
+        <input-field type="float">
+            <name>priceDhl</name>
+            <label>DHL parcel (domestic, per parcel)</label>
+            <label lang="de-DE">DHL Paket (Inland, je Paket)</label>
+            <defaultValue>10.50</defaultValue>
+        </input-field>
+
+        <input-field type="float">
+            <name>foreignSurcharge</name>
+            <label>Surcharge abroad (€ per parcel)</label>
+            <label lang="de-DE">Aufschlag Ausland (€ je Paket)</label>
+            <helpText>Abroad the price is the purchase price gross (outside the EU: net) plus this surcharge.</helpText>
+            <helpText lang="de-DE">Im Ausland gilt Einkaufspreis brutto (außerhalb der EU: netto) plus dieser Aufschlag.</helpText>
+            <defaultValue>5.00</defaultValue>
+        </input-field>
+
+        <input-field type="bool">
+            <name>passOversize</name>
+            <label>Pass on bulky/oversize surcharges</label>
+            <label lang="de-DE">Sperrgut-/Übermaß-Zuschläge weitergeben</label>
+            <helpText>Adds the purchase price gross of the bulky/oversize surcharge to the fixed price.</helpText>
+            <helpText lang="de-DE">Schlägt den Sperrgut-/Übermaß-Zuschlag zum Einkaufspreis brutto auf den Festpreis auf.</helpText>
+            <defaultValue>true</defaultValue>
+        </input-field>
+
+        <input-field type="float">
+            <name>warenpostMaxValue</name>
+            <label>Warenpost: maximum goods value (€ gross)</label>
+            <label lang="de-DE">Warenpost: höchster Warenwert (€ brutto)</label>
+            <helpText>Also applies to Warenpost International. Empty = no limit.</helpText>
+            <helpText lang="de-DE">Gilt auch für Warenpost International. Leer = keine Grenze.</helpText>
+            <defaultValue>30</defaultValue>
+        </input-field>
+
+        <input-field type="float">
+            <name>kleinpaketMaxValue</name>
+            <label>Small parcel: maximum goods value (€ gross)</label>
+            <label lang="de-DE">Kleinpaket: höchster Warenwert (€ brutto)</label>
+            <defaultValue>50</defaultValue>
+        </input-field>
+
+        <input-field type="float">
+            <name>maxPackageKg</name>
+            <label>Maximum weight per parcel (kg)</label>
+            <label lang="de-DE">Höchstgewicht je Paket (kg)</label>
+            <helpText>Above this weight a further parcel is started.</helpText>
+            <helpText lang="de-DE">Darüber beginnt ein weiteres Paket.</helpText>
+            <defaultValue>25</defaultValue>
+        </input-field>
+
+        <input-field type="float">
+            <name>vatPercent</name>
+            <label>VAT rate for shipping (%)</label>
+            <label lang="de-DE">Mehrwertsteuersatz Versand (%)</label>
+            <defaultValue>19</defaultValue>
+        </input-field>
+
+        <input-field type="text">
+            <name>homeCountry</name>
+            <label>Home country (ISO code)</label>
+            <label lang="de-DE">Heimatland (ISO-Code)</label>
+            <helpText>Fixed prices apply here.</helpText>
+            <helpText lang="de-DE">Hier gelten die Festpreise.</helpText>
+            <defaultValue>DE</defaultValue>
+        </input-field>
+    </card>
+
+    <card>
+        <title>Surcharges</title>
+        <title lang="de-DE">Zuschläge</title>
+
+        <input-field type="bool">
+            <name>passPeak</name>
+            <label>Pass on peak surcharges (Nov/Dec)</label>
+            <label lang="de-DE">Peakzuschläge weitergeben (Nov./Dez.)</label>
+            <helpText>Adds the peak surcharge gross to fixed prices and shows a note in the checkout.</helpText>
+            <helpText lang="de-DE">Schlägt den Peakzuschlag brutto auf Festpreise auf und zeigt einen Hinweis in der Kasse.</helpText>
+            <defaultValue>true</defaultValue>
+        </input-field>
+
+        <input-field type="date">
+            <name>peakInPeakFrom</name>
+            <label>Peak-in-peak from</label>
+            <label lang="de-DE">Peak-in-Peak von</label>
+            <helpText>The carrier publishes the period every year.</helpText>
+            <helpText lang="de-DE">Den Zeitraum legt der Dienstleister jedes Jahr fest.</helpText>
+        </input-field>
+
+        <input-field type="date">
+            <name>peakInPeakUntil</name>
+            <label>Peak-in-peak until</label>
+            <label lang="de-DE">Peak-in-Peak bis</label>
+        </input-field>
+
+        <input-field type="textarea">
+            <name>energyPercent</name>
+            <label>Energy surcharge (%) per carrier</label>
+            <label lang="de-DE">Energiezuschlag (%) je Dienstleister</label>
+            <helpText>One line per carrier key from the tariff file, e.g. dhl=12.5. Applied to the base price; changes only the margin for fixed prices.</helpText>
+            <helpText lang="de-DE">Je Zeile Dienstleister-Schlüssel aus der Tarifdatei, z. B. dhl=12,5. Gilt auf den Grundpreis; bei Festpreisen ändert er nur die Marge.</helpText>
+            <defaultValue>dhl=0
+dpd=0</defaultValue>
+        </input-field>
+
+        <input-field type="bool">
+            <name>offerDpdOutsideEu</name>
+            <label>Offer DPD outside the EU</label>
+            <label lang="de-DE">DPD auch außerhalb der EU anbieten</label>
+            <helpText>Including all customs and currency surcharges from the tariff file. DHL stays the recommendation.</helpText>
+            <helpText lang="de-DE">Mit allen Zoll- und Währungszuschlägen aus der Tarifdatei. Empfohlen bleibt DHL.</helpText>
+            <defaultValue>true</defaultValue>
+        </input-field>
+    </card>
+
+    <card>
+        <title>Countries and special rules</title>
+        <title lang="de-DE">Länder und Sonderregeln</title>
+
+        <input-field type="text">
+            <name>allowedCountries</name>
+            <label>Allowed countries (ISO codes)</label>
+            <label lang="de-DE">Freigeschaltete Länder (ISO-Codes)</label>
+            <helpText>Comma separated. Empty = all countries with a tariff (and assigned in the sales channel).</helpText>
+            <helpText lang="de-DE">Mit Komma getrennt. Leer = alle Länder mit Tarif (und im Verkaufskanal zugeordnet).</helpText>
+        </input-field>
+
+        <component name="sw-entity-multi-id-select">
+            <name>freeManufacturerIds</name>
+            <entity>product_manufacturer</entity>
+            <label>Free shipping for manufacturers</label>
+            <label lang="de-DE">Versandkostenfrei für Hersteller</label>
+            <helpText>If every item in the cart belongs to one of these manufacturers or tags, parcel shipping is free in the countries below.</helpText>
+            <helpText lang="de-DE">Gehören alle Artikel im Warenkorb zu diesen Herstellern oder Tags, ist der Paketversand in den Ländern unten kostenlos.</helpText>
+        </component>
+
+        <component name="sw-entity-multi-id-select">
+            <name>freeTagIds</name>
+            <entity>tag</entity>
+            <label>Free shipping for tags</label>
+            <label lang="de-DE">Versandkostenfrei für Tags</label>
+        </component>
+
+        <input-field type="text">
+            <name>freeCountries</name>
+            <label>Free shipping countries</label>
+            <label lang="de-DE">Länder für Versandkostenfrei</label>
+            <defaultValue>DE</defaultValue>
+        </input-field>
+    </card>
+
+    <card>
+        <title>Product data</title>
+        <title lang="de-DE">Artikeldaten</title>
+
+        <input-field type="text">
+            <name>propertyGroupName</name>
+            <label>Property used as fallback</label>
+            <label lang="de-DE">Eigenschaft als Ersatz</label>
+            <helpText>If the custom field “Versandeinordnung” is empty, the category is derived from this property.</helpText>
+            <helpText lang="de-DE">Ist das Zusatzfeld „Versandeinordnung“ leer, wird die Einordnung aus dieser Eigenschaft abgeleitet.</helpText>
+            <defaultValue>Versandart</defaultValue>
+        </input-field>
+
+        <input-field type="textarea">
+            <name>valuesParcel</name>
+            <label>Property values → parcel</label>
+            <label lang="de-DE">Eigenschaftswerte → Paket</label>
+            <helpText>One value per line.</helpText>
+            <helpText lang="de-DE">Ein Wert je Zeile.</helpText>
+            <defaultValue>DHL
+DPD
+DHL Paket
+DPD Paket
+Paket</defaultValue>
+        </input-field>
+
+        <input-field type="textarea">
+            <name>valuesBulky</name>
+            <label>Property values → bulky</label>
+            <label lang="de-DE">Eigenschaftswerte → Sperrgut</label>
+            <defaultValue>DHL Sperrgut
+DPD Sperrgut
+Sperrgut</defaultValue>
+        </input-field>
+
+        <input-field type="textarea">
+            <name>valuesFreight</name>
+            <label>Property values → freight</label>
+            <label lang="de-DE">Eigenschaftswerte → Spedition</label>
+            <defaultValue>Spedition
+Kurier</defaultValue>
+        </input-field>
+
+        <input-field type="textarea">
+            <name>valuesPickup</name>
+            <label>Property values → collection only</label>
+            <label lang="de-DE">Eigenschaftswerte → nur Abholung</label>
+            <defaultValue>Abholung
+nur Abholung</defaultValue>
+        </input-field>
+
+        <input-field type="text">
+            <name>defaultDimsParcel</name>
+            <label>Default dimensions parcel (cm)</label>
+            <label lang="de-DE">Standardmaße Paket (cm)</label>
+            <helpText>Used when length/width/height are missing. The order is then marked “dimensions missing”.</helpText>
+            <helpText lang="de-DE">Gilt, wenn Länge/Breite/Höhe fehlen. Die Bestellung wird dann mit „Maße fehlen“ gekennzeichnet.</helpText>
+            <defaultValue>30x20x15</defaultValue>
+        </input-field>
+
+        <input-field type="text">
+            <name>defaultDimsBulky</name>
+            <label>Default dimensions bulky (cm)</label>
+            <label lang="de-DE">Standardmaße Sperrgut (cm)</label>
+            <defaultValue>130x40x40</defaultValue>
+        </input-field>
+
+        <input-field type="text">
+            <name>defaultDimsFreight</name>
+            <label>Default dimensions freight (cm)</label>
+            <label lang="de-DE">Standardmaße Spedition (cm)</label>
+            <defaultValue>120x80x100</defaultValue>
+        </input-field>
+
+        <input-field type="float">
+            <name>defaultWeight</name>
+            <label>Default weight (kg)</label>
+            <label lang="de-DE">Standardgewicht (kg)</label>
+            <defaultValue>1</defaultValue>
+        </input-field>
+    </card>
+
+    <card>
+        <title>Delivery time</title>
+        <title lang="de-DE">Lieferzeit</title>
+
+        <input-field type="bool">
+            <name>showEstimate</name>
+            <label>Show estimated delivery date</label>
+            <label lang="de-DE">Voraussichtliches Zustelldatum anzeigen</label>
+            <defaultValue>true</defaultValue>
+        </input-field>
+
+        <input-field type="text">
+            <name>cutoff</name>
+            <label>Order cut-off time (HH:MM)</label>
+            <label lang="de-DE">Annahmeschluss (HH:MM)</label>
+            <defaultValue>12:00</defaultValue>
+        </input-field>
+
+        <input-field type="int">
+            <name>processingMin</name>
+            <label>Processing days (minimum)</label>
+            <label lang="de-DE">Bearbeitung Werktage (mindestens)</label>
+            <defaultValue>0</defaultValue>
+        </input-field>
+
+        <input-field type="int">
+            <name>processingMax</name>
+            <label>Processing days (maximum)</label>
+            <label lang="de-DE">Bearbeitung Werktage (höchstens)</label>
+            <defaultValue>1</defaultValue>
+        </input-field>
+
+        <input-field type="single-select">
+            <name>holidayState</name>
+            <options>
+                <option><id>BW</id><name>Baden-Württemberg</name></option>
+                <option><id>BY</id><name>Bayern</name></option>
+                <option><id>BE</id><name>Berlin</name></option>
+                <option><id>BB</id><name>Brandenburg</name></option>
+                <option><id>HB</id><name>Bremen</name></option>
+                <option><id>HH</id><name>Hamburg</name></option>
+                <option><id>HE</id><name>Hessen</name></option>
+                <option><id>MV</id><name>Mecklenburg-Vorpommern</name></option>
+                <option><id>NI</id><name>Niedersachsen</name></option>
+                <option><id>NW</id><name>Nordrhein-Westfalen</name></option>
+                <option><id>RP</id><name>Rheinland-Pfalz</name></option>
+                <option><id>SL</id><name>Saarland</name></option>
+                <option><id>SN</id><name>Sachsen</name></option>
+                <option><id>ST</id><name>Sachsen-Anhalt</name></option>
+                <option><id>SH</id><name>Schleswig-Holstein</name></option>
+                <option><id>TH</id><name>Thüringen</name></option>
+            </options>
+            <label>Public holidays of</label>
+            <label lang="de-DE">Feiertage von</label>
+            <defaultValue>HE</defaultValue>
+        </input-field>
+
+        <input-field type="textarea">
+            <name>closedDays</name>
+            <label>Additional closing days</label>
+            <label lang="de-DE">Zusätzliche Schließtage</label>
+            <helpText>One date or range per line, e.g. 24.12.2026 - 31.12.2026</helpText>
+            <helpText lang="de-DE">Je Zeile ein Datum oder Bereich, z. B. 24.12.2026 - 31.12.2026</helpText>
+        </input-field>
+
+        <input-field type="textarea">
+            <name>transitTable</name>
+            <label>Transit times (working days)</label>
+            <label lang="de-DE">Laufzeiten (Werktage)</label>
+            <helpText>One rule per line: option;countries;min-max. Option: warenpost, kleinpaket, dpd, dhl or *. Countries: ISO codes, EU, NACHBARN or *. The first matching line wins.</helpText>
+            <helpText lang="de-DE">Je Zeile: Option;Länder;min-max. Option: warenpost, kleinpaket, dpd, dhl oder *. Länder: ISO-Codes, EU, NACHBARN (EU-Nachbarn) oder *. Die erste passende Zeile gilt.</helpText>
+            <defaultValue>warenpost;DE;1-3
+warenpost;*;4-10
+*;DE;1-2
+*;NACHBARN;2-3
+*;EU;3-5
+*;CH,GB,NO,LI;3-6
+*;*;4-8</defaultValue>
+        </input-field>
+    </card>
+
+    <card>
+        <title>Freight forwarding (Cargoboard)</title>
+        <title lang="de-DE">Spedition (Cargoboard)</title>
+
+        <input-field type="password">
+            <name>cargoboardApiKey</name>
+            <label>Cargoboard API key</label>
+            <label lang="de-DE">Cargoboard-API-Schlüssel</label>
+            <helpText>Without a key, freight is shown as “on request”.</helpText>
+            <helpText lang="de-DE">Ohne Schlüssel erscheint Spedition nur „auf Anfrage“.</helpText>
+        </input-field>
+
+        <input-field type="bool">
+            <name>cargoboardSandbox</name>
+            <label>Use sandbox (test system)</label>
+            <label lang="de-DE">Sandbox (Testsystem) verwenden</label>
+            <defaultValue>true</defaultValue>
+        </input-field>
+
+        <input-field type="float">
+            <name>freightSurcharge</name>
+            <label>Surcharge per shipment (€ gross)</label>
+            <label lang="de-DE">Aufschlag je Sendung (€ brutto)</label>
+            <helpText>Packaging material etc.</helpText>
+            <helpText lang="de-DE">Verpackungsmaterial usw.</helpText>
+            <defaultValue>20</defaultValue>
+        </input-field>
+
+        <input-field type="float">
+            <name>freightFallbackPrice</name>
+            <label>Fallback price on API errors (€ gross)</label>
+            <label lang="de-DE">Ersatzpreis bei API-Fehler (€ brutto)</label>
+            <helpText>Empty or 0 = “on request”.</helpText>
+            <helpText lang="de-DE">Leer oder 0 = „auf Anfrage“.</helpText>
+        </input-field>
+
+        <input-field type="single-select">
+            <name>cargoboardPackageType</name>
+            <options>
+                <option><id>EP</id><name>One-way pallet (EP)</name><name lang="de-DE">Einwegpalette (EP)</name></option>
+                <option><id>FP</id><name>Euro pallet (FP)</name><name lang="de-DE">Europalette (FP)</name></option>
+                <option><id>KT</id><name>Carton (KT)</name><name lang="de-DE">Karton (KT)</name></option>
+                <option><id>PA</id><name>Package (PA)</name><name lang="de-DE">Paket/Packstück (PA)</name></option>
+                <option><id>KI</id><name>Wooden crate (KI)</name><name lang="de-DE">Holzkiste (KI)</name></option>
+                <option><id>GP</id><name>Euro box pallet (GP)</name><name lang="de-DE">Gitterbox (GP)</name></option>
+            </options>
+            <label>Default load carrier</label>
+            <label lang="de-DE">Standard-Ladungsträger</label>
+            <defaultValue>EP</defaultValue>
+        </input-field>
+
+        <input-field type="text">
+            <name>senderPostcode</name>
+            <label>Pickup postcode</label>
+            <label lang="de-DE">Abhol-PLZ</label>
+        </input-field>
+
+        <input-field type="text">
+            <name>senderCountry</name>
+            <label>Pickup country (ISO code)</label>
+            <label lang="de-DE">Abhol-Land (ISO-Code)</label>
+            <defaultValue>DE</defaultValue>
+        </input-field>
+
+        <input-field type="bool">
+            <name>freightPrivateCustomer</name>
+            <label>Quote private consignees (B2C)</label>
+            <label lang="de-DE">Empfänger als Privatkunde anfragen (B2C)</label>
+            <helpText>Customers without a company are quoted as private consignees (surcharge at Cargoboard).</helpText>
+            <helpText lang="de-DE">Kunden ohne Firma werden als Privatempfänger angefragt (Zuschlag bei Cargoboard).</helpText>
+            <defaultValue>true</defaultValue>
+        </input-field>
+
+        <input-field type="int">
+            <name>cargoboardTimeout</name>
+            <label>Timeout (seconds)</label>
+            <label lang="de-DE">Zeitlimit (Sekunden)</label>
+            <defaultValue>8</defaultValue>
+        </input-field>
+
+        <input-field type="int">
+            <name>cargoboardCacheMinutes</name>
+            <label>Cache (minutes)</label>
+            <label lang="de-DE">Zwischenspeicher (Minuten)</label>
+            <helpText>Same cart and postcode → no new request.</helpText>
+            <helpText lang="de-DE">Gleicher Warenkorb und gleiche PLZ → keine neue Anfrage.</helpText>
+            <defaultValue>30</defaultValue>
+        </input-field>
+    </card>
+
+    <card>
+        <title>Request and control</title>
+        <title lang="de-DE">Anfrage und Kontrolle</title>
+
+        <input-field type="bool">
+            <name>showTourRequest</name>
+            <label>Show “Request delivery by tour” button</label>
+            <label lang="de-DE">Knopf „Lieferung per Tour anfragen“ anzeigen</label>
+            <helpText>Opens an e-mail with the cart contents.</helpText>
+            <helpText lang="de-DE">Öffnet eine E-Mail mit dem Warenkorbinhalt.</helpText>
+            <defaultValue>true</defaultValue>
+        </input-field>
+
+        <input-field type="text">
+            <name>requestEmail</name>
+            <label>Recipient for requests</label>
+            <label lang="de-DE">Empfänger für Anfragen</label>
+            <helpText>Empty = shop email address from the basic information.</helpText>
+            <helpText lang="de-DE">Leer = E-Mail-Adresse des Shops aus den Stammdaten.</helpText>
+        </input-field>
+
+        <input-field type="bool">
+            <name>marginMailEnabled</name>
+            <label>E-mail on negative shipping margin</label>
+            <label lang="de-DE">E-Mail bei negativer Versandmarge</label>
+            <defaultValue>false</defaultValue>
+        </input-field>
+
+        <input-field type="text">
+            <name>marginMailRecipient</name>
+            <label>Recipient for margin warnings</label>
+            <label lang="de-DE">Empfänger für Margen-Warnungen</label>
+            <helpText>Empty = shop email address.</helpText>
+            <helpText lang="de-DE">Leer = E-Mail-Adresse des Shops.</helpText>
+        </input-field>
+    </card>
+</config>

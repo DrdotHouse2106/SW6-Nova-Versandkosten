@@ -1,0 +1,25 @@
+{
+  "base": "/bundles/novaversandkosten/administration/",
+  "entryPoints": {
+    "nova-versandkosten": {
+      "css": [
+        "/bundles/novaversandkosten/administration/assets/nova-versandkosten-CADw1fty.css"
+      ],
+      "dynamic": [],
+      "js": [
+        "/bundles/novaversandkosten/administration/assets/nova-versandkosten-BLZ_oH49.js"
+      ],
+      "legacy": false,
+      "preload": []
+    }
+  },
+  "legacy": false,
+  "metadatas": {},
+  "version": [
+    "7.1.0",
+    7,
+    1,
+    0
+  ],
+  "viteServer": null
+}

@@ -1,0 +1,43 @@
+{% block sw_order_detail_details_shipping %}
+<mt-card
+    v-if="novaVersandkosten"
+    class="nova-versandkosten-order-card"
+    position-identifier="nova-versandkosten-order-card"
+    :title="$tc('nova-versandkosten.order.title')"
+>
+    <p v-if="novaVersandkosten.carrier || novaVersandkosten.product">
+        <strong>{{ novaVersandkosten.carrier }} {{ novaVersandkosten.product }}</strong>
+        <span v-if="novaVersandkosten.delivery"> · {{ $tc('nova-versandkosten.order.delivery') }} {{ novaVersandkosten.delivery }}</span>
+    </p>
+    <p v-if="novaVersandkosten.dimsMissing" style="color: #de294c; font-weight: 600;">
+        {{ $tc('nova-versandkosten.order.dimsMissing') }}
+    </p>
+    <table v-if="novaVersandkosten.packages.length" style="width: 100%; border-collapse: collapse; margin: 8px 0;">
+        <thead>
+            <tr>
+                <th style="text-align: left;">#</th>
+                <th style="text-align: left;">{{ $tc('nova-versandkosten.order.weight') }}</th>
+                <th style="text-align: left;">{{ $tc('nova-versandkosten.order.dims') }}</th>
+                <th style="text-align: left;">{{ $tc('nova-versandkosten.order.tier') }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr v-for="(p, i) in novaVersandkosten.packages" :key="i">
+                <td>{{ i + 1 }}</td>
+                <td>{{ p.weightKg }} kg</td>
+                <td>{{ p.lengthCm }} × {{ p.widthCm }} × {{ p.heightCm }} cm</td>
+                <td>{{ p.tier || '–' }}</td>
+            </tr>
+        </tbody>
+    </table>
+    <table style="border-collapse: collapse;">
+        <tr><td style="padding-right: 24px;">{{ $tc('nova-versandkosten.order.purchase') }}</td><td>{{ novaVkMoney(novaVersandkosten.purchase) }}</td></tr>
+        <tr><td style="padding-right: 24px;">{{ $tc('nova-versandkosten.order.saleNet') }}</td><td>{{ novaVkMoney(novaVersandkosten.saleNet) }} ({{ $tc('nova-versandkosten.order.sale') }} {{ novaVkMoney(novaVersandkosten.sale) }})</td></tr>
+        <tr :style="novaVersandkosten.difference < 0 ? 'color: #de294c; font-weight: 600;' : 'font-weight: 600;'">
+            <td style="padding-right: 24px;">{{ $tc('nova-versandkosten.order.difference') }}</td>
+            <td>{{ novaVkMoney(novaVersandkosten.difference) }}</td>
+        </tr>
+    </table>
+</mt-card>
+{% parent %}
+{% endblock %}

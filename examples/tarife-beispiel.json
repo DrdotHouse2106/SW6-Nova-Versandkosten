@@ -1,0 +1,189 @@
+{
+    "format": "nova-versandkosten-tarife",
+    "version": 1,
+    "name": "Beispieltarife (erfundene Platzhalterpreise)",
+    "currency": "EUR",
+    "carriers": {
+        "post": { "name": "Deutsche Post" },
+        "dhl": { "name": "DHL" },
+        "dpd": { "name": "DPD" }
+    },
+    "products": [
+        {
+            "id": "warenpost_de",
+            "carrier": "post",
+            "option": "warenpost",
+            "name": "Warenpost national",
+            "limits": { "maxKg": 1, "maxDimsCm": [35.3, 25, 5], "singlePackage": true, "allowBulky": false, "basicTracking": true },
+            "zones": [
+                { "name": "Deutschland", "countries": ["DE"], "steps": [{ "maxKg": 1, "price": 2.00 }] }
+            ]
+        },
+        {
+            "id": "warenpost_int",
+            "carrier": "post",
+            "option": "warenpost",
+            "name": "Warenpost International Premium",
+            "limits": { "maxKg": 1, "maxDimsCm": [35.3, 25, 10], "singlePackage": true, "allowBulky": false },
+            "zones": [
+                { "name": "Zone 1 EU", "countries": ["AT", "BE", "FR", "NL"], "perPiece": 4.50, "per100g": 0.40 },
+                { "name": "Zone 1 Nicht-EU", "countries": ["CH", "GB"], "perPiece": 5.50, "per100g": 0.60 }
+            ],
+            "surcharges": [
+                { "type": "peak", "name": "Peakzuschlag", "amount": 0.20, "months": [11, 12] },
+                { "type": "peakInPeak", "name": "Peak-in-Peak", "amount": 0.40 }
+            ]
+        },
+        {
+            "id": "dhl_kleinpaket_de",
+            "carrier": "dhl",
+            "option": "kleinpaket",
+            "name": "DHL Kleinpaket",
+            "limits": { "maxKg": 1, "maxDimsCm": [35.3, 25, 8], "singlePackage": true, "allowBulky": false },
+            "zones": [
+                { "name": "Deutschland", "countries": ["DE"], "steps": [{ "maxKg": 1, "price": 3.00 }] }
+            ],
+            "surcharges": [
+                { "type": "fixed", "name": "Maut/CO2", "amount": 0.10 },
+                { "type": "energy", "name": "Energiezuschlag" },
+                { "type": "peak", "name": "Peakzuschlag", "amount": 0.20, "months": [11, 12] },
+                { "type": "peakInPeak", "name": "Peak-in-Peak", "amount": 0.40 }
+            ]
+        },
+        {
+            "id": "dpd_de",
+            "carrier": "dpd",
+            "option": "dpd",
+            "name": "DPD Classic national",
+            "limits": { "maxKg": 31.5, "maxLengthCm": 175, "maxGirthCm": 300 },
+            "zones": [
+                {
+                    "name": "Deutschland",
+                    "countries": ["DE"],
+                    "steps": [
+                        { "maxKg": 3, "price": 3.00 },
+                        { "maxKg": 5, "price": 3.40 },
+                        { "maxKg": 10, "price": 3.90 },
+                        { "maxKg": 15, "price": 4.30 },
+                        { "maxKg": 20, "price": 4.50 },
+                        { "maxKg": 25, "price": 4.70 },
+                        { "maxKg": 31.5, "price": 4.90 }
+                    ]
+                }
+            ],
+            "oversize": [
+                {
+                    "name": "Übermaß (NC)",
+                    "amount": 6.00,
+                    "if": { "lengthOver": 120, "sideOver": 60, "volumeOverL": 150, "bulky": true },
+                    "max": { "lengthCm": 175, "girthCm": 300 }
+                },
+                {
+                    "name": "Übergröße",
+                    "amount": 40.00,
+                    "if": { "lengthAtLeast": 175, "girthOver": 300 },
+                    "max": { "lengthCm": 250, "girthCm": 330 }
+                }
+            ],
+            "surcharges": [
+                { "type": "fixed", "name": "Maut", "amount": 0.30 },
+                { "type": "fixed", "name": "Sicherheitsgebühr", "amount": 0.10 },
+                { "type": "energy", "name": "Energiezuschlag" },
+                { "type": "fixed", "name": "Inselzustellung", "amount": 12.00, "countries": ["DE"], "postcodes": ["27498", "25846-25847"] }
+            ]
+        },
+        {
+            "id": "dpd_europa",
+            "carrier": "dpd",
+            "option": "dpd",
+            "name": "DPD Classic Europa",
+            "limits": { "maxKg": 31.5, "maxLengthCm": 175, "maxGirthCm": 300 },
+            "zones": [
+                { "name": "Österreich", "countries": ["AT"], "steps": [{ "maxKg": 31.5, "price": 8.00 }] },
+                { "name": "Frankreich", "countries": ["FR"], "steps": [{ "maxKg": 31.5, "price": 10.00 }] },
+                { "name": "Schweiz", "countries": ["CH"], "steps": [{ "maxKg": 31.5, "price": 9.00 }] },
+                { "name": "Großbritannien", "countries": ["GB"], "steps": [{ "maxKg": 31.5, "price": 12.00 }] }
+            ],
+            "oversize": [
+                {
+                    "name": "Übermaß (NC)",
+                    "amount": 6.00,
+                    "if": { "lengthOver": 120, "sideOver": 60, "volumeOverL": 150, "bulky": true },
+                    "max": { "lengthCm": 175, "girthCm": 300 }
+                },
+                {
+                    "name": "Übergröße",
+                    "amount": 40.00,
+                    "if": { "lengthAtLeast": 175, "girthOver": 300 },
+                    "max": { "lengthCm": 250, "girthCm": 330 }
+                }
+            ],
+            "surcharges": [
+                { "type": "fixed", "name": "Maut", "amount": 0.30 },
+                { "type": "fixed", "name": "Sicherheitsgebühr", "amount": 0.10 },
+                { "type": "energy", "name": "Energiezuschlag" },
+                { "type": "fixed", "name": "Zollabfertigung", "amount": 20.00, "countries": ["CH"] },
+                { "type": "percent", "name": "Währungszuschlag", "percent": 10, "countries": ["CH"] }
+            ]
+        },
+        {
+            "id": "dhl_paket_de",
+            "carrier": "dhl",
+            "option": "dhl",
+            "name": "DHL Paket national",
+            "limits": { "maxKg": 31.5, "maxDimsCm": [120, 60, 60] },
+            "zones": [
+                {
+                    "name": "Deutschland",
+                    "countries": ["DE"],
+                    "steps": [
+                        { "maxKg": 1, "price": 4.00 },
+                        { "maxKg": 3, "price": 4.60 },
+                        { "maxKg": 5, "price": 5.50 },
+                        { "maxKg": 10, "price": 7.50 },
+                        { "maxKg": 20, "price": 11.50 },
+                        { "maxKg": 31.5, "price": 14.00 }
+                    ]
+                }
+            ],
+            "oversize": [
+                {
+                    "name": "Sperrgut",
+                    "amount": 18.00,
+                    "if": { "exceedsDimsCm": [120, 60, 60], "bulky": true },
+                    "max": { "lengthCm": 200, "girthCm": 360 }
+                }
+            ],
+            "surcharges": [
+                { "type": "fixed", "name": "Maut/CO2", "amount": 0.15 },
+                { "type": "energy", "name": "Energiezuschlag" },
+                { "type": "peak", "name": "Peakzuschlag", "amount": 0.20, "months": [11, 12] },
+                { "type": "peakInPeak", "name": "Peak-in-Peak", "amount": 0.40 }
+            ]
+        },
+        {
+            "id": "dhl_paket_int",
+            "carrier": "dhl",
+            "option": "dhl",
+            "name": "DHL Paket International Premium",
+            "limits": { "maxKg": 31.5, "maxDimsCm": [120, 60, 60] },
+            "zones": [
+                { "name": "Zone 1 EU", "countries": ["AT", "BE", "FR", "NL"], "perPiece": 12.00, "perKg": 1.00, "roundKg": 0.1 },
+                { "name": "Zone 1 Nicht-EU", "countries": ["CH", "GB"], "perPiece": 20.00, "perKg": 1.00, "roundKg": 0.1 }
+            ],
+            "oversize": [
+                {
+                    "name": "Sperrgut",
+                    "amount": 18.00,
+                    "if": { "exceedsDimsCm": [120, 60, 60], "bulky": true },
+                    "max": { "lengthCm": 200, "girthCm": 360 }
+                }
+            ],
+            "surcharges": [
+                { "type": "fixed", "name": "Maut/CO2", "amount": 0.15 },
+                { "type": "peak", "name": "Peakzuschlag", "amount": 0.20, "months": [11, 12] },
+                { "type": "peakInPeak", "name": "Peak-in-Peak", "amount": 0.40 }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,202 @@
+{
+    "_hinweis": "Testfälle mit den erfundenen Platzhaltertarifen aus examples/tarife-beispiel.json. Gleiche Fälle wie in der Rechenregel (T1–T17), nur andere Preise. Erwartet = Verkaufspreis brutto (außerhalb der EU ohne MwSt.); false = Versandart nicht angeboten.",
+    "defaults": {
+        "date": "2027-03-10T10:00:00"
+    },
+    "channels": {
+        "standard": {
+            "fixedPrices": { "warenpost": 5.00, "kleinpaket": 7.50, "dpd": 7.50, "dhl": 10.50 },
+            "foreignSurcharge": 5.00,
+            "goodsValueLimits": { "warenpost": 30, "kleinpaket": 50 }
+        },
+        "kanal-b": {
+            "fixedPrices": { "warenpost": 4.00, "kleinpaket": 7.50, "dpd": 7.50, "dhl": 7.50 },
+            "foreignSurcharge": 0
+        },
+        "kanal-c": {
+            "fixedPrices": { "warenpost": 4.00, "kleinpaket": 7.50, "dpd": 7.50, "dhl": 10.50 },
+            "foreignSurcharge": 0,
+            "freeCountries": ["DE"]
+        },
+        "peak": {
+            "peakInPeakFrom": "2027-12-01",
+            "peakInPeakUntil": "2027-12-20"
+        },
+        "ersatz": {
+            "freightFallbackPrice": 349.00
+        },
+        "energie": {
+            "energyPercent": { "dhl": 10, "dpd": 5 }
+        }
+    },
+    "cases": [
+        {
+            "id": "T1", "title": "3 Kleinteile, flach, Warenwert 18 €", "country": "DE",
+            "items": [{ "label": "Kleinteile", "weightKg": 0.4, "dims": [20, 15, 4], "price": 18 }],
+            "expect": { "warenpost": 5.00, "kleinpaket": 7.50, "dpd": 7.50, "dhl": 10.50, "abholung": 0, "spedition": false },
+            "expectHints": { "warenpost": ["basicTracking"] },
+            "expectRecommended": "warenpost"
+        },
+        {
+            "id": "T2", "title": "0,8 kg, 30 × 20 × 7 cm, Warenwert 40 €", "country": "DE",
+            "items": [{ "weightKg": 0.8, "dims": [30, 20, 7], "price": 40 }],
+            "expect": { "warenpost": false, "kleinpaket": 7.50, "dpd": 7.50, "dhl": 10.50, "abholung": 0 }
+        },
+        {
+            "id": "T3", "title": "Warenwert 35 €, 0,3 kg, flach", "country": "DE",
+            "items": [{ "weightKg": 0.3, "dims": [25, 18, 2], "price": 35 }],
+            "expect": { "warenpost": false, "kleinpaket": 7.50, "dpd": 7.50, "dhl": 10.50 }
+        },
+        {
+            "id": "T4", "title": "Normale Teile, zusammen 27 kg", "country": "DE",
+            "items": [{ "weightKg": 1, "dims": [30, 20, 15], "qty": 27, "price": 10 }],
+            "expect": { "warenpost": false, "kleinpaket": false, "dpd": 15.00, "dhl": 21.00 },
+            "expectPackages": { "dpd": 2, "dhl": 2 }
+        },
+        {
+            "id": "T4b", "title": "Normale Teile, zusammen 23 kg (1 Paket)", "country": "DE",
+            "items": [{ "weightKg": 1, "dims": [30, 20, 15], "qty": 23, "price": 10 }],
+            "expect": { "dpd": 7.50, "dhl": 10.50 },
+            "expectPackages": { "dpd": 1 }
+        },
+        {
+            "id": "T5", "title": "Schwingarm 130 × 40 × 40 cm, 9 kg + 2 Kleinteile", "country": "DE",
+            "items": [
+                { "label": "Schwingarm", "weightKg": 9, "dims": [130, 40, 40], "category": "sperrgut", "price": 120 },
+                { "label": "Kleinteil", "weightKg": 0.25, "dims": [10, 10, 5], "qty": 2, "price": 5 }
+            ],
+            "expect": { "dpd": 14.64, "dhl": 31.92, "warenpost": false },
+            "expectPackages": { "dpd": 1 },
+            "expectRecommended": "dpd"
+        },
+        {
+            "id": "T6", "title": "Auspuff 180 × 20 × 20 cm, 8 kg", "country": "DE",
+            "items": [{ "weightKg": 8, "dims": [180, 20, 20], "category": "sperrgut", "price": 200 }],
+            "expect": { "dhl": 31.92, "dpd": 55.10 },
+            "expectRecommended": "dhl"
+        },
+        {
+            "id": "T7", "title": "Karosserie (Spedition)", "country": "DE", "postcode": "10115",
+            "freightQuote": { "net": 380, "daysMin": 2, "daysMax": 4 },
+            "items": [{ "weightKg": 120, "dims": [400, 180, 150], "category": "spedition", "price": 2500 }],
+            "expect": { "spedition": 472.20, "abholung": 0, "dpd": false, "dhl": false, "warenpost": false }
+        },
+        {
+            "id": "T7b", "title": "Spedition ohne API-Schlüssel → auf Anfrage", "country": "DE",
+            "items": [{ "weightKg": 120, "dims": [400, 180, 150], "category": "spedition", "price": 2500 }],
+            "expect": { "spedition": false, "abholung": 0 }
+        },
+        {
+            "id": "T7c", "title": "Spedition, API-Fehler → Ersatzpreis", "country": "DE", "channel": "ersatz",
+            "freightQuote": "error",
+            "items": [{ "weightKg": 120, "dims": [400, 180, 150], "category": "spedition", "price": 2500 }],
+            "expect": { "spedition": 349.00 },
+            "expectHints": { "spedition": ["freightEstimated"] }
+        },
+        {
+            "id": "T8", "title": "2 kg, Warenwert 60 €", "country": "AT",
+            "items": [{ "weightKg": 2, "dims": [30, 20, 15], "price": 60 }],
+            "expect": { "dpd": 15.00, "dhl": 21.84, "warenpost": false, "kleinpaket": false }
+        },
+        {
+            "id": "T9", "title": "0,45 kg, flach, Warenwert 20 €", "country": "AT",
+            "items": [{ "weightKg": 0.45, "dims": [25, 18, 3], "price": 20 }],
+            "expect": { "warenpost": 12.74, "dpd": 15.00, "dhl": 20.05 },
+            "expectRecommended": "warenpost"
+        },
+        {
+            "id": "T10", "title": "2 kg in die Schweiz (ohne MwSt.)", "country": "CH",
+            "items": [{ "weightKg": 2, "dims": [30, 20, 15], "price": 60 }],
+            "expect": { "dhl": 27.15, "dpd": 35.30, "warenpost": false },
+            "expectRecommended": "dhl"
+        },
+        {
+            "id": "T11", "title": "Kanal B: Ritzel 0,1 kg, Warenwert 12 €", "country": "DE", "channel": "kanal-b",
+            "items": [{ "weightKg": 0.1, "dims": [10, 5, 2], "price": 12 }],
+            "expect": { "warenpost": 4.00, "kleinpaket": 7.50, "dpd": 7.50, "dhl": 7.50, "abholung": 0 }
+        },
+        {
+            "id": "T12", "title": "Kanal C: eigenes Buch (versandkostenfrei)", "country": "DE", "channel": "kanal-c",
+            "items": [{ "weightKg": 0.5, "dims": [25, 18, 3], "price": 15, "free": true }],
+            "expect": { "warenpost": 0, "kleinpaket": 0, "dpd": 0, "dhl": 0 },
+            "expectHints": { "warenpost": ["free"] }
+        },
+        {
+            "id": "T13", "title": "Kanal C: fremdes Buch 0,6 kg nach Frankreich", "country": "FR", "channel": "kanal-c",
+            "items": [{ "weightKg": 0.6, "dims": [25, 18, 3], "price": 20 }],
+            "expect": { "warenpost": 8.21, "dpd": 12.38, "dhl": 15.17 }
+        },
+        {
+            "id": "T14", "title": "Kleinteil + Karosserie", "country": "DE",
+            "freightQuote": { "net": 380 },
+            "items": [
+                { "weightKg": 0.2, "dims": [10, 10, 5], "price": 9 },
+                { "weightKg": 120, "dims": [400, 180, 150], "category": "spedition", "price": 2500 }
+            ],
+            "expect": { "spedition": 472.20, "abholung": 0, "dpd": false, "dhl": false, "warenpost": false, "kleinpaket": false }
+        },
+        {
+            "id": "T15", "title": "2 Kotflügel (Sperrgut, Einzelpaket) je 6 kg", "country": "DE",
+            "items": [{ "weightKg": 6, "dims": [100, 50, 30], "category": "sperrgut", "packing": "einzelpaket", "qty": 2, "price": 150 }],
+            "expect": { "dpd": 29.28, "dhl": 63.84 },
+            "expectPackages": { "dpd": 2, "dhl": 2 }
+        },
+        {
+            "id": "T16", "title": "3 Auspuffe (Sperrgut, zusammen packbar) je 4 kg", "country": "DE",
+            "items": [{ "weightKg": 4, "dims": [125, 15, 15], "category": "sperrgut", "packing": "zusammen", "qty": 3, "price": 80 }],
+            "expect": { "dpd": 14.64, "dhl": 31.92 },
+            "expectPackages": { "dpd": 1, "dhl": 1 }
+        },
+        {
+            "id": "T17", "title": "Normale Teile (Abholung auf Treffen kommt aus Nova Termine, hier nur Paket/Abholung)", "country": "DE",
+            "items": [{ "weightKg": 3, "dims": [40, 30, 20], "price": 90 }],
+            "expect": { "dpd": 7.50, "dhl": 10.50, "abholung": 0 }
+        },
+        {
+            "id": "P1", "title": "Peak (November) wird bei DHL weitergegeben", "country": "DE", "date": "2027-11-12T09:00:00",
+            "items": [{ "weightKg": 2, "dims": [30, 20, 15], "price": 60 }],
+            "expect": { "dhl": 10.74, "dpd": 7.50, "kleinpaket": false },
+            "expectHints": { "dhl": ["peak"] }
+        },
+        {
+            "id": "P2", "title": "Peak-in-Peak (Zeitraum aus der Einstellung)", "country": "DE", "date": "2027-12-05T09:00:00", "channel": "peak",
+            "items": [{ "weightKg": 0.5, "dims": [25, 18, 6], "price": 40 }],
+            "expect": { "dhl": 11.21, "kleinpaket": 8.21, "dpd": 7.50 }
+        },
+        {
+            "id": "P3", "title": "Peak im Ausland steckt im Einkauf (AT, Warenpost International)", "country": "AT", "date": "2027-11-12T09:00:00",
+            "items": [{ "weightKg": 0.45, "dims": [25, 18, 3], "price": 20 }],
+            "expect": { "warenpost": 12.97 },
+            "expectHints": { "warenpost": ["peak"] }
+        },
+        {
+            "id": "E1", "title": "Energiezuschlag ändert nur die Marge (Festpreis bleibt)", "country": "DE", "channel": "energie",
+            "items": [{ "weightKg": 2, "dims": [30, 20, 15], "price": 60 }],
+            "expect": { "dhl": 10.50, "dpd": 7.50 }
+        },
+        {
+            "id": "E2", "title": "Energiezuschlag im Ausland wird weitergegeben", "country": "AT", "channel": "energie",
+            "items": [{ "weightKg": 2, "dims": [30, 20, 15], "price": 60 }],
+            "expect": { "dpd": 15.47 }
+        },
+        {
+            "id": "L1", "title": "Land ohne Tarif → nur Abholung", "country": "US",
+            "items": [{ "weightKg": 2, "dims": [30, 20, 15], "price": 60 }],
+            "expect": { "dpd": false, "dhl": false, "warenpost": false, "abholung": 0 }
+        },
+        {
+            "id": "L2", "title": "Artikel nur Abholung", "country": "DE",
+            "items": [
+                { "weightKg": 2, "dims": [30, 20, 15], "price": 60 },
+                { "weightKg": 50, "category": "abholung", "price": 300 }
+            ],
+            "expect": { "dpd": false, "dhl": false, "spedition": false, "abholung": 0 }
+        },
+        {
+            "id": "L3", "title": "Paket zu groß für alle Paketdienste → Spedition", "country": "DE",
+            "freightQuote": { "net": 100 },
+            "items": [{ "weightKg": 20, "dims": [260, 30, 30], "category": "sperrgut", "price": 400 }],
+            "expect": { "dpd": false, "dhl": false, "spedition": 139.00 }
+        }
+    ]
+}

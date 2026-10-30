@@ -1,0 +1,29 @@
+{% sw_extends '@Storefront/storefront/component/shipping/shipping-method.html.twig' %}
+
+{% block component_shipping_method_description %}
+    {{ parent() }}
+
+    {% set novaVk = shipping.extensions.novaVersandkosten ?? null %}
+    {% if novaVk %}
+        {% block nova_versandkosten_method_info %}
+            <div class="nova-versandkosten-info small">
+                <span class="nova-versandkosten-price fw-bold">{{ novaVk.price|currency }}</span>
+                {% if not novaVk.vatIncluded %}
+                    <span class="text-muted">({{ 'novaVersandkosten.noVat'|trans|sw_sanitize }})</span>
+                {% endif %}
+                {% if novaVk.packageCount > 1 %}
+                    <span class="text-muted">· {{ 'novaVersandkosten.packages'|trans({'%count%': novaVk.packageCount})|sw_sanitize }}</span>
+                {% endif %}
+                {% if novaVk.recommended %}
+                    <span class="badge bg-success-subtle text-success-emphasis">{{ 'novaVersandkosten.recommended'|trans|sw_sanitize }}</span>
+                {% endif %}
+                {% if novaVk.delivery %}
+                    <div class="nova-versandkosten-delivery text-muted">{{ 'novaVersandkosten.delivery'|trans({'%dates%': novaVk.delivery})|sw_sanitize }}</div>
+                {% endif %}
+                {% for hint in novaVk.hints %}
+                    <div class="nova-versandkosten-hint text-muted">{{ ('novaVersandkosten.hint.' ~ hint.code)|trans({'%carrier%': hint.carrier})|sw_sanitize }}</div>
+                {% endfor %}
+            </div>
+        {% endblock %}
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,114 @@
+{% block nova_versandkosten_index %}
+<sw-page class="nova-versandkosten-index">
+    <template #smart-bar-header>
+        <h2>{{ $tc('nova-versandkosten.general.title') }}</h2>
+    </template>
+
+    <template #content>
+        <div class="nova-versandkosten-index__content">
+            <div class="nova-versandkosten-index__tabs" role="tablist">
+                <button type="button" role="tab" :class="{ 'is--active': tab === 'tariffs' }" :aria-selected="tab === 'tariffs'" @click="setTab('tariffs')">
+                    {{ $tc('nova-versandkosten.tabs.tariffs') }}
+                </button>
+                <button type="button" role="tab" :class="{ 'is--active': tab === 'check' }" :aria-selected="tab === 'check'" @click="setTab('check')">
+                    {{ $tc('nova-versandkosten.tabs.check') }}
+                </button>
+            </div>
+
+            <template v-if="tab === 'tariffs'">
+                <mt-card position-identifier="nova-versandkosten-status" :title="$tc('nova-versandkosten.tariffs.current')" :is-loading="isLoading">
+                    <p v-if="!status || !status.meta">{{ $tc('nova-versandkosten.tariffs.none') }}</p>
+                    <template v-else>
+                        <p>
+                            <strong>{{ status.meta.name || status.meta.fileName }}</strong><br>
+                            {{ $tc('nova-versandkosten.tariffs.importedAt') }}: {{ formatDate(status.meta.importedAt) }} ·
+                            {{ $tc('nova-versandkosten.tariffs.file') }}: {{ status.meta.fileName }}
+                        </p>
+                        <p v-if="!status.valid" class="nova-versandkosten-index__error">{{ $tc('nova-versandkosten.tariffs.invalid') }}</p>
+                        <table class="nova-versandkosten-index__table">
+                            <thead>
+                                <tr>
+                                    <th>{{ $tc('nova-versandkosten.tariffs.product') }}</th>
+                                    <th>{{ $tc('nova-versandkosten.tariffs.carrier') }}</th>
+                                    <th>{{ $tc('nova-versandkosten.tariffs.option') }}</th>
+                                    <th>{{ $tc('nova-versandkosten.tariffs.countries') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="p in status.products" :key="p.id">
+                                    <td>{{ p.name }} <span class="nova-versandkosten-index__muted">({{ p.id }})</span></td>
+                                    <td>{{ p.carrier }}</td>
+                                    <td>{{ p.option }}</td>
+                                    <td>{{ p.countries }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="nova-versandkosten-index__actions">
+                            <mt-button variant="secondary" size="small" @click="download('json')">{{ $tc('nova-versandkosten.tariffs.downloadJson') }}</mt-button>
+                            <mt-button variant="secondary" size="small" @click="download('csv')">{{ $tc('nova-versandkosten.tariffs.downloadCsv') }}</mt-button>
+                        </div>
+                    </template>
+                </mt-card>
+
+                <mt-card position-identifier="nova-versandkosten-import" :title="$tc('nova-versandkosten.tariffs.import')">
+                    <p>{{ $tc('nova-versandkosten.tariffs.importHelp') }}</p>
+                    <p>
+                        <input type="file" accept=".json,.csv,application/json,text/csv" @change="onFile">
+                    </p>
+                    <textarea
+                        v-model="content"
+                        class="nova-versandkosten-index__textarea"
+                        rows="10"
+                        :placeholder="$tc('nova-versandkosten.tariffs.paste')"
+                        :aria-label="$tc('nova-versandkosten.tariffs.paste')"
+                    ></textarea>
+                    <ul v-if="errors.length" class="nova-versandkosten-index__errors">
+                        <li v-for="(e, i) in errors" :key="i">{{ e }}</li>
+                    </ul>
+                    <div class="nova-versandkosten-index__actions">
+                        <mt-button variant="secondary" :disabled="isLoading" @click="submit(true)">{{ $tc('nova-versandkosten.tariffs.check') }}</mt-button>
+                        <mt-button variant="primary" :disabled="isLoading" @click="submit(false)">{{ $tc('nova-versandkosten.tariffs.save') }}</mt-button>
+                    </div>
+                </mt-card>
+            </template>
+
+            <template v-else>
+                <mt-card position-identifier="nova-versandkosten-check" :title="$tc('nova-versandkosten.check.title')" :is-loading="checkLoading">
+                    <p>{{ $tc('nova-versandkosten.check.help') }}</p>
+                    <p v-if="check && check.errors" class="nova-versandkosten-index__error">{{ check.errors.join(' ') }}</p>
+                    <div v-for="channel in (check ? check.channels : [])" :key="channel.id" class="nova-versandkosten-index__channel">
+                        <h3>
+                            {{ channel.name }}
+                            <span v-if="channel.warnings > 0" class="nova-versandkosten-index__badge is--warning">{{ $tc('nova-versandkosten.check.warnings', channel.warnings, { count: channel.warnings }) }}</span>
+                            <span v-else class="nova-versandkosten-index__badge is--ok">{{ $tc('nova-versandkosten.check.ok') }}</span>
+                        </h3>
+                        <table class="nova-versandkosten-index__table">
+                            <thead>
+                                <tr>
+                                    <th>{{ $tc('nova-versandkosten.check.scenario') }}</th>
+                                    <th>{{ $tc('nova-versandkosten.check.fixed') }}</th>
+                                    <th>{{ $tc('nova-versandkosten.check.saleNet') }}</th>
+                                    <th>{{ $tc('nova-versandkosten.check.purchase') }}</th>
+                                    <th>{{ $tc('nova-versandkosten.check.margin') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="row in channel.rows" :key="row.label" :class="{ 'is--warning': row.warning }">
+                                    <td>{{ row.label }}</td>
+                                    <td>{{ row.fixed === null ? $tc('nova-versandkosten.check.purchaseGross') : money(row.fixed) }}</td>
+                                    <td>{{ money(row.saleNet) }}</td>
+                                    <td>{{ money(row.purchaseNet) }}</td>
+                                    <td>{{ row.reason ? row.reason : money(row.margin) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="nova-versandkosten-index__actions">
+                        <mt-button variant="secondary" size="small" @click="loadCheck">{{ $tc('nova-versandkosten.check.reload') }}</mt-button>
+                    </div>
+                </mt-card>
+            </template>
+        </div>
+    </template>
+</sw-page>
+{% endblock %}

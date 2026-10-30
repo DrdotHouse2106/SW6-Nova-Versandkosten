@@ -1,0 +1,58 @@
+{
+    "nova-versandkosten": {
+        "general": {
+            "title": "Nova Versandkosten",
+            "description": "Import tariffs and check shipping prices"
+        },
+        "tabs": { "tariffs": "Tariffs", "check": "Price check" },
+        "tariffs": {
+            "current": "Current tariff file",
+            "none": "No tariff file imported yet. Without tariffs Shopware calculates as before.",
+            "invalid": "The stored tariff file is invalid – please import again.",
+            "importedAt": "Imported",
+            "file": "File",
+            "product": "Product",
+            "carrier": "Carrier",
+            "option": "Shipping method",
+            "countries": "Countries",
+            "downloadJson": "Download as JSON",
+            "downloadCsv": "Download as CSV (Excel)",
+            "import": "Import tariff file",
+            "importHelp": "Choose a JSON or CSV file or paste its content. “Check” shows errors without saving; “Import” replaces the current tariff file for all sales channels. Format: see README.",
+            "paste": "Content of the tariff file (JSON or CSV)",
+            "check": "Check",
+            "save": "Import",
+            "empty": "Please choose a file or paste the content.",
+            "checked": "File is valid: {name} ({products} products). Not saved yet.",
+            "saved": "Tariffs imported: {name} ({products} products).",
+            "saveError": "Import failed.",
+            "loadError": "Loading failed."
+        },
+        "check": {
+            "title": "Price check",
+            "help": "Fixed prices in the home country against the current purchase price (incl. energy surcharge, peak during the period) for typical parcels. Red = net sale below purchase.",
+            "warnings": "{count} shortfall | {count} shortfalls",
+            "ok": "all covered",
+            "scenario": "Parcel",
+            "fixed": "Fixed price gross",
+            "saleNet": "Sale net",
+            "purchase": "Purchase net",
+            "margin": "Margin",
+            "purchaseGross": "Purchase gross",
+            "reload": "Recalculate",
+            "loadError": "Price check failed."
+        },
+        "order": {
+            "title": "Shipping costs",
+            "delivery": "Estimated delivery",
+            "dimsMissing": "Dimensions missing – please measure when packing.",
+            "weight": "Weight",
+            "dims": "Dimensions",
+            "tier": "Surcharge",
+            "purchase": "Purchase net (estimated)",
+            "saleNet": "Sale net",
+            "sale": "gross",
+            "difference": "Difference"
+        }
+    }
+}

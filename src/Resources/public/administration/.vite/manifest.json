@@ -1,0 +1,11 @@
+{
+  "main.js": {
+    "file": "assets/nova-versandkosten-BLZ_oH49.js",
+    "name": "nova-versandkosten",
+    "src": "main.js",
+    "isEntry": true,
+    "css": [
+      "assets/nova-versandkosten-CADw1fty.css"
+    ]
+  }
+}

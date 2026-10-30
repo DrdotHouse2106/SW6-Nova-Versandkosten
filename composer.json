@@ -1,0 +1,45 @@
+{
+    "name": "nova/nova-versandkosten",
+    "description": "Versandkosten aus Einkaufstarifen, Paketbildung und Kanalregeln berechnen – mit Sperrgut, Peak, Ausland, Spedition (Cargoboard), Zustelldatum und Margenkontrolle",
+    "type": "shopware-platform-plugin",
+    "version": "1.0.0",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Nova"
+        }
+    ],
+    "require": {
+        "shopware/core": "~6.7.0",
+        "shopware/storefront": "~6.7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Nova\\Versandkosten\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Nova\\Versandkosten\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "shopware-plugin-class": "Nova\\Versandkosten\\NovaVersandkosten",
+        "label": {
+            "de-DE": "Nova Versandkosten",
+            "en-GB": "Nova Shipping Costs"
+        },
+        "description": {
+            "de-DE": "Versandkosten je Warenkorb aus den eigenen Einkaufstarifen berechnen: Paketbildung, Warenpost/Kleinpaket/DPD/DHL, Sperrgut und Übermaß, Peak-Zuschläge, Ausland ohne MwSt. außerhalb der EU, Spedition über Cargoboard, voraussichtliches Zustelldatum und Margenkontrolle an der Bestellung.",
+            "en-GB": "Calculate shipping costs per cart from your own carrier purchase tariffs: parcel building, letter parcel/small parcel/DPD/DHL, bulky and oversize, peak surcharges, abroad without VAT outside the EU, freight via Cargoboard, estimated delivery date and margin control on the order."
+        },
+        "manufacturerLink": {
+            "de-DE": "https://github.com/DrdotHouse2106/SW6-Nova-Versandkosten",
+            "en-GB": "https://github.com/DrdotHouse2106/SW6-Nova-Versandkosten"
+        },
+        "supportLink": {
+            "de-DE": "https://github.com/DrdotHouse2106/SW6-Nova-Versandkosten/issues",
+            "en-GB": "https://github.com/DrdotHouse2106/SW6-Nova-Versandkosten/issues"
+        }
+    }
+}

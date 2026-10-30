@@ -1,0 +1,15 @@
+{% set novaVkPage = page.extensions.novaVersandkosten ?? null %}
+{% if novaVkPage %}
+    {% block nova_versandkosten_request %}
+        <div class="nova-versandkosten-request mt-3">
+            {% if novaVkPage.freightOnRequest %}
+                <p class="nova-versandkosten-freight-request mb-2">{{ 'novaVersandkosten.freightOnRequest'|trans|sw_sanitize }}</p>
+            {% endif %}
+            {% if novaVkPage.tourRequestUrl %}
+                <a class="btn btn-outline-secondary btn-sm" href="{{ novaVkPage.tourRequestUrl }}">
+                    {{ 'novaVersandkosten.tourRequest'|trans|sw_sanitize }}
+                </a>
+            {% endif %}
+        </div>
+    {% endblock %}
+{% endif %}

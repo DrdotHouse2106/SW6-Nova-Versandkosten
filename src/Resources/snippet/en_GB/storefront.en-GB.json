@@ -1,0 +1,16 @@
+{
+    "novaVersandkosten": {
+        "noVat": "excl. VAT",
+        "packages": "%count% parcels",
+        "recommended": "recommended",
+        "delivery": "Estimated delivery %dates%",
+        "freightOnRequest": "Your cart is delivered by freight forwarder. We will tell you the price on request – or choose collection.",
+        "tourRequest": "Request delivery by tour",
+        "hint": {
+            "basicTracking": "with basic tracking",
+            "peak": "incl. %carrier% seasonal surcharge (November/December)",
+            "free": "free shipping",
+            "freightEstimated": "Estimated price – we will confirm it before shipping"
+        }
+    }
+}

@@ -1,0 +1,118 @@
+<?php declare(strict_types=1);
+
+namespace Nova\Versandkosten\Calculator;
+
+/**
+ * Ergebnis für eine Versandart (warenpost, kleinpaket, dpd, dhl, spedition, abholung).
+ */
+final class OptionResult
+{
+    public const WARENPOST = 'warenpost';
+    public const KLEINPAKET = 'kleinpaket';
+    public const DPD = 'dpd';
+    public const DHL = 'dhl';
+    public const FREIGHT = 'spedition';
+    public const PICKUP = 'abholung';
+
+    public const ALL = [self::WARENPOST, self::KLEINPAKET, self::DPD, self::DHL, self::FREIGHT, self::PICKUP];
+
+    /** Grund-Code, wenn nicht verfügbar: Spedition ohne Preis → „auf Anfrage“ */
+    public const REASON_ON_REQUEST = 'onRequest';
+
+    public bool $available = false;
+
+    /** Hinweis für Admin/Log (deutsch), warum nicht verfügbar */
+    public string $reason = '';
+
+    public string $reasonCode = '';
+
+    public string $carrier = '';
+
+    public string $carrierName = '';
+
+    public string $productId = '';
+
+    public string $productName = '';
+
+    /** @var list<array<string, mixed>> */
+    public array $packages = [];
+
+    /** Einkauf netto in Einheiten (1/10.000 €) */
+    public int $purchaseNet = 0;
+
+    /** Verkaufspreis in Cent (brutto in der EU, ohne MwSt. außerhalb) */
+    public int $saleCents = 0;
+
+    public bool $vatIncluded = true;
+
+    /** @var list<array{code: string, carrier?: string}> */
+    public array $hints = [];
+
+    public ?int $transitMin = null;
+
+    public ?int $transitMax = null;
+
+    public ?\DateTimeImmutable $deliveryFrom = null;
+
+    public ?\DateTimeImmutable $deliveryTo = null;
+
+    /** Günstigste bzw. empfohlene Option */
+    public bool $recommended = false;
+
+    public bool $peakApplied = false;
+
+    public function __construct(public readonly string $key)
+    {
+    }
+
+    public static function unavailable(string $key, string $reason, string $code = ''): self
+    {
+        $r = new self($key);
+        $r->reason = $reason;
+        $r->reasonCode = $code;
+
+        return $r;
+    }
+
+    public function hasHint(string $code): bool
+    {
+        foreach ($this->hints as $hint) {
+            if ($hint['code'] === $code) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function purchaseNetCents(): int
+    {
+        return Money::toCents($this->purchaseNet);
+    }
+
+    /** @return array<string, mixed> */
+    public function toArray(): array
+    {
+        return [
+            'key' => $this->key,
+            'available' => $this->available,
+            'reason' => $this->reason,
+            'reasonCode' => $this->reasonCode,
+            'carrier' => $this->carrier,
+            'carrierName' => $this->carrierName,
+            'productId' => $this->productId,
+            'productName' => $this->productName,
+            'packages' => $this->packages,
+            'packageCount' => \count($this->packages),
+            'purchaseNet' => Money::toCents($this->purchaseNet) / 100,
+            'sale' => $this->saleCents / 100,
+            'vatIncluded' => $this->vatIncluded,
+            'hints' => $this->hints,
+            'transitMin' => $this->transitMin,
+            'transitMax' => $this->transitMax,
+            'deliveryFrom' => $this->deliveryFrom?->format('Y-m-d'),
+            'deliveryTo' => $this->deliveryTo?->format('Y-m-d'),
+            'recommended' => $this->recommended,
+        ];
+    }
+}

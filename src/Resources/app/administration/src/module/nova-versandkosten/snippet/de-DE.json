@@ -1,0 +1,58 @@
+{
+    "nova-versandkosten": {
+        "general": {
+            "title": "Nova Versandkosten",
+            "description": "Tarife importieren und Versandpreise prüfen"
+        },
+        "tabs": { "tariffs": "Tarife", "check": "Preisprüfung" },
+        "tariffs": {
+            "current": "Aktuelle Tarifdatei",
+            "none": "Noch keine Tarifdatei importiert. Ohne Tarife rechnet Shopware wie bisher.",
+            "invalid": "Die gespeicherte Tarifdatei ist ungültig – bitte neu importieren.",
+            "importedAt": "Importiert",
+            "file": "Datei",
+            "product": "Produkt",
+            "carrier": "Dienstleister",
+            "option": "Versandart",
+            "countries": "Länder",
+            "downloadJson": "Als JSON herunterladen",
+            "downloadCsv": "Als CSV herunterladen (Excel)",
+            "import": "Tarifdatei importieren",
+            "importHelp": "JSON- oder CSV-Datei wählen oder den Inhalt einfügen. „Prüfen“ zeigt Fehler, ohne zu speichern; „Importieren“ ersetzt die aktuelle Tarifdatei für alle Verkaufskanäle. Format: siehe README.",
+            "paste": "Inhalt der Tarifdatei (JSON oder CSV)",
+            "check": "Prüfen",
+            "save": "Importieren",
+            "empty": "Bitte eine Datei wählen oder Inhalt einfügen.",
+            "checked": "Datei ist gültig: {name} ({products} Produkte). Noch nicht gespeichert.",
+            "saved": "Tarife importiert: {name} ({products} Produkte).",
+            "saveError": "Import fehlgeschlagen.",
+            "loadError": "Laden fehlgeschlagen."
+        },
+        "check": {
+            "title": "Preisprüfung",
+            "help": "Festpreise im Heimatland gegen den aktuellen Einkauf (inkl. Energiezuschlag, im Zeitraum auch Peak) für typische Pakete. Rot = Verkauf netto unter Einkauf.",
+            "warnings": "{count} Unterdeckung | {count} Unterdeckungen",
+            "ok": "alles gedeckt",
+            "scenario": "Paket",
+            "fixed": "Festpreis brutto",
+            "saleNet": "Verkauf netto",
+            "purchase": "Einkauf netto",
+            "margin": "Marge",
+            "purchaseGross": "Einkauf brutto",
+            "reload": "Neu berechnen",
+            "loadError": "Preisprüfung fehlgeschlagen."
+        },
+        "order": {
+            "title": "Versandkosten",
+            "delivery": "Zustellung voraussichtlich",
+            "dimsMissing": "Maße fehlen – bitte beim Packen messen.",
+            "weight": "Gewicht",
+            "dims": "Maße",
+            "tier": "Zuschlag",
+            "purchase": "Einkauf netto (geschätzt)",
+            "saleNet": "Verkauf netto",
+            "sale": "brutto",
+            "difference": "Differenz"
+        }
+    }
+}
