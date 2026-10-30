@@ -10,6 +10,9 @@
                     {{ 'novaVersandkosten.request.finish'|trans|sw_sanitize }}
                 </div>
             {% endif %}
+            {% if novaVkFinish.tourDate %}
+                <div class="alert alert-info nova-versandkosten-tour-finish" role="alert">{{ 'novaVersandkosten.tour.finish'|trans({'%date%': novaVkFinish.tourDate})|sw_sanitize }}</div>
+            {% endif %}
             {% if novaVkFinish.beipackTo %}
                 <div class="alert alert-info" role="alert">{{ 'novaVersandkosten.beipack.finish'|trans({'%number%': novaVkFinish.beipackTo})|sw_sanitize }}</div>
             {% endif %}

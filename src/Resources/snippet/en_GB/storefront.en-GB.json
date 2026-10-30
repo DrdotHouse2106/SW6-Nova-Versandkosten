@@ -44,9 +44,52 @@
             "finish": "This order will be added to order %number%.",
             "forgot": "Forgot something?",
             "forgotLink": "Add it to this order now"
+        },
+        "tour": {
+            "title": "Delivery with our own tour",
+            "choose": "Choose delivery date",
+            "placeholder": "Please choose a date …",
+            "apply": "Apply",
+            "hint": "We deliver with our own vehicle and will contact you in advance with the time.",
+            "invalid": "The chosen date is no longer available. Please choose another date.",
+            "priceFrom": "from %price%",
+            "on": "Delivery on %date%",
+            "nextDates": "next date %date% (%count% dates)",
+            "finish": "Delivery with our own tour on %date%. We will contact you in advance with the time."
+        },
+        "tourNotify": {
+            "title": "Tour notification",
+            "teaser": "We regularly deliver with our own tour – often cheaper than freight forwarding. Leave your e-mail address and postcode and we will let you know when a tour comes near you.",
+            "email": "E-mail address",
+            "postcode": "Postcode",
+            "consent": "I would like to be notified by e-mail when a tour comes near my postcode. I can withdraw my consent at any time via the unsubscribe link. More information in the %privacyModalTagOpen%privacy policy%privacyModalTagClose%.",
+            "submit": "Notify me",
+            "success": "Almost done: please confirm via the link in the e-mail we have just sent you.",
+            "errorGeneral": "Signing up is not possible right now. Please try again later.",
+            "errorConsent": "Please give your consent.",
+            "errorEmail": "Please enter a valid e-mail address.",
+            "errorPostcode": "We do not know this postcode or it is outside our delivery area.",
+            "errorTooMany": "Too many sign-ups in a short time. Please try again later.",
+            "confirmed": "Thank you! We will notify you as soon as a tour comes near you.",
+            "confirmFailed": "The confirmation link is invalid or has expired. Please sign up again.",
+            "unsubscribed": "You have been unsubscribed. Your tour notification details have been deleted.",
+            "renewed": "Thank you – we will keep notifying you.",
+            "linkInvalid": "The link is invalid or the subscription no longer exists.",
+            "accountLink": "Tour notification",
+            "accountTitle": "Tour notification",
+            "accountIntro": "We regularly deliver with our own tour. Switch on for your delivery addresses that we send you an e-mail when a tour comes near. The e-mail only names the date, not the route.",
+            "accountOn": "Notify me",
+            "accountOff": "Notification off",
+            "accountNotPossible": "Not possible for this address (country or postcode outside our delivery area)",
+            "accountNoAddress": "You have not saved an address yet.",
+            "accountSaved": "Your setting has been saved.",
+            "accountFailed": "The setting could not be saved.",
+            "accountPrivacy": "For this we use your e-mail address and the postcode of the address. You can unsubscribe here or via the link in every e-mail."
         }
     },
     "checkout": {
-        "nova-versandkosten-beipack-select": "Please choose the order to which the items should be added."
+        "nova-versandkosten-beipack-select": "Please choose the order to which the items should be added.",
+        "nova-versandkosten-tour-select": "Please choose the date for the delivery with our own tour.",
+        "nova-versandkosten-tour-invalid": "The chosen tour date is no longer available. Please choose another date."
     }
 }

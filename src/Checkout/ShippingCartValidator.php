@@ -4,6 +4,7 @@ namespace Nova\Versandkosten\Checkout;
 
 use Nova\Versandkosten\Calculator\OptionResult;
 use Nova\Versandkosten\Service\MethodMap;
+use Nova\Versandkosten\Service\Tour\TourService;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\CartValidatorInterface;
 use Shopware\Core\Checkout\Cart\Error\ErrorCollection;
@@ -20,6 +21,10 @@ use Shopware\Core\System\SalesChannel\SalesChannelContext;
  * Beipacken: Ist noch keine Bestellung gewählt, blockiert ein eigener Fehler nur das Bestellen (die
  * Versandart bleibt, damit der Kunde wählen kann). Wurde die alte Bestellung inzwischen versendet oder
  * storniert, ist die Versandart gesperrt – auch beim Abschluss (Shopware rechnet dort neu).
+ *
+ * Tour: Passt kein Termin (mehr), ist die Versandart gesperrt. Fehlt die Termin-Auswahl oder ist der
+ * gewählte Termin inzwischen nicht mehr buchbar (geschlossen, Bestellschluss vorbei, Variante festgelegt,
+ * an der die Adresse nicht liegt), blockiert TourSelectionError das Bestellen.
  */
 class ShippingCartValidator implements CartValidatorInterface
 {
@@ -38,6 +43,10 @@ class ShippingCartValidator implements CartValidatorInterface
             $method = $delivery->getShippingMethod();
             $key = MethodMap::optionFor($method->getTechnicalName());
             if ($key === null) {
+                continue;
+            }
+            if ($key === OptionResult::TOUR) {
+                $this->validateTour($cart, $errors, $method);
                 continue;
             }
             if (!\is_array($options)) {
@@ -60,6 +69,21 @@ class ShippingCartValidator implements CartValidatorInterface
                 $method->getId(),
                 \is_array($option) && (string) ($option['reason'] ?? '') !== '' ? (string) $option['reason'] : 'nicht verfügbar'
             ));
+        }
+    }
+
+    private function validateTour(Cart $cart, ErrorCollection $errors, \Shopware\Core\Checkout\Shipping\ShippingMethodEntity $method): void
+    {
+        $tour = $cart->getExtension(TourService::EXTENSION);
+        $data = $tour instanceof ArrayStruct ? $tour->all() : [];
+        if (empty($data['available'])) {
+            $errors->add(new ShippingMethodBlockedError($this->name($method), $method->getId(), 'kein passender Tourtermin'));
+
+            return;
+        }
+        $state = (string) ($data['state'] ?? '');
+        if ($state !== 'ok') {
+            $errors->add(new TourSelectionError($state === 'invalid'));
         }
     }
 

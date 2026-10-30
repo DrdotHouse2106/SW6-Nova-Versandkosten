@@ -1,0 +1,69 @@
+{#
+    Formular „Benachrichtigen, wenn eine Tour in die Nähe fährt“ (E-Mail + PLZ + Einwilligung, Double-Opt-in).
+    Eigener Einbau, z. B. auf der Produktseite von Speditionsware:
+        {% sw_include '@Storefront/storefront/nova-versandkosten/tour-notify-form.html.twig' with { formId: 'produkt' } %}
+    Absenden über Shopwares FormCmsHandler (wie das Kontaktformular), damit Captchas (auch Nova Captcha)
+    ohne eigenes JavaScript greifen.
+#}
+{% if config('NovaVersandkosten.config.tourNotifyEnabled') %}
+    {% block nova_versandkosten_tour_notify %}
+        {% set formPrefix = 'nova-vk-tour-' ~ (formId ?? 'form') %}
+        <div class="nova-versandkosten-tour-notify" id="{{ formPrefix }}">
+            {% block nova_versandkosten_tour_notify_intro %}
+                {% if title ?? false %}<p class="h5">{{ title }}</p>{% endif %}
+                <p>{{ (text ?? false) ? text : 'novaVersandkosten.tourNotify.teaser'|trans|sw_sanitize }}</p>
+            {% endblock %}
+
+            <form action="{{ path('frontend.nova_versandkosten.tour_notify.subscribe') }}"
+                  method="post"
+                  data-form-handler="true"
+                  data-form-cms-handler="true"
+                  data-form-cms-handler-options="{{ { cmsBlock: '#' ~ formPrefix }|json_encode }}"
+                  aria-label="{{ 'novaVersandkosten.tourNotify.title'|trans|striptags }}">
+                <div class="form-content">
+                    {% block nova_versandkosten_tour_notify_fields %}
+                        <div class="row g-2">
+                            {% sw_include '@Storefront/storefront/component/form/form-input.html.twig' with {
+                                id: formPrefix ~ '-email', name: 'email', type: 'email', label: 'novaVersandkosten.tourNotify.email'|trans,
+                                validationRules: 'required,email', autocomplete: 'email', maxlength: 254, additionalClass: 'col-md-8'
+                            } %}
+                            {% sw_include '@Storefront/storefront/component/form/form-input.html.twig' with {
+                                id: formPrefix ~ '-postcode', name: 'postcode', label: 'novaVersandkosten.tourNotify.postcode'|trans,
+                                validationRules: 'required', autocomplete: 'postal-code', maxlength: 10, additionalClass: 'col-md-4'
+                            } %}
+                        </div>
+                    {% endblock %}
+
+                    {% block nova_versandkosten_tour_notify_honeypot %}
+                        {# Verstecktes Feld gegen Bots – Menschen sehen und füllen es nicht #}
+                        <div class="visually-hidden" aria-hidden="true">
+                            <label for="{{ formPrefix }}-hp">Website</label>
+                            <input type="text" id="{{ formPrefix }}-hp" name="novaTourWebsite" tabindex="-1" autocomplete="off" value="">
+                        </div>
+                    {% endblock %}
+
+                    {% block nova_versandkosten_tour_notify_captcha %}
+                        {% sw_include '@Storefront/storefront/component/captcha/base.html.twig' with { additionalClass: 'col-md-12', formId: formPrefix } %}
+                    {% endblock %}
+
+                    {% block nova_versandkosten_tour_notify_consent %}
+                        {% set privacyLink = '<button type="button" class="btn btn-link-inline" aria-haspopup="dialog" data-ajax-modal="true" data-url="' ~ path('frontend.cms.page', { id: config('core.basicInformation.privacyPage') }) ~ '">' %}
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="{{ formPrefix }}-consent" name="novaTourConsent" value="1" required>
+                            <label class="form-check-label" for="{{ formPrefix }}-consent">
+                                {{ 'novaVersandkosten.tourNotify.consent'|trans({ '%privacyModalTagOpen%': privacyLink, '%privacyModalTagClose%': '</button>' })|raw }}
+                            </label>
+                        </div>
+                    {% endblock %}
+
+                    {% block nova_versandkosten_tour_notify_submit %}
+                        <button type="submit" class="btn btn-primary mt-2">{{ 'novaVersandkosten.tourNotify.submit'|trans|sw_sanitize }}</button>
+                    {% endblock %}
+                </div>
+                <div class="form-hidden-fields">
+                    <input type="submit" class="submit--hidden d-none">
+                </div>
+            </form>
+        </div>
+    {% endblock %}
+{% endif %}

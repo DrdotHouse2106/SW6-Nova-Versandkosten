@@ -78,7 +78,7 @@ jobs:
         run: |
           name="${{ steps.meta.outputs.name }}"
           paths=()
-          for p in composer.json src README.md README.en.md CHANGELOG.md CHANGELOG_de-DE.md CHANGELOG_en-GB.md LICENSE; do
+          for p in composer.json src README.md README.en.md CHANGELOG.md CHANGELOG_de-DE.md CHANGELOG_en-GB.md LICENSE NOTICE; do
             [ -e "$p" ] && paths+=("$p")
           done
           git archive --format=zip --prefix="$name/" -o "$name-${{ steps.meta.outputs.version }}.zip" HEAD -- "${paths[@]}"

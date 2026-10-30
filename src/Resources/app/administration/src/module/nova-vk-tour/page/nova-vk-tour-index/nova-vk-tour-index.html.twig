@@ -1,0 +1,141 @@
+{% block nova_vk_tour_index %}
+<sw-page class="nova-vk-tour-index">
+    <template #smart-bar-header>
+        <h2>{{ $tc('nova-vk-tour.general.title') }}</h2>
+    </template>
+
+    <template #smart-bar-actions>
+        <mt-button v-if="tab === 'dates' && acl.can('nova_vk_tour.editor')" variant="primary" @click="$router.push({ name: 'nova.vk.tour.date' })">
+            {{ $tc('nova-vk-tour.dates.new') }}
+        </mt-button>
+        <mt-button v-if="tab === 'routes' && acl.can('nova_vk_tour.editor')" variant="primary" @click="$router.push({ name: 'nova.vk.tour.route' })">
+            {{ $tc('nova-vk-tour.routes.new') }}
+        </mt-button>
+    </template>
+
+    <template #content>
+        <div class="nova-vk-tour__content">
+            <div class="nova-vk-tour__tabs" role="tablist">
+                <button type="button" role="tab" :class="{ 'is--active': tab === 'dates' }" :aria-selected="tab === 'dates'" @click="setTab('dates')">{{ $tc('nova-vk-tour.tabs.dates') }}</button>
+                <button type="button" role="tab" :class="{ 'is--active': tab === 'routes' }" :aria-selected="tab === 'routes'" @click="setTab('routes')">{{ $tc('nova-vk-tour.tabs.routes') }}</button>
+                <button type="button" role="tab" :class="{ 'is--active': tab === 'subscribers' }" :aria-selected="tab === 'subscribers'" @click="setTab('subscribers')">{{ $tc('nova-vk-tour.tabs.subscribers') }}</button>
+            </div>
+
+            <mt-card v-if="tab === 'dates'" position-identifier="nova-vk-tour-dates" :title="$tc('nova-vk-tour.tabs.dates')" :is-loading="loading">
+                <p class="nova-vk-tour__muted">{{ $tc('nova-vk-tour.dates.help') }}</p>
+                <label class="nova-vk-tour__check">
+                    <input v-model="showPast" type="checkbox"> {{ $tc('nova-vk-tour.dates.showPast') }}
+                </label>
+                <table v-if="dates.length" class="nova-vk-tour__table">
+                    <thead>
+                        <tr>
+                            <th>{{ $tc('nova-vk-tour.dates.date') }}</th>
+                            <th>{{ $tc('nova-vk-tour.dates.tour') }}</th>
+                            <th>{{ $tc('nova-vk-tour.dates.status') }}</th>
+                            <th>{{ $tc('nova-vk-tour.dates.trailer') }}</th>
+                            <th>{{ $tc('nova-vk-tour.dates.deadline') }}</th>
+                            <th>{{ $tc('nova-vk-tour.dates.deliveries') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="d in dates" :key="d.id">
+                            <td><router-link :to="{ name: 'nova.vk.tour.date', params: { id: d.id } }">{{ formatDate(d.tourDate) }}</router-link></td>
+                            <td>{{ d.label || $tc('nova-vk-tour.dates.oneOff') }}<span v-if="d.waypoints.length" class="nova-vk-tour__muted"> ({{ $tc('nova-vk-tour.dates.ownWaypoints') }})</span></td>
+                            <td>{{ statusLabel(d.status) }}<span v-if="d.variantName" class="nova-vk-tour__muted"> · {{ d.variantName }}</span></td>
+                            <td>{{ d.trailer ? '✓' : '–' }}</td>
+                            <td>{{ formatDate(d.orderDeadline) }}</td>
+                            <td>{{ d.deliveries }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p v-else>{{ $tc('nova-vk-tour.dates.none') }}</p>
+                <p v-if="overview.settings && overview.settings.postcodes === 0" class="nova-vk-tour__error">{{ $tc('nova-vk-tour.general.noPostcodes') }}</p>
+            </mt-card>
+
+            <mt-card v-if="tab === 'routes'" position-identifier="nova-vk-tour-routes" :title="$tc('nova-vk-tour.tabs.routes')" :is-loading="loading">
+                <p class="nova-vk-tour__muted">{{ $tc('nova-vk-tour.routes.help') }}</p>
+                <table v-if="overview.routes.length" class="nova-vk-tour__table">
+                    <thead>
+                        <tr>
+                            <th>{{ $tc('nova-vk-tour.routes.name') }}</th>
+                            <th>{{ $tc('nova-vk-tour.routes.startEnd') }}</th>
+                            <th>{{ $tc('nova-vk-tour.routes.variants') }}</th>
+                            <th>{{ $tc('nova-vk-tour.routes.active') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="r in overview.routes" :key="r.id">
+                            <td><router-link :to="{ name: 'nova.vk.tour.route', params: { id: r.id } }">{{ r.name }}</router-link></td>
+                            <td>{{ r.startLabel }} – {{ r.endLabel }}</td>
+                            <td>{{ r.variants.map((v) => v.name).join(', ') }}</td>
+                            <td>{{ r.active ? '✓' : '–' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p v-else>{{ $tc('nova-vk-tour.routes.none') }}</p>
+            </mt-card>
+
+            <mt-card v-if="tab === 'subscribers'" position-identifier="nova-vk-tour-subscribers" :title="$tc('nova-vk-tour.subscribers.title')" :is-loading="subscribersLoading">
+                <p v-if="overview.settings && !overview.settings.notifyEnabled" class="nova-vk-tour__error">{{ $tc('nova-vk-tour.subscribers.disabled') }}</p>
+                <div class="nova-vk-tour__filters">
+                    <label>
+                        <span>{{ $tc('nova-vk-tour.subscribers.route') }}</span>
+                        <select v-model="filter.routeId" class="nova-vk-tour__input">
+                            <option value="">{{ $tc('nova-vk-tour.subscribers.allRoutes') }}</option>
+                            <option v-for="r in overview.routes" :key="r.id" :value="r.id">{{ r.name }}</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>{{ $tc('nova-vk-tour.subscribers.radius') }}</span>
+                        <input v-model="filter.radius" class="nova-vk-tour__input nova-vk-tour__input--short" type="number" min="1" max="500" :disabled="!filter.routeId" placeholder="60">
+                    </label>
+                    <label>
+                        <span>{{ $tc('nova-vk-tour.subscribers.search') }}</span>
+                        <input v-model="filter.q" class="nova-vk-tour__input" type="text" @keydown.enter.prevent="loadSubscribers">
+                    </label>
+                    <label class="nova-vk-tour__check">
+                        <input v-model="filter.pending" type="checkbox"> {{ $tc('nova-vk-tour.subscribers.pending') }}
+                    </label>
+                    <mt-button variant="secondary" size="small" @click="loadSubscribers">{{ $tc('nova-vk-tour.subscribers.apply') }}</mt-button>
+                    <mt-button variant="secondary" size="small" @click="exportCsv">{{ $tc('nova-vk-tour.subscribers.csv') }}</mt-button>
+                </div>
+                <table v-if="subscribers.length" class="nova-vk-tour__table">
+                    <thead>
+                        <tr>
+                            <th>{{ $tc('nova-vk-tour.subscribers.type') }}</th>
+                            <th>{{ $tc('nova-vk-tour.subscribers.email') }}</th>
+                            <th>{{ $tc('nova-vk-tour.subscribers.place') }}</th>
+                            <th>{{ $tc('nova-vk-tour.subscribers.since') }}</th>
+                            <th>{{ $tc('nova-vk-tour.subscribers.source') }}</th>
+                            <th>{{ $tc('nova-vk-tour.subscribers.confirmed') }}</th>
+                            <th v-if="filter.routeId">km</th>
+                            <th>{{ $tc('nova-vk-tour.subscribers.sent') }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="s in subscribers" :key="s.id">
+                            <td>
+                                <template v-if="s.type === 'customer'">
+                                    <router-link :to="{ name: 'sw.customer.detail', params: { id: s.customer_id } }">{{ $tc('nova-vk-tour.subscribers.customer') }} {{ s.customer_number }}</router-link>
+                                    <div class="nova-vk-tour__muted">{{ s.name }}</div>
+                                </template>
+                                <template v-else>{{ $tc('nova-vk-tour.subscribers.guest') }}</template>
+                            </td>
+                            <td>{{ s.email }}</td>
+                            <td>{{ s.postcode }} {{ s.place }}</td>
+                            <td>{{ formatDateTime(s.created_at) }}</td>
+                            <td>{{ $tc('nova-vk-tour.subscribers.source_' + s.source) }}</td>
+                            <td>{{ s.status === 'active' ? '✓' : $tc('nova-vk-tour.subscribers.notConfirmed') }}</td>
+                            <td v-if="filter.routeId">{{ s.km }}</td>
+                            <td>{{ s.notifications }}</td>
+                            <td><mt-button v-if="acl.can('nova_vk_tour.deleter')" variant="critical" size="small" @click="deleteSubscriber(s)">{{ $tc('nova-vk-tour.general.delete') }}</mt-button></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p v-else>{{ $tc('nova-vk-tour.subscribers.none') }}</p>
+            </mt-card>
+        </div>
+    </template>
+</sw-page>
+{% endblock %}

@@ -1,0 +1,19 @@
+Nova Versandkosten
+Copyright (c) Nova – MIT-Lizenz, siehe LICENSE.
+
+Dieses Plugin enthält Daten Dritter:
+
+src/Resources/geo/postcodes-de.tsv.gz
+  Postleitzahlen Deutschland mit Ort, Bundesland und Koordinate.
+  Quelle: GeoNames (https://www.geonames.org/), Postal Code Dataset,
+          Datei DE.zip von https://download.geonames.org/export/zip/ (abgerufen am 30.10.2026).
+  Lizenz: Creative Commons Attribution 4.0 International (CC BY 4.0),
+          https://creativecommons.org/licenses/by/4.0/
+  Änderungen: Einträge von Großkunden-Postleitzahlen (Firmennamen statt Ortsnamen) als Ortsnamen
+          entfernt, je (PLZ, Ort) eine Zeile, Koordinaten auf 4 Nachkommastellen gerundet,
+          Format Tabulator/gzip (scripts/plz-aufbereiten.php).
+  Die Daten werden „wie besehen“ bereitgestellt, ohne Gewähr für Richtigkeit, Aktualität oder
+  Vollständigkeit (Hinweis von GeoNames).
+
+This plugin contains third-party data: German postal codes from GeoNames (https://www.geonames.org/),
+licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); modified as described above.

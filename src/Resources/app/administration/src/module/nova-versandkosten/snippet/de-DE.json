@@ -102,5 +102,166 @@
             "dpd_efs": "DPD Emergency Fuel Surcharge",
             "dpdTotal": "DPD gesamt (Straße + Emergency)"
         }
+    },
+    "nova-vk-tour": {
+        "general": {
+            "title": "Touren",
+            "description": "Eigene Touren: Strecken, Tourtermine, Tour-Lieferungen, Benachrichtigung",
+            "save": "Speichern",
+            "saved": "Gespeichert.",
+            "saveError": "Speichern fehlgeschlagen.",
+            "loadError": "Laden fehlgeschlagen.",
+            "delete": "Löschen",
+            "back": "Zurück",
+            "note": "Interne Notiz",
+            "noPostcodes": "Die PLZ-Koordinaten fehlen. Bitte das Plugin aktualisieren bzw. neu aktivieren."
+        },
+        "tabs": {
+            "dates": "Tourtermine",
+            "routes": "Strecken",
+            "subscribers": "Benachrichtigung"
+        },
+        "status": {
+            "open": "offen (alle Varianten)",
+            "fixed": "festgelegt",
+            "closed": "geschlossen"
+        },
+        "dates": {
+            "new": "Neuer Tourtermin",
+            "help": "Ein Termin ist zunächst offen: Kunden an allen Varianten der Strecke können buchen. Die erste Buchung legt die Variante fest (die mit der geringsten Abweichung für diesen Kunden); danach nur noch Kunden an dieser Variante. Die Variante lässt sich hier jederzeit festlegen oder ändern.",
+            "showPast": "Vergangene Termine zeigen",
+            "date": "Datum",
+            "tour": "Strecke / Fahrt",
+            "status": "Status",
+            "trailer": "Hänger",
+            "deadline": "Bestellschluss",
+            "deliveries": "Lieferungen",
+            "none": "Noch keine Tourtermine.",
+            "oneOff": "Einmalige Fahrt",
+            "ownWaypoints": "eigene Wegpunkte",
+            "route": "Strecke",
+            "oneOffOption": "— keine: eigene Wegpunkte (einmalige Fahrt) —",
+            "name": "Name (optional)",
+            "namePlaceholder": "z. B. Fahrt Beispielhausen",
+            "deadlineHelp": "Letzter Bestelltag (inklusive). Leer = Standard aus den Einstellungen.",
+            "variant": "Variante",
+            "allVariants": "— offen: alle Varianten —",
+            "variantHelp": "Nur bei Status „festgelegt“.",
+            "trailerHelp": "mit Hänger (ohne Hänger keine Speditionsware)",
+            "ownHelp": "Einmalige Fahrt: Wegpunkte in Fahrtreihenfolge eingeben (mindestens zwei).",
+            "saveAsRoute": "Als Strecken-Vorlage speichern",
+            "saveAsRouteName": "Name der neuen Strecke",
+            "savedAsRoute": "Strecke angelegt.",
+            "confirmDelete": "Diesen Tourtermin löschen? Bestellungen behalten ihre Angaben."
+        },
+        "routes": {
+            "new": "Neue Strecke",
+            "help": "Strecken sind Vorlagen für regelmäßige Fahrten. Jede Strecke hat eine oder mehrere Varianten (Wege) mit Wegpunkten in Fahrtreihenfolge. Abweichung eines Kunden = Luftlinie seiner PLZ zur Linie der Wegpunkte × Umwegfaktor.",
+            "name": "Name",
+            "namePlaceholder": "z. B. Musterstadt – Beispielhausen",
+            "startEnd": "Start – Ziel",
+            "variants": "Varianten",
+            "active": "Aktiv",
+            "none": "Noch keine Strecken.",
+            "route": "Strecke",
+            "start": "Start",
+            "end": "Ziel",
+            "activeHelp": "aktiv (für Hinweise an „Versandkosten auf Anfrage“)",
+            "variant": "Variante",
+            "variantName": "Name der Variante",
+            "variantPlaceholder": "z. B. über Beispielstadt",
+            "waypointsHelp": "Wegpunkte in Fahrtreihenfolge – Start, Orte unterwegs, Ziel. Eingabe als PLZ oder Ort.",
+            "removeVariant": "Variante entfernen",
+            "addVariant": "Variante hinzufügen",
+            "confirmDelete": "Diese Strecke mit allen Varianten löschen? Tourtermine bleiben, verlieren aber die Strecke."
+        },
+        "waypoints": {
+            "empty": "Noch keine Wegpunkte.",
+            "placeholder": "PLZ oder Ort",
+            "search": "Suchen",
+            "noResult": "Nichts gefunden.",
+            "up": "nach oben",
+            "down": "nach unten",
+            "remove": "entfernen"
+        },
+        "deliveries": {
+            "title": "Tour-Lieferungen",
+            "help": "Reihenfolge entlang der Strecke (km ab Start) – zuletzt angefahrene Lieferungen zuerst laden.",
+            "order": "Bestellung",
+            "customer": "Kunde",
+            "place": "PLZ / Ort",
+            "along": "ab Start",
+            "deviation": "Abweichung",
+            "current": "jetzt",
+            "outOfRange": "liegt mit der aktuellen Variante außerhalb des Preisrahmens",
+            "tier": "Einordnung",
+            "small": "Kleinteile/Paket/Sperrgut",
+            "freight": "Speditionsware",
+            "status": "Status (Bestellung/Lieferung/Zahlung)",
+            "none": "Noch keine Bestellungen für diesen Termin."
+        },
+        "notify": {
+            "title": "Interessenten im Korridor",
+            "count": "{total} Interessenten im Korridor",
+            "split": "{open} noch nicht benachrichtigt, {notified} bereits",
+            "help": "Bei offenem Termin zählen alle Varianten. Reichweite: mit Hänger bis zur größten Speditionsstufe, sonst bis zur Grenze für Kleinteile. Die Mail nennt nur Datum und PLZ-Gebiet, nie die Strecke. Jeder Abonnent bekommt zu einem Termin höchstens eine Mail.",
+            "send": "Benachrichtigung senden ({count})",
+            "confirm": "Jetzt {count} Interessenten per E-Mail benachrichtigen?",
+            "sent": "{sent} E-Mails gesendet, {failed} fehlgeschlagen.",
+            "error": "Senden fehlgeschlagen.",
+            "notified": "benachrichtigt"
+        },
+        "subscribers": {
+            "title": "Tour-Benachrichtigung: Abonnenten",
+            "disabled": "Die Tour-Benachrichtigung ist in den Plugin-Einstellungen ausgeschaltet.",
+            "route": "Strecke",
+            "allRoutes": "alle",
+            "radius": "Umkreis km",
+            "search": "Suche (E-Mail, PLZ, Ort)",
+            "pending": "auch unbestätigte",
+            "apply": "Anzeigen",
+            "csv": "CSV exportieren",
+            "type": "Kunde/Gast",
+            "customer": "Kunde",
+            "guest": "Gast",
+            "email": "E-Mail",
+            "place": "PLZ / Ort",
+            "since": "seit",
+            "source": "Quelle",
+            "source_account": "Kundenkonto",
+            "source_form": "Formular",
+            "confirmed": "bestätigt",
+            "notConfirmed": "offen (DOI)",
+            "sent": "Mails",
+            "none": "Keine Abonnenten.",
+            "confirmDelete": "Abonnent {email} löschen?"
+        },
+        "order": {
+            "tour": "Lieferung mit unserer Tour am {date}",
+            "openDate": "Termin öffnen",
+            "details": "Variante: {variant} · Abweichung: {km} km · {tier}",
+            "hintTitle": "Liegt an einer eigenen Tour:",
+            "hintRoute": "Strecke {name} ({variant}): {km} km",
+            "hintDate": "Tourtermin {date} {name} ({variant}): {km} km",
+            "trailer": "mit Hänger"
+        },
+        "cms": {
+            "elementLabel": "Tour-Benachrichtigung",
+            "blockLabel": "Tour-Benachrichtigung",
+            "previewTitle": "Tour-Benachrichtigung",
+            "title": "Überschrift (optional)",
+            "text": "Text",
+            "defaultText": "Wir liefern regelmäßig mit unserer eigenen Tour. Hinterlassen Sie E-Mail und PLZ, dann sagen wir Bescheid, wenn eine Tour in Ihre Nähe fährt.",
+            "email": "E-Mail-Adresse",
+            "postcode": "PLZ",
+            "hint": "Formular mit Double-Opt-in und Captcha. Erscheint nur, wenn die Tour-Benachrichtigung in den Plugin-Einstellungen eingeschaltet ist."
+        }
+    },
+    "sw-privileges": {
+        "permissions": {
+            "nova_vk_tour": {
+                "label": "Touren (Nova Versandkosten)"
+            }
+        }
     }
 }

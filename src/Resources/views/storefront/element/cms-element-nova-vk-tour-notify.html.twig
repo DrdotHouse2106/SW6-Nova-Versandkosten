@@ -1,0 +1,11 @@
+{# Erlebniswelten-Element „Tour-Benachrichtigung“ (Nova Versandkosten). Texte werden escaped ausgegeben. #}
+{% block element_nova_vk_tour_notify %}
+    {% set config = element.translated.config %}
+    <div class="cms-element-nova-vk-tour-notify">
+        {% sw_include '@Storefront/storefront/nova-versandkosten/tour-notify-form.html.twig' with {
+            formId: element.id,
+            title: config.title.value is defined ? config.title.value : '',
+            text: config.text.value is defined ? config.text.value : ''
+        } %}
+    </div>
+{% endblock %}

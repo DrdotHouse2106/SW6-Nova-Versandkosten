@@ -42,6 +42,14 @@ estimated delivery date and notes.
 - **Shipping costs on request** (new in 1.1.0): order without a shipping price; the shop enters the
   shipping costs afterwards, the customer receives the total and a payment link by e-mail; unpaid
   requests are cancelled after X days.
+- **Own delivery tours** (new in 1.2.0): routes with variants and waypoints, tour dates (with/without
+  trailer, order deadline), shipping method “Lieferung mit unserer Tour” only for addresses close to
+  the route, price by category and deviation, date choice at checkout, list “tour deliveries” for
+  loading, hint on “shipping costs on request” orders within reach of a route.
+- **Tour notification** (new in 1.2.0): customers (switch per delivery address in the account) and
+  guests (form with double opt-in and captcha) are informed at the push of a button when a tour date
+  comes near them – without revealing the route.
+- **German postcode coordinates included** (GeoNames, CC BY 4.0) – no external service.
 
 Real purchase prices do not belong in the plugin: each shop imports its own tariffs. All prices in
 this document and in `examples/` are **made-up placeholders**.
@@ -55,14 +63,18 @@ this document and in `examples/` are **made-up placeholders**.
 [releases](https://github.com/DrdotHouse2106/SW6-Nova-Versandkosten/releases) under *Extensions →
 My extensions → Upload extension*, install and activate. Reload the administration (Ctrl+F5).
 
-On installation the plugin creates eight **inactive** shipping methods (not assigned to any sales
+On installation the plugin creates nine **inactive** shipping methods (not assigned to any sales
 channel): *Warenpost*, *DHL Kleinpaket*, *DPD Paket*, *DHL Paket*, *Spedition* (freight), *Abholung*
-(collection), *Versandkosten auf Anfrage* (`nova_versandkosten_anfrage`) and *Zu meiner Bestellung
-beipacken* (`nova_versandkosten_beipack`) – identified by the technical name `nova_versandkosten_…` –
-plus custom fields on products and orders, the mail template “Nova Versandkosten: Versandkosten
-nachberechnet” (German/English) and two daily scheduled tasks (`nova_versandkosten.energy_fetch`,
-`nova_versandkosten.request_cancel`; they need a running scheduled task runner). Updating to 1.1.0
-only adds what is missing. Name, description, image, position and rules can be changed freely; only the
+(collection), *Versandkosten auf Anfrage* (`nova_versandkosten_anfrage`), *Zu meiner Bestellung
+beipacken* (`nova_versandkosten_beipack`) and *Lieferung mit unserer Tour* (`nova_versandkosten_tour`) –
+identified by the technical name `nova_versandkosten_…` – plus custom fields on products and orders,
+the tables for routes, tour dates, subscribers and postcode coordinates (loaded from the included file
+on install/update), the mail templates “Versandkosten nachberechnet”, “Tour-Benachrichtigung
+bestätigen” and “Tour in Ihrer Nähe” (German/English) and three daily scheduled tasks
+(`nova_versandkosten.energy_fetch`, `nova_versandkosten.request_cancel`,
+`nova_versandkosten.tour_cleanup`; they need a running scheduled task runner). Updates only add what is
+missing. Uninstalling without “keep data” removes the tour tables, custom fields, mail templates and
+settings; shipping methods are only deactivated. Name, description, image, position and rules can be changed freely; only the
 technical name must stay. An existing shipping method can be taken over by giving it one of these
 technical names.
 
@@ -87,6 +99,8 @@ technical names.
 8. **Energy surcharges:** *Extensions → Nova Versandkosten → Energy surcharges → Fetch now*; then it
    runs daily. Before November enter the peak-in-peak period.
 9. **Optional:** activate “shipping costs on request” and “add to my open order” (see below).
+10. **Optional: own tours** – routes and dates under *Orders → Tours*, activate the shipping method
+    “Lieferung mit unserer Tour” (see below).
 
 ## Add to an open order
 
@@ -141,6 +155,79 @@ will be calculated afterwards. Your order only becomes binding once you pay the 
   `{% if order.customFields.nova_versandkosten_anfrage|default(false) %}…{% endif %}`
 - **Terms and conditions:** such an order is only a request until the total is paid. *Nova
   Rechtstexte* (1.8.4+) provides the block `[[wenn versandanfrage]]`. No legal advice.
+
+## Own delivery tours
+
+Shops that deliver themselves (own van, with or without trailer) offer customers **along the route**
+the shipping method **“Lieferung mit unserer Tour”** (`nova_versandkosten_tour`, created inactive).
+Customers never see the route – only the date and the price.
+
+| Term | Meaning |
+|---|---|
+| **Route** | template for regular trips: name, start, destination and one or more **variants** |
+| **Variant** | one way to the destination with ordered **waypoints** (entered as postcode or place → coordinate). Example: route “Sampletown – Exampleville”, variant A “via Northam”, variant B “via Southby” |
+| **Tour date** | date (typically Fri/Sat/Sun, any day), route **or** own waypoints (one-off trip), order deadline (default 2 days before, last order day inclusive), switch **“with trailer”**, status |
+| **Status** | **open** = no booking yet, all variants count · **fixed** = variant fixed, only customers along it · **closed** = no more bookings |
+| **Deviation** | straight-line distance from the postcode centre of the delivery address to the variant's line (polyline of the waypoints) × **detour factor** (default 1.3), in km |
+
+**The first booking fixes the variant** – the one with the smallest deviation for that customer. The
+administration can fix or change the variant at any time.
+
+**Prices** (per sales channel, settings “Own tours”): small parts, parcels, bulky goods **50 €** up to
+**10 km**; freight goods (only for dates **with trailer**) **190 €** up to 30 km, **290 €** up to 60 km;
+beyond: no tour. The **highest category** in the cart sets the price; items “collection only” or “on
+request only” exclude the tour. Domestic addresses only (countries configurable, default DE). No
+tariff file needed.
+
+**Setup:** activate and assign the shipping method · settings “Own tours” · *Orders → Tours → Routes →
+New route* (waypoints via “postcode or place” search, ↑/↓ to reorder) · *Tour dates → New tour date*
+(route or own waypoints, date, deadline, trailer; one-off trips can be saved as route template) · role
+permissions under *Orders → Tours*.
+
+**Checkout:** shown only if at least one open/fixed date fits (deadline not passed, deviation within
+limits, trailer for freight, country allowed, postcode known). The customer must choose the date
+(“Sat, 14/11/2026 – 50.00 €”); no route, no places. Everything is checked again when ordering.
+Store API: `GET /store-api/nova-versandkosten/tour`, `POST /store-api/nova-versandkosten/tour/select`
+(`{"tourDateId": "…"}`).
+
+**Order:** customer comment starts with **“TOUR: Sa, 14.11.2026”**; custom fields
+`nova_versandkosten_tour_termin`, `_datum`, `_variante`, `_variante_name`, `_abweichung_km`,
+`_einordnung`. The tour date shows **“tour deliveries”** (order, customer, street, postcode/place,
+position along the route, deviation, category, states) sorted along the route for loading. Orders
+“shipping costs on request” show whether the address is close to an active route or bookable tour
+date.
+
+## Tour notification
+
+Customers and prospects are told when a tour date comes near them – the e-mail only names the **date
+and “near you (postcode area 12…)”**, never the route. Switch on in the settings “Tour notification”.
+
+- **Customer account:** *My account → Tour notification* – switch per delivery address (signed in,
+  so no double opt-in; sent to the account's current e-mail). Store API:
+  `GET/POST /store-api/nova-versandkosten/tour-notification`.
+- **Guests:** Shopping Experience element/block **“Tour notification”** or own include
+  `{% sw_include '@Storefront/storefront/nova-versandkosten/tour-notify-form.html.twig' with { formId: 'product' } %}`:
+  e-mail + postcode + consent checkbox, **double opt-in** (link valid 7 days), Shopware captchas (same
+  route attribute as the contact form, so e.g. Nova Captcha applies), honeypot, origin check, rate
+  limiter (3 per hour and IP, 100 per day and channel).
+- **Duration:** active until unsubscribed (signed link in every e-mail). Unconfirmed sign-ups are
+  deleted after 7 days, active subscribers after **24 months without activity** (configurable, 0 =
+  never). Scheduled task `nova_versandkosten.tour_cleanup` (daily).
+- **Administration:** *Orders → Tours → Notification*: all subscribers, filter by route and radius,
+  search, **CSV export**, delete. On a tour date: **“X subscribers along the route”** (all variants
+  while open) and the button **“Send notification”** – never automatic, at most one e-mail per date and
+  subscriber. Mail templates de/en are created on installation.
+- **Privacy policy:** *Nova Rechtstexte* (1.8.5+) provides the block `[[wenn tourbenachrichtigung]]`,
+  detected automatically when the plugin is active and the notification is switched on.
+
+## Postcode coordinates (source and licence)
+
+The plugin ships `src/Resources/geo/postcodes-de.tsv.gz` (German postcodes with place, state and
+coordinate). Source: **GeoNames** postal codes (`DE.zip`,
+[download.geonames.org/export/zip](https://download.geonames.org/export/zip/), as of 30/10/2026),
+licence **Creative Commons Attribution 4.0** ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)).
+Modifications: business entries removed as place names, coordinates rounded to 4 decimals
+(`scripts/plz-aufbereiten.php`). Attribution also in [NOTICE](NOTICE).
 
 ## Automatic energy surcharges
 
@@ -199,13 +286,21 @@ README (section “Tarifformat”); the field names are English. Convert without
 - Energy surcharges: only the public pages of DHL and DPD are requested, without customer or shop data.
 - Add to order: only the chosen order ID is stored with the cart; for the attempt limit a hash of the
   IP address (max. one hour in the cache).
+- Own tours: the deviation is calculated in the shop from the included postcode file – **no external
+  service**. Customers never see routes or dates other than their own choice.
+- Tour notification: e-mail, postcode (with place and centre), for customers the link to account and
+  address, source, timestamps (sign-up, confirmation, last activity), language, sales channel and
+  which date e-mails were sent. The confirmation token is stored as a hash only. Legal basis: consent
+  (Art. 6(1)(a) GDPR), withdrawal at any time via the unsubscribe link or in the account.
 
 ## Planned
 
 Own price list with volumetric weight · express/time-definite delivery, parcel shop delivery,
 worldwide tariffs with volumetric weight · variable international transport surcharge · contact form instead of e-mail for tour requests, shipping info page
 element · delivery times to Google Merchant Center · default shipping method per country ·
-Cargoboard booking and labels (belongs to the ERP).
+Cargoboard booking and labels (belongs to the ERP) · own tours: **real detour via a routing service**
+(e.g. OpenRouteService, only coordinates would be sent) instead of straight line × detour factor,
+recurring dates, time windows per stop, route map, tour plan PDF, postcodes of other countries.
 
 ## Development
 
@@ -220,4 +315,5 @@ after changes as described in the German README.
 
 ## License
 
-MIT – see [LICENSE](LICENSE).
+MIT – see [LICENSE](LICENSE). The included postcode coordinates come from GeoNames (CC BY 4.0) –
+see [NOTICE](NOTICE).

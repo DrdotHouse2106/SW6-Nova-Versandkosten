@@ -8,6 +8,7 @@ use Nova\Versandkosten\Installer\CustomFieldInstaller as CF;
 use Nova\Versandkosten\Service\BeipackService;
 use Nova\Versandkosten\Service\MethodMap;
 use Nova\Versandkosten\Service\Settings;
+use Nova\Versandkosten\Service\Tour\TourService;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\LineItem\LineItem;
 use Shopware\Core\Framework\Struct\ArrayStruct;
@@ -21,13 +22,15 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 /**
  * Hängt an Warenkorb-, Bestätigungs- und Abschlussseite die Angaben für Hinweise, den Knopf
  * „Lieferung per Tour anfragen“ (mailto-Link), die Auswahl „Zu meiner Bestellung beipacken“ und den
- * Hinweis „Versandkosten werden nachberechnet“.
+ * Hinweis „Versandkosten werden nachberechnet“ sowie die Termin-Auswahl „Lieferung mit unserer Tour“
+ * (nur Datum und Preis – nie Strecke oder Orte).
  */
 class CheckoutPageSubscriber implements EventSubscriberInterface
 {
     public function __construct(
         private readonly Settings $settings,
         private readonly BeipackService $beipack,
+        private readonly TourService $tour,
     ) {
     }
 
@@ -49,6 +52,20 @@ class CheckoutPageSubscriber implements EventSubscriberInterface
         $key = MethodMap::optionFor($context->getShippingMethod()->getTechnicalName());
         if ($key === OptionResult::BEIPACK) {
             $page->addExtension('novaVersandkostenBeipack', new ArrayStruct($this->beipackData($page->getCart(), $context)));
+        }
+        if ($key === OptionResult::TOUR) {
+            $tour = $page->getCart()->getExtension(TourService::EXTENSION);
+            $data = $tour instanceof ArrayStruct ? $tour->all() : [];
+            $page->addExtension('novaVersandkostenTour', new ArrayStruct([
+                'available' => !empty($data['available']),
+                'state' => (string) ($data['state'] ?? ''),
+                'selectedId' => \is_array($data['selected'] ?? null) ? $data['selected']['id'] : null,
+                'options' => array_map(
+                    static fn (array $o) => ['id' => $o['id'], 'label' => $o['label'], 'price' => $o['price'], 'deadline' => $o['deadline']],
+                    \is_array($data['options'] ?? null) ? $data['options'] : []
+                ),
+                'hint' => $this->tour->hint($context->getSalesChannelId()),
+            ]));
         }
     }
 
@@ -72,6 +89,7 @@ class CheckoutPageSubscriber implements EventSubscriberInterface
             'requestOrder' => !empty($fields[CF::ORDER_REQUEST]),
             'beipackTo' => \is_string($fields[CF::ORDER_BEIPACK_TO_NUMBER] ?? null) ? $fields[CF::ORDER_BEIPACK_TO_NUMBER] : null,
             'beipackDeepLinkCode' => $beipackCode,
+            'tourDate' => \is_string($fields[CF::ORDER_TOUR_DATE] ?? null) ? \Nova\Versandkosten\Calculator\Tour\TourText::date(new \DateTimeImmutable($fields[CF::ORDER_TOUR_DATE]), $context->getLanguageInfo()->localeCode) : null,
         ]));
     }
 

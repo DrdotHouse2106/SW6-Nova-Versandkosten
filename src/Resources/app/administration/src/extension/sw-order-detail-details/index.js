@@ -4,7 +4,9 @@ import template from './sw-order-detail-details.html.twig';
  * Bestellung → Details:
  * - Karte „Versandkosten“ (Dienstleister, Pakete, Einkauf, Verkauf, Differenz; „Maße fehlen“ je nach Einstellung)
  * - Beipack-Hinweise (neue Bestellung: „BEIPACK zu …“, alte Bestellung: Liste der beigepackten Bestellungen)
- * - Karte „Versandkosten auf Anfrage“: Versandkosten eintragen und Kunde benachrichtigen
+ * - Karte „Versandkosten auf Anfrage“: Versandkosten eintragen und Kunde benachrichtigen; Hinweis, wenn die
+ *   Lieferadresse an einer Strecke oder einem Tourtermin liegt
+ * - Eigene Tour: Termin, Variante, Abweichung, Einordnung mit Link zum Termin
  */
 Shopware.Component.override('sw-order-detail-details', {
     template,
@@ -70,6 +72,24 @@ Shopware.Component.override('sw-order-detail-details', {
             };
         },
 
+        novaVkTour() {
+            const f = this.order?.customFields || {};
+            if (!f.nova_versandkosten_tour_datum) {
+                return null;
+            }
+            return {
+                date: f.nova_versandkosten_tour_datum,
+                dateId: f.nova_versandkosten_tour_termin || null,
+                variant: f.nova_versandkosten_tour_variante_name || '',
+                deviation: f.nova_versandkosten_tour_abweichung_km,
+                tier: f.nova_versandkosten_tour_einordnung || '',
+            };
+        },
+
+        novaVkTourHint() {
+            return this.novaVkInfo && Array.isArray(this.novaVkInfo.tourHint) ? this.novaVkInfo.tourHint : [];
+        },
+
         novaVkHttp() {
             return Shopware.Application.getContainer('init').httpClient;
         },
@@ -85,6 +105,14 @@ Shopware.Component.override('sw-order-detail-details', {
     },
 
     methods: {
+        novaVkDate(value) {
+            if (!value) {
+                return '';
+            }
+            const date = new Date(`${String(value).substring(0, 10)}T12:00:00`);
+            return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
+        },
+
         novaVkMoney(value) {
             return Number(value || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
         },

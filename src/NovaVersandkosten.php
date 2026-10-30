@@ -6,16 +6,24 @@ use Doctrine\DBAL\Connection;
 use Nova\Versandkosten\Installer\CustomFieldInstaller;
 use Nova\Versandkosten\Installer\MailTemplateInstaller;
 use Nova\Versandkosten\Installer\ShippingMethodInstaller;
+use Nova\Versandkosten\Migration\Migration1793450000NovaVkTour;
 use Nova\Versandkosten\Service\MethodMap;
+use Nova\Versandkosten\Service\Tour\PostcodeDirectory;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\Plugin;
+use Shopware\Core\Framework\Plugin\Context\ActivateContext;
 use Shopware\Core\Framework\Plugin\Context\InstallContext;
 use Shopware\Core\Framework\Plugin\Context\UninstallContext;
 use Shopware\Core\Framework\Plugin\Context\UpdateContext;
 
 /**
- * Nova Versandkosten – Versandkosten aus Einkaufstarifen, Paketbildung und Kanalregeln berechnen.
+ * Nova Versandkosten – Versandkosten aus Einkaufstarifen, Paketbildung und Kanalregeln berechnen;
+ * ab 1.2.0 zusätzlich eigene Touren (Strecken, Tourtermine, Tour-Benachrichtigung).
+ *
+ * Die Tabellen der Touren legt die Migration an (Migration1793450000NovaVkTour). Beim Installieren,
+ * Aktualisieren und Aktivieren lädt das Plugin die mitgelieferten PLZ-Koordinaten (GeoNames, CC BY 4.0),
+ * wenn sich die Datei geändert hat. Deinstallieren ohne „Daten behalten“ entfernt die Tabellen wieder.
  */
 class NovaVersandkosten extends Plugin
 {
@@ -23,12 +31,20 @@ class NovaVersandkosten extends Plugin
     {
         parent::install($installContext);
         $this->setup($installContext->getContext());
+        $this->importPostcodes($installContext);
     }
 
     public function update(UpdateContext $updateContext): void
     {
         parent::update($updateContext);
         $this->setup($updateContext->getContext());
+        $this->importPostcodes($updateContext);
+    }
+
+    public function activate(ActivateContext $activateContext): void
+    {
+        parent::activate($activateContext);
+        $this->importPostcodes($activateContext);
     }
 
     public function uninstall(UninstallContext $uninstallContext): void
@@ -55,6 +71,33 @@ class NovaVersandkosten extends Plugin
             ['p' => MethodMap::PREFIX . '%']
         );
         $connection->executeStatement('DELETE FROM `system_config` WHERE `configuration_key` LIKE \'NovaVersandkosten.%\'');
+
+        // Eigene Touren: Tabellen entfernen (Reihenfolge wegen Fremdschlüsseln)
+        foreach (Migration1793450000NovaVkTour::TABLES as $table) {
+            $connection->executeStatement('DROP TABLE IF EXISTS `' . $table . '`');
+        }
+    }
+
+    /**
+     * PLZ-Koordinaten laden. Shopware führt die Migrationen erst NACH install()/update()/activate() aus –
+     * deshalb hier zuerst die (noch offenen) Migrationen des Plugins ausführen, damit die Tabelle existiert.
+     */
+    private function importPostcodes(InstallContext $context): void
+    {
+        $connection = $this->container?->get(Connection::class);
+        if (!$connection instanceof Connection) {
+            return;
+        }
+        try {
+            if ($context->isAutoMigrate()) {
+                $context->getMigrationCollection()->migrateInPlace();
+            }
+            if ($connection->createSchemaManager()->tablesExist(['nova_vk_postcode'])) {
+                (new PostcodeDirectory($connection))->import();
+            }
+        } catch (\Throwable) {
+            // PLZ fehlen nur für die Tour; beim nächsten Update/Aktivieren erneut versuchen
+        }
     }
 
     private function setup(Context $context): void

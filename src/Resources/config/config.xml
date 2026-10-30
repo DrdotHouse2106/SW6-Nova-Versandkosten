@@ -648,4 +648,93 @@ warenpost;*;4-10
             <helpText lang="de-DE">Leer = E-Mail-Adresse des Shops.</helpText>
         </input-field>
     </card>
+
+    <card>
+        <title>Own tours</title>
+        <title lang="de-DE">Eigene Touren</title>
+
+        <input-field type="float">
+            <name>tourSmallPrice</name>
+            <label>Price small parts, parcels, bulky goods (gross)</label>
+            <label lang="de-DE">Preis Kleinteile, Paketware, Sperrgut (brutto)</label>
+            <helpText>Shipping method “nova_versandkosten_tour”. Routes and tour dates: Orders → Tours.</helpText>
+            <helpText lang="de-DE">Versandart „nova_versandkosten_tour“. Strecken und Tourtermine: Bestellungen → Touren.</helpText>
+            <defaultValue>50</defaultValue>
+        </input-field>
+
+        <input-field type="float">
+            <name>tourSmallMaxKm</name>
+            <label>Small parts, parcels, bulky goods: maximum deviation (km)</label>
+            <label lang="de-DE">Kleinteile, Paketware, Sperrgut: höchste Abweichung (km)</label>
+            <defaultValue>10</defaultValue>
+        </input-field>
+
+        <input-field type="textarea">
+            <name>tourFreightTiers</name>
+            <label>Freight goods (trailer only): up to km = price</label>
+            <label lang="de-DE">Speditionsware (nur mit Hänger): bis km = Preis</label>
+            <helpText>One tier per line, e.g. “30=190” and “60=290”. Beyond the last tier: no tour.</helpText>
+            <helpText lang="de-DE">Eine Stufe je Zeile, z. B. „30=190“ und „60=290“. Über der letzten Stufe: keine Tour.</helpText>
+            <defaultValue>30=190
+60=290</defaultValue>
+        </input-field>
+
+        <input-field type="float">
+            <name>tourDetourFactor</name>
+            <label>Detour factor</label>
+            <label lang="de-DE">Umwegfaktor</label>
+            <helpText>Deviation = straight-line distance of the delivery postcode to the route line × factor.</helpText>
+            <helpText lang="de-DE">Abweichung = Luftlinie der Liefer-PLZ zur Linie der Strecke × Faktor.</helpText>
+            <defaultValue>1.3</defaultValue>
+        </input-field>
+
+        <input-field type="text">
+            <name>tourCountries</name>
+            <label>Delivery countries</label>
+            <label lang="de-DE">Lieferländer</label>
+            <helpText>ISO codes. Postcode coordinates are included for DE.</helpText>
+            <helpText lang="de-DE">ISO-Codes. PLZ-Koordinaten sind für DE enthalten.</helpText>
+            <defaultValue>DE</defaultValue>
+        </input-field>
+
+        <input-field type="int">
+            <name>tourDeadlineDays</name>
+            <label>Default order deadline (days before the tour)</label>
+            <label lang="de-DE">Standard-Bestellschluss (Tage vor dem Termin)</label>
+            <helpText>Pre-filled for new tour dates (global setting “All sales channels”).</helpText>
+            <helpText lang="de-DE">Vorschlag für neue Tourtermine (Einstellung „Alle Verkaufskanäle“).</helpText>
+            <defaultValue>2</defaultValue>
+        </input-field>
+
+        <input-field type="textarea">
+            <name>tourCheckoutHint</name>
+            <label>Note at checkout</label>
+            <label lang="de-DE">Hinweis in der Kasse</label>
+            <helpText>Empty = standard text (“We deliver with our own vehicle and will contact you in advance with the time.”).</helpText>
+            <helpText lang="de-DE">Leer = Standardtext („Wir liefern mit unserem eigenen Fahrzeug und melden uns vorab mit der Uhrzeit.“).</helpText>
+        </input-field>
+    </card>
+
+    <card>
+        <title>Tour notification</title>
+        <title lang="de-DE">Tour-Benachrichtigung</title>
+
+        <input-field type="bool">
+            <name>tourNotifyEnabled</name>
+            <label>Enable tour notification</label>
+            <label lang="de-DE">Tour-Benachrichtigung einschalten</label>
+            <helpText>Switch per delivery address in the customer account, form for guests (Shopping Experience element “Tour notification”, double opt-in). Mention it in the privacy policy (Nova Rechtstexte: block “tourbenachrichtigung”).</helpText>
+            <helpText lang="de-DE">Schalter je Lieferadresse im Kundenkonto, Formular für Gäste (Erlebniswelten-Element „Tour-Benachrichtigung“, Double-Opt-in). In der Datenschutzerklärung erwähnen (Nova Rechtstexte: Baustein „tourbenachrichtigung“).</helpText>
+            <defaultValue>false</defaultValue>
+        </input-field>
+
+        <input-field type="int">
+            <name>tourNotifyRetentionMonths</name>
+            <label>Delete subscribers without activity after (months)</label>
+            <label lang="de-DE">Abonnenten ohne Aktivität löschen nach (Monaten)</label>
+            <helpText>Activity = confirmation, switching in the account or “keep notifying me” in a mail. 0 = never. Unconfirmed sign-ups are deleted after 7 days. Global setting.</helpText>
+            <helpText lang="de-DE">Aktivität = Bestätigung, Umschalten im Konto oder „Weiter benachrichtigen“ in einer Mail. 0 = nie. Unbestätigte Anmeldungen werden nach 7 Tagen gelöscht. Globale Einstellung.</helpText>
+            <defaultValue>24</defaultValue>
+        </input-field>
+    </card>
 </config>

@@ -11,6 +11,8 @@ use Nova\Versandkosten\Service\EnergySurchargeService;
 use Nova\Versandkosten\Service\RequestOrderService;
 use Nova\Versandkosten\Service\Settings;
 use Nova\Versandkosten\Service\TariffStore;
+use Nova\Versandkosten\Service\Tour\PostcodeDirectory;
+use Nova\Versandkosten\Service\Tour\TourRepository;
 use Shopware\Core\Framework\Context;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -33,6 +35,8 @@ class AdminController
         private readonly Connection $connection,
         private readonly EnergySurchargeService $energy,
         private readonly RequestOrderService $requests,
+        private readonly TourRepository $tours,
+        private readonly PostcodeDirectory $postcodes,
     ) {
     }
 
@@ -65,7 +69,25 @@ class AdminController
             'amountTotal' => $order->getAmountTotal(),
             'taxStatus' => $order->getTaxStatus(),
             'currency' => $order->getCurrency()?->getIsoCode(),
+            'tourHint' => $request ? $this->tourHint($order) : [],
         ]);
+    }
+
+    /**
+     * „Versandkosten auf Anfrage“: Liegt die Lieferadresse an einer Strecke oder einem buchbaren Tourtermin?
+     *
+     * @return list<array{type: string, name: string, variant: string, km: float, date: string|null, trailer: bool}>
+     */
+    private function tourHint(\Shopware\Core\Checkout\Order\OrderEntity $order): array
+    {
+        $address = RequestOrderService::mainDelivery($order)?->getShippingOrderAddress();
+        $iso = (string) ($address?->getCountry()?->getIso() ?? '');
+        $point = $address === null ? null : $this->postcodes->point($iso, (string) $address->getZipcode());
+        if ($point === null) {
+            return [];
+        }
+
+        return $this->tours->nearby($point, $this->settings->tourPricing($order->getSalesChannelId()));
     }
 
     #[Route(path: '/api/_action/nova-versandkosten/order/{orderId}/request-price', name: 'api.action.nova_versandkosten.order.request_price', defaults: ['_acl' => ['order:update']], methods: ['POST'])]

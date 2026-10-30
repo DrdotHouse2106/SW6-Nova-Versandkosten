@@ -1,0 +1,50 @@
+{# Termin-Auswahl „Lieferung mit unserer Tour“ (nur wenn diese Versandart gewählt ist). Gezeigt werden nur
+   Datum und Preis – nie Strecke oder Orte. Die Auswahl sendet sich beim Ändern selbst ab (Shopwares
+   FormAutoSubmit) und wird am Warenkorb gespeichert; beim Bestellen prüft das Plugin sie erneut. #}
+{% set novaTour = page.extensions.novaVersandkostenTour ?? null %}
+{% if novaTour and novaTour.available %}
+    {% block nova_versandkosten_tour %}
+        <div class="nova-versandkosten-tour card mt-3">
+            <div class="card-body">
+                <p class="fw-bold mb-2">{{ 'novaVersandkosten.tour.title'|trans|sw_sanitize }}</p>
+
+                {% if novaTour.state == 'invalid' %}
+                    {% sw_include '@Storefront/storefront/utilities/alert.html.twig' with {
+                        type: 'danger',
+                        content: 'novaVersandkosten.tour.invalid'|trans|sw_sanitize
+                    } %}
+                {% endif %}
+
+                {% block nova_versandkosten_tour_select %}
+                    <form action="{{ path('frontend.nova_versandkosten.tour.select') }}" method="post" data-form-auto-submit="true">
+                        <div class="form-group">
+                            <label class="form-label" for="novaVersandkostenTourDate">
+                                {{ 'novaVersandkosten.tour.choose'|trans|sw_sanitize }}
+                                <span class="form-required-label" aria-hidden="true">*</span>
+                            </label>
+                            <select class="form-select{% if novaTour.state == 'invalid' %} is-invalid{% endif %}"
+                                    id="novaVersandkostenTourDate"
+                                    name="tourDateId"
+                                    required
+                                    aria-required="true"
+                                    aria-describedby="novaVersandkostenTourHint">
+                                <option value=""{% if not novaTour.selectedId %} selected{% endif %} disabled>{{ 'novaVersandkosten.tour.placeholder'|trans|striptags }}</option>
+                                {% for option in novaTour.options %}
+                                    <option value="{{ option.id }}"{% if option.id == novaTour.selectedId %} selected{% endif %}>
+                                        {{ option.label }} – {{ option.price|currency }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div id="novaVersandkostenTourHint" class="form-text">
+                                {% if novaTour.hint %}{{ novaTour.hint }}{% else %}{{ 'novaVersandkosten.tour.hint'|trans|sw_sanitize }}{% endif %}
+                            </div>
+                        </div>
+                        <noscript>
+                            <button type="submit" class="btn btn-sm btn-outline-primary">{{ 'novaVersandkosten.tour.apply'|trans|sw_sanitize }}</button>
+                        </noscript>
+                    </form>
+                {% endblock %}
+            </div>
+        </div>
+    {% endblock %}
+{% endif %}

@@ -1,0 +1,35 @@
+{% sw_extends '@Storefront/storefront/page/account/_page.html.twig' %}
+
+{# Kundenkonto → Tour-Benachrichtigung: Schalter je Lieferadresse. #}
+{% block page_account_main_content %}
+    {% block nova_versandkosten_account_tour %}
+        <div class="account-tour-notification">
+            <h1 class="account-welcome h3">{{ 'novaVersandkosten.tourNotify.accountTitle'|trans|sw_sanitize }}</h1>
+            <p>{{ 'novaVersandkosten.tourNotify.accountIntro'|trans|sw_sanitize }}</p>
+
+            {% if novaTourAddresses is empty %}
+                <p class="text-muted">{{ 'novaVersandkosten.tourNotify.accountNoAddress'|trans|sw_sanitize }}</p>
+            {% else %}
+                <ul class="list-group mb-3">
+                    {% for address in novaTourAddresses %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center gap-3 flex-wrap">
+                            <span>{{ address.label }}</span>
+                            {% if address.possible %}
+                                <form action="{{ path('frontend.nova_versandkosten.tour_notify.account.save') }}" method="post" class="m-0">
+                                    <input type="hidden" name="addressId" value="{{ address.addressId }}">
+                                    <input type="hidden" name="subscribe" value="{{ address.subscribed ? '0' : '1' }}">
+                                    <button type="submit" class="btn btn-sm {{ address.subscribed ? 'btn-outline-secondary' : 'btn-primary' }}" aria-pressed="{{ address.subscribed ? 'true' : 'false' }}">
+                                        {{ (address.subscribed ? 'novaVersandkosten.tourNotify.accountOff' : 'novaVersandkosten.tourNotify.accountOn')|trans|sw_sanitize }}
+                                    </button>
+                                </form>
+                            {% else %}
+                                <span class="text-muted small">{{ 'novaVersandkosten.tourNotify.accountNotPossible'|trans|sw_sanitize }}</span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            <p class="text-muted small">{{ 'novaVersandkosten.tourNotify.accountPrivacy'|trans|sw_sanitize }}</p>
+        </div>
+    {% endblock %}
+{% endblock %}

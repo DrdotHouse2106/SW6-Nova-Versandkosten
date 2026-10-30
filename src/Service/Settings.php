@@ -6,6 +6,7 @@ use Nova\Versandkosten\Calculator\ChannelRules;
 use Nova\Versandkosten\Calculator\DeliveryEstimator;
 use Nova\Versandkosten\Calculator\HolidayCalendar;
 use Nova\Versandkosten\Calculator\Item;
+use Nova\Versandkosten\Calculator\Tour\TourPricing;
 use Nova\Versandkosten\Energy\EnergyState;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Symfony\Contracts\Service\ResetInterface;
@@ -219,6 +220,22 @@ class Settings implements ResetInterface
         $value = $this->config->get(self::ENERGY_STATE_KEY);
 
         return \is_array($value) ? $value : [];
+    }
+
+    /**
+     * Preise und Grenzen der eigenen Tour (Einstellungen „Eigene Touren“).
+     */
+    public function tourPricing(?string $salesChannelId): TourPricing
+    {
+        $countries = $this->countries('tourCountries', $salesChannelId, 'DE');
+
+        return new TourPricing(
+            (int) round(max(0.0, (float) $this->float('tourSmallPrice', $salesChannelId, TourPricing::DEFAULT_SMALL_PRICE_CENTS / 100)) * 100),
+            max(0.0, (float) $this->float('tourSmallMaxKm', $salesChannelId, TourPricing::DEFAULT_SMALL_MAX_KM)),
+            TourPricing::parseTiers($this->string('tourFreightTiers', $salesChannelId)),
+            max(1.0, (float) $this->float('tourDetourFactor', $salesChannelId, TourPricing::DEFAULT_DETOUR_FACTOR)),
+            $countries === [] ? ['DE'] : $countries,
+        );
     }
 
     public function estimator(?string $salesChannelId): ?DeliveryEstimator

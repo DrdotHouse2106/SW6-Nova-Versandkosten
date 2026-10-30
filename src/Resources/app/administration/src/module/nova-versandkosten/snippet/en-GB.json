@@ -102,5 +102,166 @@
             "dpd_efs": "DPD Emergency Fuel Surcharge",
             "dpdTotal": "DPD total (road + emergency)"
         }
+    },
+    "nova-vk-tour": {
+        "general": {
+            "title": "Tours",
+            "description": "Own delivery tours: routes, tour dates, tour deliveries, notification",
+            "save": "Save",
+            "saved": "Saved.",
+            "saveError": "Saving failed.",
+            "loadError": "Loading failed.",
+            "delete": "Delete",
+            "back": "Back",
+            "note": "Internal note",
+            "noPostcodes": "Postcode coordinates are missing. Please update or re-activate the plugin."
+        },
+        "tabs": {
+            "dates": "Tour dates",
+            "routes": "Routes",
+            "subscribers": "Notification"
+        },
+        "status": {
+            "open": "open (all variants)",
+            "fixed": "fixed",
+            "closed": "closed"
+        },
+        "dates": {
+            "new": "New tour date",
+            "help": "A date starts open: customers along all variants of the route can book. The first booking fixes the variant (the one with the smallest deviation for that customer); afterwards only customers along this variant. You can fix or change the variant here at any time.",
+            "showPast": "Show past dates",
+            "date": "Date",
+            "tour": "Route / trip",
+            "status": "Status",
+            "trailer": "Trailer",
+            "deadline": "Order deadline",
+            "deliveries": "Deliveries",
+            "none": "No tour dates yet.",
+            "oneOff": "One-off trip",
+            "ownWaypoints": "own waypoints",
+            "route": "Route",
+            "oneOffOption": "— none: own waypoints (one-off trip) —",
+            "name": "Name (optional)",
+            "namePlaceholder": "e.g. trip Sampletown",
+            "deadlineHelp": "Last order day (inclusive). Empty = default from the settings.",
+            "variant": "Variant",
+            "allVariants": "— open: all variants —",
+            "variantHelp": "Only with status “fixed”.",
+            "trailerHelp": "with trailer (no freight goods without trailer)",
+            "ownHelp": "One-off trip: enter waypoints in driving order (at least two).",
+            "saveAsRoute": "Save as route template",
+            "saveAsRouteName": "Name of the new route",
+            "savedAsRoute": "Route created.",
+            "confirmDelete": "Delete this tour date? Orders keep their data."
+        },
+        "routes": {
+            "new": "New route",
+            "help": "Routes are templates for regular trips. Each route has one or more variants (ways) with waypoints in driving order. A customer's deviation = straight-line distance of the postcode to the waypoint line × detour factor.",
+            "name": "Name",
+            "namePlaceholder": "e.g. Sampletown – Exampleville",
+            "startEnd": "Start – destination",
+            "variants": "Variants",
+            "active": "Active",
+            "none": "No routes yet.",
+            "route": "Route",
+            "start": "Start",
+            "end": "Destination",
+            "activeHelp": "active (for hints on “shipping costs on request”)",
+            "variant": "Variant",
+            "variantName": "Variant name",
+            "variantPlaceholder": "e.g. via Exampletown",
+            "waypointsHelp": "Waypoints in driving order – start, places on the way, destination. Enter postcode or place.",
+            "removeVariant": "Remove variant",
+            "addVariant": "Add variant",
+            "confirmDelete": "Delete this route with all variants? Tour dates remain but lose the route."
+        },
+        "waypoints": {
+            "empty": "No waypoints yet.",
+            "placeholder": "Postcode or place",
+            "search": "Search",
+            "noResult": "Nothing found.",
+            "up": "up",
+            "down": "down",
+            "remove": "remove"
+        },
+        "deliveries": {
+            "title": "Tour deliveries",
+            "help": "Order along the route (km from start) – load the deliveries reached last first.",
+            "order": "Order",
+            "customer": "Customer",
+            "place": "Postcode / place",
+            "along": "from start",
+            "deviation": "Deviation",
+            "current": "now",
+            "outOfRange": "outside the price range with the current variant",
+            "tier": "Category",
+            "small": "Small parts/parcel/bulky",
+            "freight": "Freight goods",
+            "status": "Status (order/delivery/payment)",
+            "none": "No orders for this date yet."
+        },
+        "notify": {
+            "title": "Subscribers along the route",
+            "count": "{total} subscribers along the route",
+            "split": "{open} not yet notified, {notified} already",
+            "help": "For an open date all variants count. Reach: with trailer up to the largest freight tier, otherwise up to the small-parts limit. The e-mail only names the date and postcode area, never the route. Each subscriber gets at most one e-mail per date.",
+            "send": "Send notification ({count})",
+            "confirm": "Notify {count} subscribers by e-mail now?",
+            "sent": "{sent} e-mails sent, {failed} failed.",
+            "error": "Sending failed.",
+            "notified": "notified"
+        },
+        "subscribers": {
+            "title": "Tour notification: subscribers",
+            "disabled": "The tour notification is switched off in the plugin settings.",
+            "route": "Route",
+            "allRoutes": "all",
+            "radius": "Radius km",
+            "search": "Search (e-mail, postcode, place)",
+            "pending": "include unconfirmed",
+            "apply": "Show",
+            "csv": "Export CSV",
+            "type": "Customer/guest",
+            "customer": "Customer",
+            "guest": "Guest",
+            "email": "E-mail",
+            "place": "Postcode / place",
+            "since": "since",
+            "source": "Source",
+            "source_account": "Customer account",
+            "source_form": "Form",
+            "confirmed": "confirmed",
+            "notConfirmed": "open (DOI)",
+            "sent": "E-mails",
+            "none": "No subscribers.",
+            "confirmDelete": "Delete subscriber {email}?"
+        },
+        "order": {
+            "tour": "Delivery with our own tour on {date}",
+            "openDate": "Open date",
+            "details": "Variant: {variant} · deviation: {km} km · {tier}",
+            "hintTitle": "Close to an own tour:",
+            "hintRoute": "Route {name} ({variant}): {km} km",
+            "hintDate": "Tour date {date} {name} ({variant}): {km} km",
+            "trailer": "with trailer"
+        },
+        "cms": {
+            "elementLabel": "Tour notification",
+            "blockLabel": "Tour notification",
+            "previewTitle": "Tour notification",
+            "title": "Heading (optional)",
+            "text": "Text",
+            "defaultText": "We regularly deliver with our own tour. Leave your e-mail and postcode and we will let you know when a tour comes near you.",
+            "email": "E-mail address",
+            "postcode": "Postcode",
+            "hint": "Form with double opt-in and captcha. Only shown when the tour notification is switched on in the plugin settings."
+        }
+    },
+    "sw-privileges": {
+        "permissions": {
+            "nova_vk_tour": {
+                "label": "Tours (Nova Shipping Costs)"
+            }
+        }
     }
 }

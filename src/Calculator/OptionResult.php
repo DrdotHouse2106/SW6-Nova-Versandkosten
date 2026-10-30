@@ -17,6 +17,8 @@ final class OptionResult
     public const REQUEST = 'anfrage';
     /** Zu einer offenen Bestellung beipacken (Preis = Differenz, siehe Beipack) */
     public const BEIPACK = 'beipack';
+    /** Lieferung mit der eigenen Tour (Preis und Termin aus Tour\TourPlanner, nicht aus den Tarifen) */
+    public const TOUR = 'tour';
 
     public const ALL = [self::WARENPOST, self::KLEINPAKET, self::DPD, self::DHL, self::FREIGHT, self::PICKUP, self::REQUEST];
 

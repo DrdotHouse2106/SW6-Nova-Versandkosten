@@ -1,0 +1,163 @@
+.nova-vk-tour__content {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.nova-vk-tour__tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    button {
+        border: 1px solid #d1d9e0;
+        background: #fff;
+        border-radius: 4px;
+        padding: 6px 14px;
+        cursor: pointer;
+
+        &.is--active {
+            background: #189eff;
+            border-color: #189eff;
+            color: #fff;
+        }
+    }
+}
+
+.nova-vk-tour__table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0 16px;
+
+    th,
+    td {
+        text-align: left;
+        padding: 6px 8px;
+        border-bottom: 1px solid #e0e6eb;
+        vertical-align: top;
+    }
+}
+
+.nova-vk-tour__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+
+    label {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+}
+
+.nova-vk-tour__block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 12px 0;
+}
+
+.nova-vk-tour__filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+    margin-bottom: 12px;
+
+    label {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+}
+
+.nova-vk-tour__input {
+    padding: 6px 8px;
+    border: 1px solid #d1d9e0;
+    border-radius: 4px;
+    font: inherit;
+    min-width: 0;
+}
+
+.nova-vk-tour__input--short {
+    width: 90px;
+}
+
+.nova-vk-tour__check {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 6px;
+    align-items: center;
+}
+
+.nova-vk-tour__muted {
+    color: #758ca3;
+    font-size: 12px;
+}
+
+.nova-vk-tour__error {
+    color: #de294c;
+    font-weight: 600;
+}
+
+.nova-vk-tour__warn td {
+    background: #fff4f5;
+}
+
+.nova-vk-tour-waypoints__list {
+    margin: 0 0 12px 20px;
+
+    li {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 6px;
+    }
+}
+
+.nova-vk-tour-waypoints__actions button {
+    border: 1px solid #d1d9e0;
+    background: #fff;
+    border-radius: 4px;
+    padding: 2px 8px;
+    cursor: pointer;
+    margin-right: 2px;
+
+    &:disabled {
+        opacity: 0.4;
+        cursor: default;
+    }
+}
+
+.nova-vk-tour-waypoints__search {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.nova-vk-tour-waypoints__results {
+    list-style: none;
+    margin: 0 0 12px;
+    padding: 0;
+    max-height: 260px;
+    overflow: auto;
+    border: 1px solid #e0e6eb;
+    border-radius: 4px;
+
+    button {
+        width: 100%;
+        text-align: left;
+        border: 0;
+        border-bottom: 1px solid #f0f2f5;
+        background: #fff;
+        padding: 6px 10px;
+        cursor: pointer;
+
+        &:hover {
+            background: #f0f8ff;
+        }
+    }
+}

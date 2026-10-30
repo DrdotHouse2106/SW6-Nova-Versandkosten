@@ -23,6 +23,7 @@ final class MethodMap
         OptionResult::PICKUP => ['Abholung', 'Collection'],
         OptionResult::REQUEST => ['Versandkosten auf Anfrage', 'Shipping costs on request'],
         OptionResult::BEIPACK => ['Zu meiner Bestellung beipacken', 'Add to my open order'],
+        OptionResult::TOUR => ['Lieferung mit unserer Tour', 'Delivery with our own tour'],
     ];
 
     public static function technicalName(string $option): string

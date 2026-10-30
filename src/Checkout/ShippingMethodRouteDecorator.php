@@ -6,6 +6,7 @@ use Nova\Versandkosten\Calculator\OptionResult;
 use Nova\Versandkosten\Service\BeipackService;
 use Nova\Versandkosten\Service\MethodMap;
 use Nova\Versandkosten\Service\Settings;
+use Nova\Versandkosten\Service\Tour\TourService;
 use Shopware\Core\Checkout\Cart\SalesChannel\CartService;
 use Shopware\Core\Checkout\Shipping\SalesChannel\AbstractShippingMethodRoute;
 use Shopware\Core\Checkout\Shipping\SalesChannel\ShippingMethodRouteResponse;
@@ -24,6 +25,9 @@ use Symfony\Component\HttpFoundation\Request;
  * „Zu meiner Bestellung beipacken“ erscheint nur, wenn es etwas zum Beipacken gibt: eine gewählte,
  * noch gültige Bestellung, eigene offene Bestellungen (Kundenkonto) oder – für Gäste, wenn eingestellt –
  * das Formular „Bestellnummer + E-Mail + PLZ“.
+ *
+ * „Lieferung mit unserer Tour“ erscheint nur, wenn mindestens ein offener/festgelegter Termin zu Warenkorb
+ * und Lieferadresse passt (Preis des gewählten Termins, sonst „ab“ dem günstigsten) – auch ohne Tarife.
  */
 class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
 {
@@ -32,6 +36,7 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
         private readonly CartService $cartService,
         private readonly Settings $settings,
         private readonly BeipackService $beipack,
+        private readonly TourService $tour,
     ) {
     }
 
@@ -57,6 +62,19 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
         }
 
         $cart = $this->cartService->getCart($context->getToken(), $context);
+
+        foreach ($methods->getElements() as $id => $method) {
+            if (MethodMap::optionFor($method->getTechnicalName()) !== OptionResult::TOUR) {
+                continue;
+            }
+            $state = $this->tourState($cart, $context);
+            if ($state === null) {
+                $methods->remove((string) $id);
+                continue;
+            }
+            $method->addExtension(ShippingCostProcessor::EXTENSION, new ArrayStruct($state));
+        }
+
         $data = $cart->getExtension(ShippingCostProcessor::EXTENSION);
         $options = $data instanceof ArrayStruct ? $data->get('options') : null;
         if (!\is_array($options)) {
@@ -74,7 +92,7 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
         $showEstimate = $this->settings->bool('showEstimate', $context->getSalesChannelId(), true);
         foreach ($methods->getElements() as $id => $method) {
             $key = MethodMap::optionFor($method->getTechnicalName());
-            if ($key === null) {
+            if ($key === null || $key === OptionResult::TOUR) {
                 continue;
             }
             if ($key === OptionResult::BEIPACK) {
@@ -95,6 +113,40 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
         }
 
         return $response;
+    }
+
+    /**
+     * Anzeige-Daten für „Lieferung mit unserer Tour“ oder null (ausblenden). Keine Strecke, keine Orte.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function tourState(\Shopware\Core\Checkout\Cart\Cart $cart, SalesChannelContext $context): ?array
+    {
+        $data = $cart->getExtension(TourService::EXTENSION);
+        $tour = $data instanceof ArrayStruct ? $data->all() : $this->tour->evaluate($cart->getLineItems(), $context, $this->tour->selection($cart));
+        if (empty($tour['available']) || !\is_array($tour['options'] ?? null) || $tour['options'] === []) {
+            return null;
+        }
+        $selected = \is_array($tour['selected'] ?? null) ? $tour['selected'] : null;
+        $prices = array_column($tour['options'], 'price');
+
+        return [
+            'key' => OptionResult::TOUR,
+            'tour' => true,
+            'available' => true,
+            'price' => $selected !== null ? (float) $selected['price'] : (float) min($prices),
+            'priceFrom' => $selected === null && \count(array_unique($prices)) > 1,
+            'dateLabel' => $selected !== null ? (string) $selected['label'] : null,
+            'nextDate' => (string) $tour['options'][0]['label'],
+            'dateCount' => \count($tour['options']),
+            'vatIncluded' => true,
+            'hints' => [],
+            'packageCount' => 0,
+            'recommended' => false,
+            'delivery' => null,
+            'onRequest' => false,
+            'beipack' => false,
+        ];
     }
 
     /**

@@ -43,6 +43,14 @@ gehen – mit Preis, voraussichtlichem Zustelldatum und Hinweisen.
 - **Versandkosten auf Anfrage** (neu in 1.1.0): Bestellung ohne Versandpreis, der Shop trägt die
   Versandkosten nachträglich ein, der Kunde bekommt Gesamtbetrag und Bezahl-Link per E-Mail;
   unbezahlte Anfragen werden nach X Tagen storniert.
+- **Eigene Touren** (neu in 1.2.0): Strecken mit Varianten und Wegpunkten, Tourtermine (mit/ohne
+  Hänger, Bestellschluss), Versandart „Lieferung mit unserer Tour“ nur für Adressen nahe der Strecke,
+  Preis nach Einordnung und Abweichung, Termin-Auswahl in der Kasse, Liste „Tour-Lieferungen“ zum
+  Beladen, Hinweis an Bestellungen „Versandkosten auf Anfrage“ in Reichweite einer Strecke.
+- **Tour-Benachrichtigung** (neu in 1.2.0): Kunden (Schalter je Lieferadresse im Konto) und Gäste
+  (Formular mit Double-Opt-in und Captcha) werden auf Knopfdruck informiert, wenn ein Tourtermin in
+  ihre Nähe fährt – ohne die Strecke zu verraten.
+- **PLZ-Koordinaten für Deutschland mitgeliefert** (GeoNames, CC BY 4.0) – kein externer Dienst.
 
 Die konkreten Einkaufspreise gehören nicht ins Plugin: Jeder Shop importiert seine eigenen Tarife.
 Alle Preise in dieser Anleitung und in `examples/` sind **erfundene Platzhalter**.
@@ -59,17 +67,26 @@ Administration neu laden (Strg+F5).
 
 Beim Installieren legt das Plugin an:
 
-- acht **inaktive** Versandarten (keinem Verkaufskanal zugeordnet): *Warenpost*, *DHL Kleinpaket*,
+- neun **inaktive** Versandarten (keinem Verkaufskanal zugeordnet): *Warenpost*, *DHL Kleinpaket*,
   *DPD Paket*, *DHL Paket*, *Spedition*, *Abholung*, *Versandkosten auf Anfrage*
-  (`nova_versandkosten_anfrage`) und *Zu meiner Bestellung beipacken* (`nova_versandkosten_beipack`) –
-  erkennbar am technischen Namen `nova_versandkosten_…`. Vorhandene Versandarten mit diesem Namen
-  bleiben unverändert; beim Update auf 1.1.0 kommen nur die zwei neuen dazu.
+  (`nova_versandkosten_anfrage`), *Zu meiner Bestellung beipacken* (`nova_versandkosten_beipack`) und
+  *Lieferung mit unserer Tour* (`nova_versandkosten_tour`) – erkennbar am technischen Namen
+  `nova_versandkosten_…`. Vorhandene Versandarten mit diesem Namen bleiben unverändert; beim Update
+  kommen nur die fehlenden dazu.
+- die Tabellen für Strecken, Varianten, Tourtermine, Abonnenten der Tour-Benachrichtigung und die
+  PLZ-Koordinaten (Migration); die mitgelieferte PLZ-Datei wird beim Installieren/Aktualisieren
+  geladen (nur wenn sie sich geändert hat, ca. 20.800 Zeilen).
 - Zusatzfelder am Produkt („Versandeinordnung“, „Sperrgut-Packart“) und an der Bestellung (beim Update
   werden fehlende Felder und der neue Wert „Nur auf Anfrage“ ergänzt).
-- die E-Mail-Vorlage „Nova Versandkosten: Versandkosten nachberechnet“ (deutsch/englisch).
-- zwei geplante Aufgaben (täglich): `nova_versandkosten.energy_fetch` (Energiezuschläge abrufen) und
-  `nova_versandkosten.request_cancel` (unbezahlte Anfragen stornieren). Sie brauchen einen laufenden
+- die E-Mail-Vorlagen „Nova Versandkosten: Versandkosten nachberechnet“, „… Tour-Benachrichtigung
+  bestätigen“ und „… Tour in Ihrer Nähe“ (deutsch/englisch).
+- drei geplante Aufgaben (täglich): `nova_versandkosten.energy_fetch` (Energiezuschläge abrufen),
+  `nova_versandkosten.request_cancel` (unbezahlte Anfragen stornieren) und
+  `nova_versandkosten.tour_cleanup` (Tour-Benachrichtigung aufräumen). Sie brauchen einen laufenden
   Scheduled-Task-Runner (Cron oder `bin/console scheduled-task:run`).
+
+Beim **Deinstallieren ohne „Daten behalten“** entfernt das Plugin die Tabellen der Touren, die
+Zusatzfelder, die E-Mail-Vorlagen und die Einstellungen; Versandarten werden nur deaktiviert.
 
 Warum vom Plugin angelegte, inaktive Versandarten? Die Zuordnung läuft über den technischen Namen –
 das ist robuster als IDs in der Konfiguration, und nichts erscheint im Shop, bevor Tarife importiert
@@ -105,6 +122,8 @@ schon vorhandene Versandart lässt sich übernehmen, indem man ihr einen dieser 
 9. **Optional:** Versandarten *Versandkosten auf Anfrage* und *Zu meiner Bestellung beipacken*
    aktivieren und zuordnen (siehe eigene Abschnitte unten), Link „Noch etwas vergessen?“ in die
    Bestellbestätigung einbauen.
+10. **Optional: Eigene Touren** – Strecken und Termine unter *Bestellungen → Touren*, Versandart
+    *Lieferung mit unserer Tour* aktivieren (siehe Abschnitt „Eigene Touren“).
 
 Abholung auf Treffen/Messe aus *Nova Termine* ist eine eigene Versandart und wird von diesem Plugin
 nicht verändert.
@@ -281,6 +300,8 @@ surcharge;dpd_europa;;;Währungszuschlag;;CH;;;;;;;10;percent;;;;;
 | Beipacken | Höchstalter der Bestellung (Tage), Formular für Gäste |
 | Zuschläge (Energie) | automatisch/manuell je Dienstleister, DPD Emergency Fuel Surcharge, Schlüssel in der Tarifdatei, E-Mail bei Abruf-Fehlern |
 | Anfrage/Kontrolle | Knopf „Lieferung per Tour anfragen“, Empfänger, Hinweis „Maße fehlen“ ausgeben, E-Mail bei negativer Marge |
+| Eigene Touren | Preis Kleinteile/Paket/Sperrgut und Höchstabweichung, Speditionsstufen (`30=190`, `60=290`), Umwegfaktor, Lieferländer, Standard-Bestellschluss, Hinweis in der Kasse |
+| Tour-Benachrichtigung | einschalten, Löschen nach X Monaten ohne Aktivität |
 
 ## Zur offenen Bestellung beipacken
 
@@ -406,6 +427,145 @@ stehen. Wer *Nova Rechtstexte* (ab 1.8.4) nutzt, bekommt dafür den Baustein `[[
 – er wird automatisch aktiv, wenn Nova Versandkosten installiert und die Versandart aktiv ist. Keine
 Rechtsberatung – im Zweifel anwaltlich prüfen lassen.
 
+## Eigene Touren
+
+Wer selbst ausliefert (eigener Transporter, mit oder ohne Hänger), bietet Kunden **entlang der
+Strecke** die Versandart **„Lieferung mit unserer Tour“** (`nova_versandkosten_tour`) an. Die Strecke
+selbst sieht der Kunde nie – nur den Termin und den Preis.
+
+### Begriffe
+
+| Begriff | Bedeutung |
+|---|---|
+| **Strecke** | Vorlage für regelmäßige Fahrten: Name, Start, Ziel und eine oder mehrere **Varianten** |
+| **Variante** | ein Weg zum Ziel mit geordneten **Wegpunkten** (Eingabe als PLZ oder Ort → Koordinate). Beispiel: Strecke „Musterstadt – Beispielhausen“, Variante A „über Nordheim“, Variante B „über Südhausen“ |
+| **Tourtermin** | Datum (typisch Fr/Sa/So, frei wählbar), Strecke **oder** eigene Wegpunkte (einmalige Fahrt), Bestellschluss (Standard 2 Tage vorher, letzter Bestelltag inklusive), Schalter **„mit Hänger“**, Status |
+| **Status** | **offen** = noch keine Buchung, alle Varianten zählen · **festgelegt** = Variante steht fest, nur noch Kunden an dieser Variante · **geschlossen** = keine Buchung mehr |
+| **Abweichung** | Luftlinie vom PLZ-Mittelpunkt der Lieferadresse zur Linie der Variante (Polylinie der Wegpunkte) × **Umwegfaktor** (Standard 1,3), in km |
+
+**Die erste Buchung legt die Variante fest** – und zwar die mit der geringsten Abweichung für diesen
+Kunden. Damit werden Kunden links und rechts verschiedener Wege nicht beide „billig“. Im Admin lässt
+sich die Variante jederzeit festlegen oder ändern (z. B. vor der ersten Buchung).
+
+### Preise und Regeln (je Verkaufskanal, Einstellungen „Eigene Touren“)
+
+| Einordnung im Warenkorb | Standard |
+|---|---|
+| Kleinteile, Paketware, Sperrgut | **50 €** bis **10 km** Abweichung |
+| Speditionsware (nur bei Terminen **mit Hänger**) | **190 €** bis 30 km, **290 €** bis 60 km |
+| darüber | keine Tour |
+
+- Die **höchste Einordnung** im Warenkorb bestimmt den Preis (ein Speditionsartikel → Speditionspreis).
+- Artikel „Nur Abholung“ oder „Nur auf Anfrage“ schließen die Tour aus.
+- Nur **Inlandsadressen** (Lieferländer einstellbar, Standard DE; PLZ-Koordinaten sind für DE enthalten).
+- Preise brutto; Steuer wie bei den anderen Versandarten. Die Tour braucht **keine** Tarifdatei.
+- Beispiel (Platzhalter): Lieferadresse 8 km neben der Strecke → Abweichung 8 × 1,3 = 10,4 km → für
+  Kleinteile zu weit, für Speditionsware bei Termin mit Hänger 190 €.
+
+### Einrichtung
+
+1. *Einstellungen → Versand* → „Lieferung mit unserer Tour“ aktivieren und dem Verkaufskanal zuordnen
+   (Platzhalterpreis 0,00 € bleibt; den Preis setzt das Plugin).
+2. *Erweiterungen → Meine Erweiterungen → Nova Versandkosten → Konfigurieren* → „Eigene Touren“:
+   Preise, Grenzen, Umwegfaktor, Lieferländer, Standard-Bestellschluss, Hinweis in der Kasse.
+3. *Bestellungen → Touren → Strecken → Neue Strecke*: Name, Start, Ziel; je Variante die Wegpunkte in
+   Fahrtreihenfolge über „PLZ oder Ort“ suchen und übernehmen (bei Orten mit mehreren PLZ gibt es den
+   Mittelpunkt aller PLZ). Reihenfolge mit ↑/↓, Bezeichnung frei änderbar.
+4. *Tourtermine → Neuer Tourtermin*: Strecke wählen (oder „eigene Wegpunkte“ für eine einmalige
+   Fahrt), Datum, ggf. Bestellschluss, „mit Hänger“. Status „offen“ lassen. Einmalige Fahrten lassen
+   sich mit „Als Strecken-Vorlage speichern“ für später sichern.
+5. Rechte: *Einstellungen → Benutzer & Rechte → Rollen → Bestellungen → Touren* (ansehen, bearbeiten,
+   anlegen, löschen). Für „Tour-Lieferungen“ braucht die Rolle zusätzlich Bestellungen lesen.
+
+### In der Kasse
+
+- Die Versandart erscheint nur, wenn **mindestens ein offener/festgelegter Termin passt**:
+  Bestellschluss nicht vorbei, Abweichung im Rahmen, Hänger bei Speditionsware, Lieferland erlaubt,
+  PLZ bekannt. Angezeigt werden Preis („ab …“ bei mehreren Terminen mit unterschiedlichem Preis) und
+  der nächste Termin.
+- Auf der Bestätigungsseite wählt der Kunde **den Termin (Pflicht)** – „Sa, 14.11.2026 – 50,00 €“ –
+  dazu der Hinweis (einstellbar). **Keine Strecke, keine Orte.**
+- Beim Bestellen prüft das Plugin alles erneut: Ist der Termin inzwischen geschlossen, der
+  Bestellschluss vorbei oder die Variante anders festgelegt (die Adresse liegt nicht daran), kann
+  nicht bestellt werden („Der gewählte Tourtermin ist nicht mehr verfügbar …“).
+- Store-API: `GET /store-api/nova-versandkosten/tour` (passende Termine), `POST
+  /store-api/nova-versandkosten/tour/select` mit `{"tourDateId": "…"}`.
+
+### An der Bestellung
+
+- Bestellkommentar beginnt mit **„TOUR: Sa, 14.11.2026“** (ein Kundenkommentar bleibt dahinter).
+- Zusatzfelder: `nova_versandkosten_tour_termin` (Termin-ID), `nova_versandkosten_tour_datum`,
+  `nova_versandkosten_tour_variante` (+ `_name`), `nova_versandkosten_tour_abweichung_km`,
+  `nova_versandkosten_tour_einordnung` (`klein`/`spedition`); `nova_versandkosten_option` = `tour`.
+- Die erste Buchung setzt den Termin auf „festgelegt“ mit ihrer Variante. Haben zwei Kunden
+  gleichzeitig an verschiedenen Varianten bestellt, bekommt die spätere Bestellung einen internen
+  Kommentar zur Prüfung.
+- Karte „Versandkosten“ in der Bestellung: Termin, Variante, Abweichung, Link zum Termin.
+
+### Tour-Lieferungen (Beladen)
+
+Im Tourtermin listet **„Tour-Lieferungen“** alle Bestellungen des Termins: Bestellnummer (Link),
+Kunde, Straße, PLZ/Ort, Position entlang der Strecke (km ab Start), Abweichung (bei Bestellung und
+mit der aktuellen Variante), Einordnung, Status von Bestellung/Lieferung/Zahlung. Sortiert **entlang
+der Strecke** – die zuletzt angefahrenen zuerst laden. Liegt eine Bestellung nach einer
+Varianten-Änderung außerhalb des Preisrahmens, ist sie rot markiert.
+
+### Hinweis bei „Versandkosten auf Anfrage“
+
+An Bestellungen „Versandkosten auf Anfrage“ zeigt die Karte in der Administration, ob die
+Lieferadresse **an einer aktiven Strecke oder einem buchbaren Tourtermin** liegt („Strecke … (Variante):
+12,3 km“) – Reichweite bis zur größten Speditionsstufe (Standard 60 km).
+
+## Tour-Benachrichtigung
+
+Kunden und Interessenten werden informiert, wenn ein Tourtermin in ihre Nähe fährt – die Mail nennt
+nur **Datum und „in Ihrer Nähe (PLZ-Gebiet 12…)“**, nie die Strecke. Einschalten: Einstellungen
+„Tour-Benachrichtigung“.
+
+- **Kundenkonto:** *Mein Konto → Tour-Benachrichtigung* – Schalter je Lieferadresse („Benachrichtigen,
+  wenn eine Tour in die Nähe fährt“). Der Kunde ist angemeldet, deshalb ohne Double-Opt-in; gesendet
+  wird an die aktuelle E-Mail des Kontos. Store-API: `GET/POST /store-api/nova-versandkosten/tour-notification`
+  (`{"addressId": "…", "subscribe": true}`).
+- **Gäste/Besucher:** Erlebniswelten-Element bzw. -Block **„Tour-Benachrichtigung“** (Kategorie
+  Formular, z. B. auf der Versandseite) oder eigener Einbau, z. B. auf Produktseiten von Speditionsware:
+  `{% sw_include '@Storefront/storefront/nova-versandkosten/tour-notify-form.html.twig' with { formId: 'produkt' } %}`.
+  E-Mail + PLZ + Einwilligung (Pflicht-Checkbox mit Link zur Datenschutzerklärung), **Double-Opt-in**
+  per Mail (Link 7 Tage gültig), Shopware-Captchas (dasselbe Route-Attribut wie das Kontaktformular,
+  damit z. B. Nova Captcha greift), Honeypot, Herkunftsprüfung, RateLimiter (3 je Stunde und IP,
+  100 je Tag und Kanal). Die Antwort verrät nicht, ob eine Adresse schon angemeldet ist.
+- **Dauer:** aktiv bis zur Abmeldung (Link in jeder Mail, signiert). Automatisch gelöscht werden
+  unbestätigte Anmeldungen nach 7 Tagen und aktive Abonnenten nach **24 Monaten ohne Aktivität**
+  (einstellbar, 0 = nie). Aktivität = Bestätigung, Umschalten im Konto oder „Weiter benachrichtigen“
+  in einer Mail. Geplante Aufgabe `nova_versandkosten.tour_cleanup` (täglich).
+- **Administration:** *Bestellungen → Touren → Benachrichtigung*: alle Abonnenten (Kunde/Gast,
+  E-Mail, PLZ/Ort, seit, Quelle, bestätigt, Anzahl Mails), Filter nach Strecke und Umkreis, Suche,
+  **CSV-Export**, Löschen. Im Tourtermin: **„X Interessenten im Korridor“** (bei offenem Termin alle
+  Varianten; Reichweite mit Hänger bis zur größten Speditionsstufe, sonst bis zur Grenze für
+  Kleinteile) und Knopf **„Benachrichtigung senden“** – nie automatisch, je Termin und Abonnent höchstens
+  eine Mail.
+- Mail-Vorlagen (anpassbar unter *Einstellungen → E-Mail-Vorlagen*): „Tour-Benachrichtigung
+  bestätigen“ (Variablen `novaTour.confirmUrl`, `.postcode`, `.days`) und „Tour in Ihrer Nähe“
+  (`novaTour.date`, `.dateShort`, `.area`, `.deadline`, `.trailer`, `.shopUrl`, `.renewUrl`,
+  `.unsubscribeUrl`).
+- **Datenschutzerklärung ergänzen:** *Nova Rechtstexte* (ab 1.8.5) hat den Baustein
+  `[[wenn tourbenachrichtigung]]` und erkennt ihn automatisch, wenn das Plugin aktiv und die
+  Tour-Benachrichtigung eingeschaltet ist. Keine Rechtsberatung.
+
+## PLZ-Koordinaten (Herkunft und Lizenz)
+
+Die Abweichung wird ohne externen Dienst berechnet. Dafür liefert das Plugin die Datei
+`src/Resources/geo/postcodes-de.tsv.gz` mit (deutsche Postleitzahlen mit Ort, Bundesland und
+Koordinate, ca. 290 kB). Quelle: **GeoNames** Postal Codes, Datei `DE.zip` von
+[download.geonames.org/export/zip](https://download.geonames.org/export/zip/), Stand 30.10.2026,
+Lizenz **Creative Commons Attribution 4.0** ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)) –
+Weitergabe und Bearbeitung mit Namensnennung erlaubt, keine Weitergabe-unter-gleichen-Bedingungen-Pflicht.
+Bearbeitung: Großkunden-Einträge (Firmennamen statt Ort) als Ortsnamen entfernt, Koordinaten auf
+4 Nachkommastellen gerundet (`scripts/plz-aufbereiten.php DE.txt …`). Namensnennung auch in
+[NOTICE](NOTICE). Die Koordinaten sind Schätzwerte (Mittelpunkte), keine Adressen.
+
+Aktualisieren: `DE.zip` laden, entpacken, `php scripts/plz-aufbereiten.php DE.txt
+src/Resources/geo/postcodes-de.tsv.gz` – beim nächsten Update lädt das Plugin die geänderte Datei.
+
 ## Energiezuschläge automatisch
 
 Die geplante Aufgabe `nova_versandkosten.energy_fetch` (täglich) und der Knopf *Erweiterungen → Nova
@@ -445,6 +605,9 @@ Versandkosten → Energiezuschläge → Jetzt abrufen* lesen die öffentlichen T
 | `nova_versandkosten_beipack_zu`, `nova_versandkosten_beipack_zu_nr` | Beipack: ID/Nummer der Bestellung, zu der beigepackt wird |
 | `nova_versandkosten_beipack_bestellungen` | an der alten Bestellung: Liste `{id, orderNumber, date}` der Beipack-Bestellungen |
 | `nova_versandkosten_anfrage`, `nova_versandkosten_anfrage_status`, `nova_versandkosten_anfrage_preis_am` | Versandkosten auf Anfrage: Kennzeichen, `open`/`priced`, Zeitpunkt |
+| `nova_versandkosten_tour_termin`, `nova_versandkosten_tour_datum` | Eigene Tour: Termin-ID, Datum (`2026-11-14`) |
+| `nova_versandkosten_tour_variante`, `nova_versandkosten_tour_variante_name` | Variante (ID bzw. `custom` bei eigenen Wegpunkten) und Name |
+| `nova_versandkosten_tour_abweichung_km`, `nova_versandkosten_tour_einordnung` | Abweichung in km (inkl. Umwegfaktor), `klein`/`spedition` |
 
 Bei Beipack-Bestellungen steht in `nova_versandkosten_option` die Option, nach der gerechnet wurde
 (z. B. `dpd`), und in `nova_versandkosten_sale` die Nachzahlung.
@@ -475,6 +638,13 @@ Artikel aus dem Feed lassen; `abholung`-Artikel nicht in den Feed).
   dpd.com) ab – ohne Kunden- oder Shopdaten.
 - Beipacken: Gespeichert wird nur die ID der gewählten Bestellung am Warenkorb; für die
   Versuchsbegrenzung ein Hash der IP-Adresse (höchstens eine Stunde im Cache).
+- Eigene Touren: Die Abweichung wird im Shop aus der mitgelieferten PLZ-Datei berechnet – **kein
+  externer Dienst**, keine Übertragung von Adressen. Strecken und Termine sieht der Kunde nicht.
+- Tour-Benachrichtigung: gespeichert werden E-Mail-Adresse, PLZ (mit Ort und PLZ-Mittelpunkt),
+  bei Kunden der Bezug zu Konto und Adresse, Quelle, Zeitpunkte (Anmeldung, Bestätigung, letzte
+  Aktivität), Sprache, Verkaufskanal und welche Termin-Mails versendet wurden. Der Bestätigungs-Token
+  liegt nur als Hash vor; für die Mengenbegrenzung ein Hash der IP (Cache). Rechtsgrundlage
+  Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), Widerruf jederzeit über den Abmelde-Link oder im Konto.
 
 ## Geplant
 
@@ -486,6 +656,11 @@ Artikel aus dem Feed lassen; `abholung`-Artikel nicht in den Feed).
   (heute: Erscheinungsdatum des Produkts)
 - Standard-Versandart je Land (heute: Empfehlung außerhalb der EU nur als Hinweis „empfohlen“)
 - Cargoboard-Buchung und Etiketten (gehört in die Warenwirtschaft)
+- Eigene Touren: **echter Umweg über einen Routendienst** (z. B. OpenRouteService – übertragen würden
+  nur Koordinaten, keine Namen) statt Luftlinie × Umwegfaktor; dann zählen auch Kunden zwischen zwei
+  Varianten richtig
+- Eigene Touren: Termine im Rhythmus anlegen (z. B. jeden 2. Freitag), Zeitfenster je Stopp, Karte der
+  Strecke im Admin, Tourplan als PDF; PLZ-Koordinaten weiterer Länder
 
 ## Entwicklung
 
@@ -494,6 +669,7 @@ php phpunit.phar                     # Unit-Tests des Rechenkerns (ohne Shopware
 php scripts/testfaelle.php           # Beispiel-Testfälle (Tabelle Soll/Ist)
 NOVA_VK_TARIFE=/pfad/tarife.json NOVA_VK_FAELLE=/pfad/faelle.json php scripts/testfaelle.php
 php scripts/tarif-konvertieren.php tarife.json tarife.csv
+php scripts/plz-aufbereiten.php DE.txt src/Resources/geo/postcodes-de.tsv.gz   # GeoNames-PLZ aufbereiten
 ```
 
 Die eigenen Tarife und Testfälle mit echten Preisen gehören **nicht** ins Repository – das Skript
@@ -501,7 +677,9 @@ nimmt die Pfade als Umgebungsvariablen.
 
 Template-Blöcke: `nova_versandkosten_method_info` (in `component/shipping/shipping-method.html.twig`),
 `nova_versandkosten_request` (`nova-versandkosten/request.html.twig`), `nova_versandkosten_beipack`
-(`nova-versandkosten/beipack.html.twig`), `nova_versandkosten_finish` (Abschlussseite). Versandarten-Erweiterung
+(`nova-versandkosten/beipack.html.twig`), `nova_versandkosten_tour` (`nova-versandkosten/tour.html.twig`,
+Termin-Auswahl), `nova_versandkosten_tour_notify` (`nova-versandkosten/tour-notify-form.html.twig`),
+`nova_versandkosten_account_tour` (Kundenkonto), `nova_versandkosten_finish` (Abschlussseite). Versandarten-Erweiterung
 `shippingMethod.extensions.novaVersandkosten` (auch in der Store-API): `price`, `vatIncluded`,
 `packageCount`, `delivery`, `hints`, `recommended`. Warenkorb-Erweiterung `novaVersandkosten`:
 alle Optionen mit Paketen.
@@ -552,6 +730,23 @@ als die eingestellten Tage, anderes Lieferland), oder für Gäste ist das Formul
 
 **Lösung:** Versandart prüfen; Gäste nutzen den Link aus der Bestellbestätigung.
 
+### „Lieferung mit unserer Tour“ erscheint nicht
+
+**Ursache:** Versandart inaktiv/nicht zugeordnet, kein offener/festgelegter Termin mit Datum ab heute,
+Bestellschluss vorbei, Lieferadresse zu weit von der Strecke (bzw. von der festgelegten Variante),
+Speditionsware bei Termin ohne Hänger, Artikel „Nur Abholung“/„Nur auf Anfrage“ im Warenkorb,
+Lieferland nicht freigegeben oder PLZ unbekannt.
+
+**Lösung:** Im Tourtermin Status, Bestellschluss, Hänger und Variante prüfen; Abweichung schätzen
+(Luftlinie zur Strecke × Umwegfaktor). Fehlen die PLZ-Koordinaten, zeigt *Bestellungen → Touren* einen
+Hinweis – Plugin aktualisieren oder neu aktivieren.
+
+### Tour-Benachrichtigung: Formular erscheint nicht
+
+**Ursache:** Einstellung „Tour-Benachrichtigung einschalten“ aus (für diesen Verkaufskanal).
+
+**Lösung:** Einschalten; danach erscheinen Formular, Erlebniswelten-Element und der Eintrag im Kundenkonto.
+
 ### Bei „Versandkosten auf Anfrage“ ist keine Zahlart wählbar
 
 **Ursache:** Es gibt im Verkaufskanal keine aktive Vorkasse-Zahlart, und in „Zahlarten in der Kasse“
@@ -569,4 +764,5 @@ den Wert eintragen. Bei geänderter Seite bitte ein Issue anlegen.
 
 ## Lizenz
 
-MIT – siehe [LICENSE](LICENSE).
+MIT – siehe [LICENSE](LICENSE). Die mitgelieferten PLZ-Koordinaten stammen von GeoNames
+(CC BY 4.0) – siehe [NOTICE](NOTICE).

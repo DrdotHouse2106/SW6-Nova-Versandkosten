@@ -8,6 +8,7 @@ use Nova\Versandkosten\Service\BeipackService;
 use Nova\Versandkosten\Service\MethodMap;
 use Nova\Versandkosten\Service\QuoteService;
 use Nova\Versandkosten\Service\Settings;
+use Nova\Versandkosten\Service\Tour\TourService;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\CartBehavior;
 use Shopware\Core\Checkout\Cart\CartProcessorInterface;
@@ -32,6 +33,10 @@ use Shopware\Core\System\SalesChannel\SalesChannelContext;
  * „Zu meiner Bestellung beipacken“: Ist diese Versandart gewählt, wird die gewählte alte Bestellung bei
  * jeder Berechnung frisch geprüft und der Differenzpreis gesetzt (Ergebnis unter options.beipack und
  * beipack = {state: ok|select|invalid, reason, orderNumber}).
+ *
+ * „Lieferung mit unserer Tour“: unabhängig von den Tarifen; passende Termine und gewählter Termin hängen als
+ * Erweiterung TourService::EXTENSION am Warenkorb, der Preis kommt aus dem gewählten Termin (ohne Auswahl
+ * der günstigste passende – bestellen lässt sich erst nach der Auswahl).
  */
 class ShippingCostProcessor implements CartProcessorInterface
 {
@@ -42,12 +47,16 @@ class ShippingCostProcessor implements CartProcessorInterface
         private readonly QuantityPriceCalculator $priceCalculator,
         private readonly Settings $settings,
         private readonly BeipackService $beipack,
+        private readonly TourService $tour,
     ) {
     }
 
     public function process(CartDataCollection $data, Cart $original, Cart $toCalculate, SalesChannelContext $context, CartBehavior $behavior): void
     {
         $toCalculate->removeExtension(self::EXTENSION);
+        $toCalculate->removeExtension(TourService::EXTENSION);
+
+        $this->processTour($original, $toCalculate, $context, $behavior);
 
         $result = $this->quotes->calculate($toCalculate->getLineItems(), $context);
         if ($result === null) {
@@ -88,6 +97,39 @@ class ShippingCostProcessor implements CartProcessorInterface
             }
 
             $price = $this->priceFor($optionResult->saleCents, $optionResult->vatIncluded, $context);
+            $taxRules = $delivery->getShippingCosts()->getTaxRules();
+            $delivery->setShippingCosts($this->priceCalculator->calculate(new QuantityPriceDefinition($price, $taxRules, 1), $context));
+        }
+    }
+
+    private function processTour(Cart $original, Cart $toCalculate, SalesChannelContext $context, CartBehavior $behavior): void
+    {
+        $deliveries = [];
+        foreach ($toCalculate->getDeliveries() as $delivery) {
+            if (MethodMap::optionFor($delivery->getShippingMethod()->getTechnicalName()) === OptionResult::TOUR) {
+                $deliveries[] = $delivery;
+            }
+        }
+        if ($deliveries === []) {
+            return;
+        }
+
+        $tour = $this->tour->evaluate($toCalculate->getLineItems(), $context, $this->tour->selection($original));
+        $toCalculate->addExtension(TourService::EXTENSION, new ArrayStruct($tour));
+
+        if ($behavior->hasPermission(CheckoutPermissions::SKIP_DELIVERY_PRICE_RECALCULATION) || $original->hasExtension(OrderConverter::ORIGINAL_ID) || empty($tour['available'])) {
+            return;
+        }
+        $prices = array_map('intval', array_column((array) $tour['options'], 'priceCents'));
+        if ($prices === []) {
+            return;
+        }
+        $cents = \is_array($tour['selected'] ?? null) ? (int) $tour['selected']['priceCents'] : min($prices);
+        foreach ($deliveries as $delivery) {
+            if ($this->onlyShippingFree($delivery->getPositions()->getLineItems()->getFlat())) {
+                continue;
+            }
+            $price = $this->priceFor($cents, true, $context);
             $taxRules = $delivery->getShippingCosts()->getTaxRules();
             $delivery->setShippingCosts($this->priceCalculator->calculate(new QuantityPriceDefinition($price, $taxRules, 1), $context));
         }

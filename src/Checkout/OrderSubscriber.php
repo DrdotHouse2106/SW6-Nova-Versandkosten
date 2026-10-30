@@ -11,6 +11,9 @@ use Nova\Versandkosten\Service\RequestOrderService;
 use Nova\Versandkosten\Installer\CustomFieldInstaller as CF;
 use Nova\Versandkosten\Service\MethodMap;
 use Nova\Versandkosten\Service\Settings;
+use Nova\Versandkosten\Service\Tour\TourRepository;
+use Nova\Versandkosten\Service\Tour\TourService;
+use Nova\Versandkosten\Calculator\Tour\TourText;
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Checkout\Cart\Event\CheckoutOrderPlacedEvent;
 use Shopware\Core\Checkout\Cart\Order\CartConvertedEvent;
@@ -30,6 +33,8 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
  * Beipacken: Bestellkommentar „BEIPACK zu Bestellung <Nr>“ vorne, Lieferadresse der alten Bestellung,
  * Verweise an beiden Bestellungen, Hinweis im internen Kommentar der alten Bestellung.
  * Versandkosten auf Anfrage: Kennzeichen an der Bestellung, E-Mail an den Shop.
+ * Eigene Tour: Kommentar „TOUR: <Wochentag, Datum>“ vorne, Zusatzfelder (Termin, Variante, Abweichung,
+ * Einordnung); nach dem Anlegen legt die erste Buchung die Variante des Termins fest.
  *
  * Bei der Nachberechnung einer bestehenden Bestellung (Administration) bleibt alles unverändert.
  */
@@ -45,6 +50,7 @@ class OrderSubscriber implements EventSubscriberInterface
         private readonly BeipackService $beipack,
         private readonly RequestOrderService $requests,
         private readonly EntityRepository $orders,
+        private readonly TourRepository $tours,
     ) {
     }
 
@@ -111,6 +117,9 @@ class OrderSubscriber implements EventSubscriberInterface
         if ($key === OptionResult::BEIPACK) {
             $converted = $this->convertBeipack($converted, $fields, $data, \is_array($option) ? $option : []);
         }
+        if ($key === OptionResult::TOUR) {
+            $converted = $this->convertTour($converted, $fields, $cart->getExtension(TourService::EXTENSION), $event->getSalesChannelContext()->getSalesChannelId());
+        }
         if ($key === OptionResult::REQUEST) {
             $fields[CF::ORDER_REQUEST] = true;
             $fields[CF::ORDER_REQUEST_STATUS] = RequestOrder::STATUS_OPEN;
@@ -162,10 +171,74 @@ class OrderSubscriber implements EventSubscriberInterface
         return $converted;
     }
 
+    /**
+     * @param array<string, mixed> $converted
+     * @param array<string, mixed> $fields
+     *
+     * @return array<string, mixed>
+     */
+    private function convertTour(array $converted, array &$fields, mixed $extension, string $salesChannelId): array
+    {
+        $data = $extension instanceof ArrayStruct ? $extension->all() : [];
+        $selected = \is_array($data['selected'] ?? null) ? $data['selected'] : null;
+        if ($selected === null || ($data['state'] ?? '') !== 'ok') {
+            return $converted;
+        }
+        $date = new \DateTimeImmutable((string) $selected['date']);
+        $vat = $this->settings->rules($salesChannelId)->vatPercent;
+        $sale = (int) $selected['priceCents'] / 100;
+        $variantId = \is_string($selected['variantId'] ?? null) ? $selected['variantId'] : null;
+
+        $fields[CF::ORDER_OPTION] = OptionResult::TOUR;
+        $fields[CF::ORDER_CARRIER] = 'Eigene Tour';
+        $fields[CF::ORDER_PRODUCT] = 'Tour ' . TourText::date($date);
+        $fields[CF::ORDER_PACKAGES] = [];
+        $fields[CF::ORDER_PACKAGE_COUNT] = 0;
+        $fields[CF::ORDER_PURCHASE] = 0.0;
+        $fields[CF::ORDER_SALE] = $sale;
+        $fields[CF::ORDER_SALE_NET] = round($sale / (1 + $vat / 100), 2);
+        $fields[CF::ORDER_DELIVERY] = TourText::date($date);
+        $fields[CF::ORDER_TOUR_DATE_ID] = (string) $selected['id'];
+        $fields[CF::ORDER_TOUR_DATE] = $date->format('Y-m-d');
+        $fields[CF::ORDER_TOUR_VARIANT] = $variantId;
+        $fields[CF::ORDER_TOUR_VARIANT_NAME] = $this->tours->variantName($variantId);
+        $fields[CF::ORDER_TOUR_DEVIATION] = isset($selected['deviationKm']) ? (float) $selected['deviationKm'] : null;
+        $fields[CF::ORDER_TOUR_TIER] = (string) ($data['tier'] ?? '');
+
+        $converted['customerComment'] = TourText::comment($date, \is_string($converted['customerComment'] ?? null) ? $converted['customerComment'] : null);
+
+        return $converted;
+    }
+
+    /**
+     * Erste Buchung legt die Variante fest. War der Termin inzwischen auf eine andere Variante festgelegt
+     * (gleichzeitige Bestellungen), bekommt die Bestellung einen internen Hinweis zur Prüfung.
+     */
+    private function fixTourVariant(OrderEntity $order, string $dateId, string $variantId, Context $context): void
+    {
+        try {
+            if ($this->tours->fixVariant($dateId, $variantId)) {
+                return;
+            }
+            $note = 'TOUR: Der Termin war beim Bestellen bereits auf eine andere Variante festgelegt – Lieferadresse bitte prüfen.';
+            $context->scope(Context::SYSTEM_SCOPE, function (Context $context) use ($order, $note): void {
+                $this->orders->update([[
+                    'id' => $order->getId(),
+                    'internalComment' => trim($note . "\n" . (string) $order->getInternalComment()),
+                ]], $context);
+            });
+        } catch (\Throwable $e) {
+            $this->logger->warning('Nova Versandkosten: Tour-Variante konnte nicht festgelegt werden', ['error' => $e->getMessage()]);
+        }
+    }
+
     public function onOrderPlaced(CheckoutOrderPlacedEvent $event): void
     {
         $order = $event->getOrder();
         $fields = $order->getCustomFields() ?? [];
+        if (\is_string($fields[CF::ORDER_TOUR_DATE_ID] ?? null) && \is_string($fields[CF::ORDER_TOUR_VARIANT] ?? null)) {
+            $this->fixTourVariant($order, $fields[CF::ORDER_TOUR_DATE_ID], $fields[CF::ORDER_TOUR_VARIANT], $event->getContext());
+        }
         if (\is_string($fields[CF::ORDER_BEIPACK_TO] ?? null)) {
             $this->linkBeipack($order, $fields[CF::ORDER_BEIPACK_TO], $event->getContext());
         }

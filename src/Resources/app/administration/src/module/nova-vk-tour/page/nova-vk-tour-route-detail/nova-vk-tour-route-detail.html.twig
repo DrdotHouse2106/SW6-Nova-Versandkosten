@@ -1,0 +1,58 @@
+{% block nova_vk_tour_route_detail %}
+<sw-page class="nova-vk-tour-route-detail">
+    <template #smart-bar-header>
+        <h2>{{ route.name || $tc('nova-vk-tour.routes.new') }}</h2>
+    </template>
+
+    <template #smart-bar-actions>
+        <mt-button variant="secondary" @click="$router.push({ name: 'nova.vk.tour.index', params: { tab: 'routes' } })">{{ $tc('nova-vk-tour.general.back') }}</mt-button>
+        <mt-button v-if="routeId && acl.can('nova_vk_tour.deleter')" variant="critical" @click="remove">{{ $tc('nova-vk-tour.general.delete') }}</mt-button>
+        <mt-button v-if="canEdit" variant="primary" :disabled="saving" @click="save">{{ $tc('nova-vk-tour.general.save') }}</mt-button>
+    </template>
+
+    <template #content>
+        <div class="nova-vk-tour__content">
+            <mt-card position-identifier="nova-vk-tour-route" :title="$tc('nova-vk-tour.routes.route')" :is-loading="loading">
+                <div class="nova-vk-tour__grid">
+                    <label>
+                        <span>{{ $tc('nova-vk-tour.routes.name') }} *</span>
+                        <input v-model="route.name" class="nova-vk-tour__input" type="text" maxlength="255" :disabled="!canEdit" :placeholder="$tc('nova-vk-tour.routes.namePlaceholder')">
+                    </label>
+                    <label>
+                        <span>{{ $tc('nova-vk-tour.routes.start') }}</span>
+                        <input v-model="route.startLabel" class="nova-vk-tour__input" type="text" maxlength="255" :disabled="!canEdit">
+                    </label>
+                    <label>
+                        <span>{{ $tc('nova-vk-tour.routes.end') }}</span>
+                        <input v-model="route.endLabel" class="nova-vk-tour__input" type="text" maxlength="255" :disabled="!canEdit">
+                    </label>
+                    <label class="nova-vk-tour__check">
+                        <input v-model="route.active" type="checkbox" :disabled="!canEdit"> {{ $tc('nova-vk-tour.routes.activeHelp') }}
+                    </label>
+                </div>
+                <label class="nova-vk-tour__block">
+                    <span>{{ $tc('nova-vk-tour.general.note') }}</span>
+                    <textarea v-model="route.note" class="nova-vk-tour__input" rows="2" :disabled="!canEdit"></textarea>
+                </label>
+            </mt-card>
+
+            <mt-card
+                v-for="(variant, index) in route.variants"
+                :key="variant.id || 'neu-' + index"
+                :position-identifier="'nova-vk-tour-variant-' + index"
+                :title="$tc('nova-vk-tour.routes.variant') + ': ' + (variant.name || (index + 1))"
+            >
+                <label class="nova-vk-tour__block">
+                    <span>{{ $tc('nova-vk-tour.routes.variantName') }}</span>
+                    <input v-model="variant.name" class="nova-vk-tour__input" type="text" maxlength="255" :disabled="!canEdit" :placeholder="$tc('nova-vk-tour.routes.variantPlaceholder')">
+                </label>
+                <p class="nova-vk-tour__muted">{{ $tc('nova-vk-tour.routes.waypointsHelp') }}</p>
+                <nova-vk-tour-waypoints v-model="variant.waypoints" :disabled="!canEdit" />
+                <mt-button v-if="canEdit && route.variants.length > 1" variant="critical" size="small" @click="removeVariant(index)">{{ $tc('nova-vk-tour.routes.removeVariant') }}</mt-button>
+            </mt-card>
+
+            <mt-button v-if="canEdit" variant="secondary" @click="addVariant">{{ $tc('nova-vk-tour.routes.addVariant') }}</mt-button>
+        </div>
+    </template>
+</sw-page>
+{% endblock %}

@@ -1,3 +1,13 @@
+# 1.2.0
+
+- New: **Own delivery tours** – routes (templates) with one or more variants and ordered waypoints (entered as postcode or place), tour dates with a route or own waypoints (one-off trip, optionally saved as template), date, order deadline (default 2 days before), “with trailer”, status open/fixed/closed. New administration *Orders → Tours* with role permissions
+- New: shipping method **“Lieferung mit unserer Tour”** (`nova_versandkosten_tour`, created inactive) – only if an open/fixed date fits (deadline, deviation, trailer for freight goods, domestic). Deviation = straight-line distance of the delivery postcode to the variant's line × detour factor (default 1.3). Prices per sales channel (default small parts/parcels/bulky 50 € up to 10 km, freight goods with trailer only 190 € up to 30 km, 290 € up to 60 km), the highest category in the cart counts. Open date: all variants count, **the first booking fixes the variant**
+- New: mandatory date choice at checkout (date and price only, no route), checked again when ordering, Store API routes; customer comment “TOUR: <weekday, date>”, custom fields (date, variant, deviation, category), list **“tour deliveries”** per date sorted along the route for loading
+- New: hint on “shipping costs on request” orders when the delivery address is close to a route or bookable tour date
+- New: **Tour notification** – switch per delivery address in the customer account (also Store API), form for guests as Shopping Experience element/block with double opt-in, Shopware captcha, honeypot and rate limiter; unsubscribe via signed link in every e-mail, deletion of unconfirmed sign-ups after 7 days and inactive subscribers after 24 months (configurable); administration with subscriber list, filter by route/radius, CSV export, preview “X subscribers along the route” and button “Send notification” (once per date and subscriber); mail templates de/en
+- New: German postcode coordinates included (GeoNames, CC BY 4.0, see NOTICE) – no external service
+- Uninstalling without “keep data” also removes the new tables
+
 # 1.1.0
 
 - New: **Add to an open order** – shipping method “Zu meiner Bestellung beipacken” (created inactive). Customers choose an own order that has not been shipped; guests use the link from the order confirmation (Shopware's order code) or order number + e-mail + postcode (max. 5 attempts per hour and IP). Price = shipping for old + new items minus shipping already paid, at least 0.00. Checked again when ordering, delivery address of the old order, comment “BEIPACK zu Bestellung <no>”, references on both orders, note in the old order's internal comment, link “Forgot something?” on the finish page

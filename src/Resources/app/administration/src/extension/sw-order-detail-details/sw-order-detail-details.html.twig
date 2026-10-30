@@ -25,6 +25,15 @@
             {{ $tc('nova-versandkosten.request.resend') }}
         </mt-button>
     </div>
+    <div v-if="novaVkTourHint.length" style="margin-top: 12px; padding: 8px 12px; background: #f0f8ff; border-radius: 4px;">
+        <strong>{{ $tc('nova-vk-tour.order.hintTitle') }}</strong>
+        <ul style="margin: 4px 0 0 18px;">
+            <li v-for="(h, i) in novaVkTourHint" :key="i">
+                <template v-if="h.type === 'date'">{{ $tc('nova-vk-tour.order.hintDate', 0, { name: h.name, date: novaVkDate(h.date), variant: h.variant, km: h.km }) }}<span v-if="h.trailer"> · {{ $tc('nova-vk-tour.order.trailer') }}</span></template>
+                <template v-else>{{ $tc('nova-vk-tour.order.hintRoute', 0, { name: h.name, variant: h.variant, km: h.km }) }}</template>
+            </li>
+        </ul>
+    </div>
     <p v-if="novaVkInfo && novaVkInfo.paymentUrl" style="margin-top: 12px;">
         {{ $tc('nova-versandkosten.request.paymentUrl') }}: <a :href="novaVkInfo.paymentUrl" target="_blank" rel="noopener">{{ novaVkInfo.paymentUrl }}</a>
     </p>
@@ -47,6 +56,14 @@
             </template>
         </p>
     </template>
+    <p v-if="novaVkTour" style="font-weight: 600;">
+        {{ $tc('nova-vk-tour.order.tour', 0, { date: novaVkDate(novaVkTour.date) }) }}
+        <router-link v-if="novaVkTour.dateId" :to="{ name: 'nova.vk.tour.date', params: { id: novaVkTour.dateId } }">{{ $tc('nova-vk-tour.order.openDate') }}</router-link>
+        <br>
+        <span class="nova-versandkosten-muted" style="font-weight: normal;">
+            {{ $tc('nova-vk-tour.order.details', 0, { variant: novaVkTour.variant || '–', km: novaVkTour.deviation ?? '–', tier: novaVkTour.tier === 'spedition' ? $tc('nova-vk-tour.deliveries.freight') : $tc('nova-vk-tour.deliveries.small') }) }}
+        </span>
+    </p>
     <template v-if="novaVersandkosten">
         <p v-if="novaVersandkosten.carrier || novaVersandkosten.product">
             <strong>{{ novaVersandkosten.carrier }} {{ novaVersandkosten.product }}</strong>

@@ -44,9 +44,52 @@
             "finish": "Diese Bestellung wird zu Bestellung %number% beigepackt.",
             "forgot": "Noch etwas vergessen?",
             "forgotLink": "Jetzt zu dieser Bestellung beipacken"
+        },
+        "tour": {
+            "title": "Lieferung mit unserer Tour",
+            "choose": "Liefertermin wählen",
+            "placeholder": "Bitte Termin wählen …",
+            "apply": "Übernehmen",
+            "hint": "Wir liefern mit unserem eigenen Fahrzeug und melden uns vorab mit der Uhrzeit.",
+            "invalid": "Der gewählte Termin ist nicht mehr verfügbar. Bitte wählen Sie einen anderen Termin.",
+            "priceFrom": "ab %price%",
+            "on": "Lieferung am %date%",
+            "nextDates": "nächster Termin %date% (%count% Termine)",
+            "finish": "Lieferung mit unserer Tour am %date%. Wir melden uns vorab mit der Uhrzeit."
+        },
+        "tourNotify": {
+            "title": "Tour-Benachrichtigung",
+            "teaser": "Wir liefern regelmäßig mit unserer eigenen Tour – oft günstiger als per Spedition. Hinterlassen Sie Ihre E-Mail-Adresse und Postleitzahl, dann sagen wir Bescheid, wenn eine Tour in Ihre Nähe fährt.",
+            "email": "E-Mail-Adresse",
+            "postcode": "Postleitzahl",
+            "consent": "Ich möchte per E-Mail benachrichtigt werden, wenn eine Tour in die Nähe meiner Postleitzahl fährt. Die Einwilligung kann ich jederzeit über den Abmelde-Link widerrufen. Weitere Hinweise in der %privacyModalTagOpen%Datenschutzerklärung%privacyModalTagClose%.",
+            "submit": "Benachrichtigen",
+            "success": "Fast geschafft: Bitte bestätigen Sie die Anmeldung über den Link in der E-Mail, die wir Ihnen gerade geschickt haben.",
+            "errorGeneral": "Die Anmeldung ist gerade nicht möglich. Bitte versuchen Sie es später erneut.",
+            "errorConsent": "Bitte bestätigen Sie die Einwilligung.",
+            "errorEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+            "errorPostcode": "Diese Postleitzahl kennen wir nicht oder sie liegt nicht in unserem Liefergebiet.",
+            "errorTooMany": "Zu viele Anmeldungen in kurzer Zeit. Bitte versuchen Sie es später erneut.",
+            "confirmed": "Danke! Wir benachrichtigen Sie, sobald eine Tour in Ihre Nähe fährt.",
+            "confirmFailed": "Der Bestätigungslink ist ungültig oder abgelaufen. Bitte melden Sie sich erneut an.",
+            "unsubscribed": "Sie sind abgemeldet. Ihre Angaben zur Tour-Benachrichtigung wurden gelöscht.",
+            "renewed": "Danke – wir benachrichtigen Sie weiterhin.",
+            "linkInvalid": "Der Link ist ungültig oder die Anmeldung besteht nicht mehr.",
+            "accountLink": "Tour-Benachrichtigung",
+            "accountTitle": "Tour-Benachrichtigung",
+            "accountIntro": "Wir liefern regelmäßig mit unserer eigenen Tour. Schalten Sie für Ihre Lieferadressen ein, dass wir Ihnen eine E-Mail schicken, wenn eine Tour in die Nähe fährt. Die Mail nennt nur den Termin, nicht die Strecke.",
+            "accountOn": "Benachrichtigen",
+            "accountOff": "Benachrichtigung aus",
+            "accountNotPossible": "Für diese Adresse nicht möglich (Land oder Postleitzahl außerhalb unseres Liefergebiets)",
+            "accountNoAddress": "Sie haben noch keine Adresse hinterlegt.",
+            "accountSaved": "Ihre Einstellung wurde gespeichert.",
+            "accountFailed": "Die Einstellung konnte nicht gespeichert werden.",
+            "accountPrivacy": "Wir verwenden dafür Ihre E-Mail-Adresse und die Postleitzahl der Adresse. Die Benachrichtigung können Sie hier oder über den Link in jeder Mail abbestellen."
         }
     },
     "checkout": {
-        "nova-versandkosten-beipack-select": "Bitte wählen Sie die Bestellung, zu der beigepackt werden soll."
+        "nova-versandkosten-beipack-select": "Bitte wählen Sie die Bestellung, zu der beigepackt werden soll.",
+        "nova-versandkosten-tour-select": "Bitte wählen Sie den Termin für die Lieferung mit unserer Tour.",
+        "nova-versandkosten-tour-invalid": "Der gewählte Tourtermin ist nicht mehr verfügbar. Bitte wählen Sie einen anderen Termin."
     }
 }

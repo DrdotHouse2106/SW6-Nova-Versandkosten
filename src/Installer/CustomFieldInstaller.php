@@ -11,7 +11,8 @@ use Shopware\Core\System\CustomField\CustomFieldTypes;
 /**
  * Zusatzfelder:
  * - Produkt: „Versandeinordnung“ und „Sperrgut-Packart“ (Auswahlfelder)
- * - Bestellung: Ergebnis der Versandberechnung (Dienstleister, Produkt, Pakete, Einkauf, Verkauf, Maße fehlen)
+ * - Bestellung: Ergebnis der Versandberechnung (Dienstleister, Produkt, Pakete, Einkauf, Verkauf, Maße fehlen),
+ *   Beipacken, Versandkosten auf Anfrage und eigene Tour (Termin, Variante, Abweichung)
  *
  * Fehlt ein Set, wird es angelegt. Bei vorhandenen Sets werden nur fehlende Felder ergänzt (Update auf
  * eine neue Version) und bei „Versandeinordnung“ fehlende Auswahlwerte angehängt; Bezeichnungen und
@@ -47,6 +48,14 @@ final class CustomFieldInstaller
     public const ORDER_REQUEST = 'nova_versandkosten_anfrage';
     public const ORDER_REQUEST_STATUS = 'nova_versandkosten_anfrage_status';
     public const ORDER_REQUEST_PRICED_AT = 'nova_versandkosten_anfrage_preis_am';
+
+    /** Eigene Tour: Termin-ID, Datum (Y-m-d), Variante (ID bzw. „custom“) und Name, Abweichung km, Einordnung */
+    public const ORDER_TOUR_DATE_ID = 'nova_versandkosten_tour_termin';
+    public const ORDER_TOUR_DATE = 'nova_versandkosten_tour_datum';
+    public const ORDER_TOUR_VARIANT = 'nova_versandkosten_tour_variante';
+    public const ORDER_TOUR_VARIANT_NAME = 'nova_versandkosten_tour_variante_name';
+    public const ORDER_TOUR_DEVIATION = 'nova_versandkosten_tour_abweichung_km';
+    public const ORDER_TOUR_TIER = 'nova_versandkosten_tour_einordnung';
 
     /**
      * @param EntityRepository<\Shopware\Core\System\CustomField\Aggregate\CustomFieldSet\CustomFieldSetCollection> $sets
@@ -229,6 +238,11 @@ final class CustomFieldInstaller
                 $field(self::ORDER_BEIPACK_TO_NUMBER, CustomFieldTypes::TEXT, 'Beipack zu Bestellung', 'Add-on to order', 8),
                 $field(self::ORDER_REQUEST, CustomFieldTypes::BOOL, 'Versandkosten auf Anfrage', 'Shipping costs on request', 9),
                 $field(self::ORDER_REQUEST_STATUS, CustomFieldTypes::TEXT, 'Anfrage-Status (open/priced)', 'Request status (open/priced)', 10),
+                $field(self::ORDER_TOUR_DATE, CustomFieldTypes::TEXT, 'Tour: Datum', 'Tour: date', 11),
+                $field(self::ORDER_TOUR_DATE_ID, CustomFieldTypes::TEXT, 'Tour: Termin-ID', 'Tour: date ID', 12),
+                $field(self::ORDER_TOUR_VARIANT_NAME, CustomFieldTypes::TEXT, 'Tour: Variante', 'Tour: variant', 13),
+                $field(self::ORDER_TOUR_DEVIATION, CustomFieldTypes::FLOAT, 'Tour: Abweichung (km)', 'Tour: deviation (km)', 14),
+                $field(self::ORDER_TOUR_TIER, CustomFieldTypes::TEXT, 'Tour: Einordnung (klein/spedition)', 'Tour: category (klein/spedition)', 15),
             ],
         ];
     }

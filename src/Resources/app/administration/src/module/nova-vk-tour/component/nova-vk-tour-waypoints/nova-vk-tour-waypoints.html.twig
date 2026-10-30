@@ -1,0 +1,45 @@
+{% block nova_vk_tour_waypoints %}
+<div class="nova-vk-tour-waypoints">
+    <ol v-if="points.length" class="nova-vk-tour-waypoints__list">
+        <li v-for="(point, index) in points" :key="index + '-' + point.lat + '-' + point.lon">
+            <input
+                class="nova-vk-tour__input"
+                type="text"
+                :value="point.label"
+                :disabled="disabled"
+                maxlength="120"
+                @input="rename(index, $event.target.value)"
+            >
+            <span class="nova-vk-tour__muted">{{ point.postcode }} · {{ point.lat }}, {{ point.lon }}</span>
+            <span v-if="!disabled" class="nova-vk-tour-waypoints__actions">
+                <button type="button" :disabled="index === 0" :title="$tc('nova-vk-tour.waypoints.up')" @click="move(index, -1)">↑</button>
+                <button type="button" :disabled="index === points.length - 1" :title="$tc('nova-vk-tour.waypoints.down')" @click="move(index, 1)">↓</button>
+                <button type="button" :title="$tc('nova-vk-tour.waypoints.remove')" @click="remove(index)">✕</button>
+            </span>
+        </li>
+    </ol>
+    <p v-else class="nova-vk-tour__muted">{{ $tc('nova-vk-tour.waypoints.empty') }}</p>
+
+    <div v-if="!disabled" class="nova-vk-tour-waypoints__search">
+        <input
+            v-model="query"
+            class="nova-vk-tour__input"
+            type="text"
+            :placeholder="$tc('nova-vk-tour.waypoints.placeholder')"
+            @keydown.enter.prevent="search"
+        >
+        <mt-button variant="secondary" size="small" :disabled="searching || !query.trim()" @click="search">
+            {{ $tc('nova-vk-tour.waypoints.search') }}
+        </mt-button>
+    </div>
+    <ul v-if="results.length" class="nova-vk-tour-waypoints__results">
+        <li v-for="(result, i) in results" :key="i">
+            <button type="button" @click="add(result)">
+                <strong>{{ result.label }}</strong>
+                <span class="nova-vk-tour__muted"> {{ result.state }}</span>
+            </button>
+        </li>
+    </ul>
+    <p v-else-if="searched && !searching" class="nova-vk-tour__muted">{{ $tc('nova-vk-tour.waypoints.noResult') }}</p>
+</div>
+{% endblock %}

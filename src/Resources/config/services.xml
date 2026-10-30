@@ -68,6 +68,64 @@
             <argument type="service" id="cache.object"/>
         </service>
 
+        <!-- Eigene Touren (1.2.0): Entitäten, PLZ-Koordinaten, Termine, Benachrichtigung -->
+        <service id="Nova\Versandkosten\Core\Tour\TourRouteDefinition">
+            <tag name="shopware.entity.definition" entity="nova_vk_tour_route"/>
+        </service>
+        <service id="Nova\Versandkosten\Core\Tour\TourVariantDefinition">
+            <tag name="shopware.entity.definition" entity="nova_vk_tour_variant"/>
+        </service>
+        <service id="Nova\Versandkosten\Core\Tour\TourDateDefinition">
+            <tag name="shopware.entity.definition" entity="nova_vk_tour_date"/>
+        </service>
+        <service id="Nova\Versandkosten\Core\Tour\TourSubscriberDefinition">
+            <tag name="shopware.entity.definition" entity="nova_vk_tour_subscriber"/>
+        </service>
+
+        <service id="Nova\Versandkosten\Service\Tour\PostcodeDirectory">
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <tag name="kernel.reset" method="reset"/>
+        </service>
+
+        <service id="Nova\Versandkosten\Service\Tour\TourRepository">
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <tag name="kernel.reset" method="reset"/>
+        </service>
+
+        <service id="Nova\Versandkosten\Service\Tour\TourService">
+            <argument type="service" id="Nova\Versandkosten\Service\Tour\TourRepository"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Tour\PostcodeDirectory"/>
+            <argument type="service" id="Nova\Versandkosten\Service\ProductClassifier"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <tag name="kernel.reset" method="reset"/>
+        </service>
+
+        <service id="Nova\Versandkosten\Service\Tour\TourNotificationService">
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <argument type="service" id="Shopware\Core\Content\Mail\Service\MailService"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Tour\PostcodeDirectory"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Tour\TourRepository"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
+            <argument type="service" id="logger"/>
+            <argument>%kernel.secret%</argument>
+        </service>
+
+        <service id="Nova\Versandkosten\Service\Tour\TourNotifyLimiter">
+            <argument type="service" id="cache.object"/>
+        </service>
+
+        <service id="Nova\Versandkosten\ScheduledTask\TourCleanupTask">
+            <tag name="shopware.scheduled.task"/>
+        </service>
+        <service id="Nova\Versandkosten\ScheduledTask\TourCleanupTaskHandler">
+            <argument type="service" id="scheduled_task.repository"/>
+            <argument type="service" id="logger"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Tour\TourNotificationService"/>
+            <argument type="service" id="logger"/>
+            <tag name="messenger.message_handler"/>
+        </service>
+
         <!-- Geplante Aufgaben (täglich) -->
         <service id="Nova\Versandkosten\ScheduledTask\EnergyFetchTask">
             <tag name="shopware.scheduled.task"/>
@@ -95,6 +153,7 @@
             <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
             <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
             <argument type="service" id="Nova\Versandkosten\Service\BeipackService"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Tour\TourService"/>
             <tag name="shopware.cart.processor" priority="-5050"/>
         </service>
 
@@ -110,6 +169,7 @@
             <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
             <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
             <argument type="service" id="Nova\Versandkosten\Service\BeipackService"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Tour\TourService"/>
         </service>
 
         <!-- Versandkosten auf Anfrage: nur Zahlarten ohne sofortigen Geldeinzug -->
@@ -128,12 +188,14 @@
             <argument type="service" id="Nova\Versandkosten\Service\BeipackService"/>
             <argument type="service" id="Nova\Versandkosten\Service\RequestOrderService"/>
             <argument type="service" id="order.repository"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Tour\TourRepository"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 
         <service id="Nova\Versandkosten\Storefront\CheckoutPageSubscriber">
             <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
             <argument type="service" id="Nova\Versandkosten\Service\BeipackService"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Tour\TourService"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 
@@ -150,6 +212,44 @@
             <argument type="service" id="Doctrine\DBAL\Connection"/>
             <argument type="service" id="Nova\Versandkosten\Service\EnergySurchargeService"/>
             <argument type="service" id="Nova\Versandkosten\Service\RequestOrderService"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Tour\TourRepository"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Tour\PostcodeDirectory"/>
+        </service>
+
+        <service id="Nova\Versandkosten\Controller\TourAdminController" public="true">
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <argument type="service" id="nova_vk_tour_route.repository"/>
+            <argument type="service" id="nova_vk_tour_variant.repository"/>
+            <argument type="service" id="nova_vk_tour_date.repository"/>
+            <argument type="service" id="nova_vk_tour_subscriber.repository"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Tour\TourRepository"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Tour\PostcodeDirectory"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Tour\TourNotificationService"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
+        </service>
+
+        <!-- Storefront/Store-API: Tourtermin wählen, Tour-Benachrichtigung -->
+        <service id="Nova\Versandkosten\Controller\TourController" public="true">
+            <argument type="service" id="Nova\Versandkosten\Service\Tour\TourService"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
+            <call method="setContainer">
+                <argument type="service" id="service_container"/>
+            </call>
+        </service>
+        <service id="Nova\Versandkosten\Controller\TourStoreApiController" public="true">
+            <argument type="service" id="Nova\Versandkosten\Service\Tour\TourService"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
+        </service>
+        <service id="Nova\Versandkosten\Controller\TourNotificationController" public="true">
+            <argument type="service" id="Nova\Versandkosten\Service\Tour\TourNotificationService"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Tour\TourNotifyLimiter"/>
+            <argument type="service" id="Shopware\Storefront\Page\GenericPageLoader"/>
+            <call method="setContainer">
+                <argument type="service" id="service_container"/>
+            </call>
+        </service>
+        <service id="Nova\Versandkosten\Controller\TourNotificationStoreApiController" public="true">
+            <argument type="service" id="Nova\Versandkosten\Service\Tour\TourNotificationService"/>
         </service>
 
         <!-- Storefront: Bestellung zum Beipacken wählen -->

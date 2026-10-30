@@ -1,4 +1,6 @@
 import './module/nova-versandkosten';
+import './module/nova-vk-tour';
+import './cms/nova-vk-tour-notify';
 import './extension/sw-order-detail-details';
 
 import deDE from './module/nova-versandkosten/snippet/de-DE.json';

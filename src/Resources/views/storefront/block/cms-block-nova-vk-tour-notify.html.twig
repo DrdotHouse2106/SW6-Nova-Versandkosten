@@ -1,0 +1,7 @@
+{# Erlebniswelten-Block „Tour-Benachrichtigung“: ein Element im Bereich „content“ #}
+{% block block_nova_vk_tour_notify %}
+    {% set element = block.slots.getSlot('content') %}
+    <div class="col-12" data-cms-element-id="{{ element.id }}">
+        {% sw_include '@Storefront/storefront/element/cms-element-' ~ element.type ~ '.html.twig' ignore missing %}
+    </div>
+{% endblock %}

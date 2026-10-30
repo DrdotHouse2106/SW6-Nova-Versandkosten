@@ -11,6 +11,21 @@
                     {% block nova_versandkosten_method_info_request %}
                         <span class="nova-versandkosten-price fw-bold">{{ 'novaVersandkosten.request.price'|trans|sw_sanitize }}</span>
                     {% endblock %}
+                {% elseif novaVk.tour ?? false %}
+                    {% block nova_versandkosten_method_info_tour %}
+                        <span class="nova-versandkosten-price fw-bold">
+                            {% if novaVk.priceFrom %}{{ 'novaVersandkosten.tour.priceFrom'|trans({'%price%': novaVk.price|currency})|sw_sanitize }}{% else %}{{ novaVk.price|currency }}{% endif %}
+                        </span>
+                        <div class="nova-versandkosten-delivery text-muted">
+                            {% if novaVk.dateLabel %}
+                                {{ 'novaVersandkosten.tour.on'|trans({'%date%': novaVk.dateLabel})|sw_sanitize }}
+                            {% elseif novaVk.dateCount > 1 %}
+                                {{ 'novaVersandkosten.tour.nextDates'|trans({'%date%': novaVk.nextDate, '%count%': novaVk.dateCount})|sw_sanitize }}
+                            {% else %}
+                                {{ 'novaVersandkosten.tour.on'|trans({'%date%': novaVk.nextDate})|sw_sanitize }}
+                            {% endif %}
+                        </div>
+                    {% endblock %}
                 {% elseif novaVk.beipack ?? false %}
                     {% block nova_versandkosten_method_info_beipack %}
                         {% if novaVk.price is not null %}
