@@ -14,8 +14,10 @@ final class Item
     public const BULKY = 'sperrgut';
     public const FREIGHT = 'spedition';
     public const PICKUP_ONLY = 'abholung';
+    /** Versand nur auf Anfrage: Preis nennt der Shop nach der Bestellung (Versandart „Versandkosten auf Anfrage“) */
+    public const ON_REQUEST = 'anfrage';
 
-    public const CATEGORIES = [self::PARCEL, self::BULKY, self::FREIGHT, self::PICKUP_ONLY];
+    public const CATEGORIES = [self::PARCEL, self::BULKY, self::FREIGHT, self::PICKUP_ONLY, self::ON_REQUEST];
 
     /** Sperrgut: jedes Stück ein eigenes Paket */
     public const PACK_SINGLE = 'einzelpaket';

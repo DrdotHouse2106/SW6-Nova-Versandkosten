@@ -3,6 +3,8 @@
 namespace Nova\Versandkosten\Checkout;
 
 use Nova\Versandkosten\Calculator\Money;
+use Nova\Versandkosten\Calculator\OptionResult;
+use Nova\Versandkosten\Service\BeipackService;
 use Nova\Versandkosten\Service\MethodMap;
 use Nova\Versandkosten\Service\QuoteService;
 use Nova\Versandkosten\Service\Settings;
@@ -10,6 +12,7 @@ use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\CartBehavior;
 use Shopware\Core\Checkout\Cart\CartProcessorInterface;
 use Shopware\Core\Checkout\Cart\LineItem\CartDataCollection;
+use Shopware\Core\Checkout\Cart\Order\OrderConverter;
 use Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator;
 use Shopware\Core\Checkout\Cart\Price\Struct\CartPrice;
 use Shopware\Core\Checkout\Cart\Price\Struct\QuantityPriceDefinition;
@@ -25,6 +28,10 @@ use Shopware\Core\System\SalesChannel\SalesChannelContext;
  * Shopware hat die Lieferung schon mit dem Platzhalterpreis (0 €) und den passenden Steuerregeln
  * berechnet; diese Steuerregeln übernehmen wir und ersetzen nur den Betrag.
  * Das Ergebnis aller Optionen hängt als Erweiterung „novaVersandkosten“ am Warenkorb (Anzeige, Bestellung).
+ *
+ * „Zu meiner Bestellung beipacken“: Ist diese Versandart gewählt, wird die gewählte alte Bestellung bei
+ * jeder Berechnung frisch geprüft und der Differenzpreis gesetzt (Ergebnis unter options.beipack und
+ * beipack = {state: ok|select|invalid, reason, orderNumber}).
  */
 class ShippingCostProcessor implements CartProcessorInterface
 {
@@ -34,6 +41,7 @@ class ShippingCostProcessor implements CartProcessorInterface
         private readonly QuoteService $quotes,
         private readonly QuantityPriceCalculator $priceCalculator,
         private readonly Settings $settings,
+        private readonly BeipackService $beipack,
     ) {
     }
 
@@ -45,19 +53,31 @@ class ShippingCostProcessor implements CartProcessorInterface
         if ($result === null) {
             return;
         }
-        $toCalculate->addExtension(self::EXTENSION, new ArrayStruct($result->toArray()));
+        $data = $result->toArray();
 
         // Bestellung in der Administration bearbeiten: manuell gesetzte Versandkosten nicht überschreiben
-        if ($behavior->hasPermission(CheckoutPermissions::SKIP_DELIVERY_PRICE_RECALCULATION)) {
+        if ($behavior->hasPermission(CheckoutPermissions::SKIP_DELIVERY_PRICE_RECALCULATION) || $original->hasExtension(OrderConverter::ORIGINAL_ID)) {
+            $toCalculate->addExtension(self::EXTENSION, new ArrayStruct($data));
+
             return;
         }
+
+        $beipack = null;
+        foreach ($toCalculate->getDeliveries() as $delivery) {
+            if (MethodMap::optionFor($delivery->getShippingMethod()->getTechnicalName()) === OptionResult::BEIPACK) {
+                [$beipack, $data['beipack']] = $this->beipackQuote($original, $toCalculate, $context);
+                $data['options'][OptionResult::BEIPACK] = $beipack->toArray();
+                break;
+            }
+        }
+        $toCalculate->addExtension(self::EXTENSION, new ArrayStruct($data));
 
         foreach ($toCalculate->getDeliveries() as $delivery) {
             $option = MethodMap::optionFor($delivery->getShippingMethod()->getTechnicalName());
             if ($option === null) {
                 continue;
             }
-            $optionResult = $result->option($option);
+            $optionResult = $option === OptionResult::BEIPACK ? $beipack : $result->option($option);
             if ($optionResult === null || !$optionResult->available) {
                 // Validator sperrt die Versandart, Shopware wechselt auf eine passende
                 continue;
@@ -71,6 +91,38 @@ class ShippingCostProcessor implements CartProcessorInterface
             $taxRules = $delivery->getShippingCosts()->getTaxRules();
             $delivery->setShippingCosts($this->priceCalculator->calculate(new QuantityPriceDefinition($price, $taxRules, 1), $context));
         }
+    }
+
+    /**
+     * @return array{0: OptionResult, 1: array{state: string, reason: string, orderId: string|null, orderNumber: string|null}}
+     */
+    private function beipackQuote(Cart $original, Cart $toCalculate, SalesChannelContext $context): array
+    {
+        $selection = $this->beipack->selection($original);
+        if ($selection === null) {
+            // Auswahl fehlt noch: Versandart bleibt wählbar, der Validator verlangt die Auswahl vor dem Bestellen
+            $option = OptionResult::unavailable(OptionResult::BEIPACK, 'Bitte Bestellung wählen');
+            $option->available = true;
+
+            return [$option, ['state' => 'select', 'reason' => '', 'orderId' => null, 'orderNumber' => null]];
+        }
+
+        [$row, $reason] = $this->beipack->validate($selection, $context);
+        if ($row === null || $reason !== null) {
+            return [
+                OptionResult::unavailable(OptionResult::BEIPACK, (string) $reason),
+                ['state' => 'invalid', 'reason' => (string) $reason, 'orderId' => $selection['orderId'], 'orderNumber' => $row === null ? null : (string) $row['order_number']],
+            ];
+        }
+
+        $quote = $this->beipack->quote($row, $toCalculate->getLineItems(), $context);
+
+        return [$quote, [
+            'state' => $quote->available ? 'ok' : 'invalid',
+            'reason' => $quote->reason,
+            'orderId' => (string) $row['id'],
+            'orderNumber' => (string) $row['order_number'],
+        ]];
     }
 
     /**

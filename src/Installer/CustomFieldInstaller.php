@@ -13,7 +13,9 @@ use Shopware\Core\System\CustomField\CustomFieldTypes;
  * - Produkt: „Versandeinordnung“ und „Sperrgut-Packart“ (Auswahlfelder)
  * - Bestellung: Ergebnis der Versandberechnung (Dienstleister, Produkt, Pakete, Einkauf, Verkauf, Maße fehlen)
  *
- * Fehlt ein Set, wird es angelegt; vorhandene Sets bleiben unverändert (Einstellungen des Inhabers).
+ * Fehlt ein Set, wird es angelegt. Bei vorhandenen Sets werden nur fehlende Felder ergänzt (Update auf
+ * eine neue Version) und bei „Versandeinordnung“ fehlende Auswahlwerte angehängt; Bezeichnungen und
+ * Reihenfolge, die der Inhaber geändert hat, bleiben unverändert.
  */
 final class CustomFieldInstaller
 {
@@ -35,6 +37,17 @@ final class CustomFieldInstaller
     public const ORDER_DELIVERY = 'nova_versandkosten_delivery';
     public const ORDER_DETAILS = 'nova_versandkosten_details';
 
+    /** Beipack: an der neuen Bestellung – ID und Nummer der Bestellung, zu der beigepackt wird */
+    public const ORDER_BEIPACK_TO = 'nova_versandkosten_beipack_zu';
+    public const ORDER_BEIPACK_TO_NUMBER = 'nova_versandkosten_beipack_zu_nr';
+    /** Beipack: an der alten Bestellung – Liste {id, orderNumber, date} der beigepackten Bestellungen */
+    public const ORDER_BEIPACK_ORDERS = 'nova_versandkosten_beipack_bestellungen';
+
+    /** Versandkosten auf Anfrage: Kennzeichen, Status (open|priced), Zeitpunkt der Preisangabe */
+    public const ORDER_REQUEST = 'nova_versandkosten_anfrage';
+    public const ORDER_REQUEST_STATUS = 'nova_versandkosten_anfrage_status';
+    public const ORDER_REQUEST_PRICED_AT = 'nova_versandkosten_anfrage_preis_am';
+
     /**
      * @param EntityRepository<\Shopware\Core\System\CustomField\Aggregate\CustomFieldSet\CustomFieldSetCollection> $sets
      */
@@ -46,21 +59,80 @@ final class CustomFieldInstaller
 
     public function install(Context $context): void
     {
-        $existing = $this->connection->fetchFirstColumn(
-            'SELECT name FROM custom_field_set WHERE name IN (:names)',
+        /** @var array<string, string> $existing Name → ID */
+        $existing = $this->connection->fetchAllKeyValue(
+            'SELECT name, LOWER(HEX(id)) FROM custom_field_set WHERE name IN (:names)',
             ['names' => [self::PRODUCT_SET, self::ORDER_SET]],
             ['names' => \Doctrine\DBAL\ArrayParameterType::STRING]
         );
 
         $create = [];
-        if (!\in_array(self::PRODUCT_SET, $existing, true)) {
-            $create[] = $this->productSet();
-        }
-        if (!\in_array(self::ORDER_SET, $existing, true)) {
-            $create[] = $this->orderSet();
+        $update = [];
+        foreach ([self::PRODUCT_SET => $this->productSet(), self::ORDER_SET => $this->orderSet()] as $name => $set) {
+            if (!isset($existing[$name])) {
+                $create[] = $set;
+                continue;
+            }
+            $missing = $this->missingFields($set['customFields']);
+            if ($missing !== []) {
+                $update[] = ['id' => $existing[$name], 'customFields' => $missing];
+            }
         }
         if ($create !== []) {
             $this->sets->create($create, $context);
+        }
+        if ($update !== []) {
+            $this->sets->upsert($update, $context);
+        }
+
+        $this->addMissingOptions(self::PRODUCT_CATEGORY, $this->productSet()['customFields'][0]['config']['options']);
+    }
+
+    /**
+     * @param list<array<string, mixed>> $fields
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function missingFields(array $fields): array
+    {
+        $names = array_map(static fn (array $f) => (string) $f['name'], $fields);
+        $present = $this->connection->fetchFirstColumn(
+            'SELECT name FROM custom_field WHERE name IN (:names)',
+            ['names' => $names],
+            ['names' => \Doctrine\DBAL\ArrayParameterType::STRING]
+        );
+
+        return array_values(array_filter($fields, static fn (array $f) => !\in_array($f['name'], $present, true)));
+    }
+
+    /**
+     * Neue Auswahlwerte (z. B. „Nur auf Anfrage“ ab 1.1.0) an ein vorhandenes Auswahlfeld anhängen.
+     *
+     * @param list<array{value: string, label: array<string, string>}> $options
+     */
+    private function addMissingOptions(string $fieldName, array $options): void
+    {
+        $config = $this->connection->fetchOne('SELECT config FROM custom_field WHERE name = :name', ['name' => $fieldName]);
+        if (!\is_string($config)) {
+            return;
+        }
+        $data = json_decode($config, true);
+        if (!\is_array($data) || !\is_array($data['options'] ?? null)) {
+            return;
+        }
+        $values = array_map(static fn ($o) => \is_array($o) ? ($o['value'] ?? null) : null, $data['options']);
+        $changed = false;
+        foreach ($options as $option) {
+            if (!\in_array($option['value'], $values, true)) {
+                $data['options'][] = $option;
+                $changed = true;
+            }
+        }
+        if ($changed) {
+            $this->connection->executeStatement(
+                'UPDATE custom_field SET config = :config, updated_at = NOW(3) WHERE name = :name',
+                ['config' => json_encode($data, \JSON_UNESCAPED_UNICODE), 'name' => $fieldName]
+            );
         }
     }
 
@@ -76,7 +148,7 @@ final class CustomFieldInstaller
         }
     }
 
-    /** @return array<string, mixed> */
+    /** @return array{id: string, name: string, config: array<string, mixed>, relations: list<array<string, string>>, customFields: list<array{name: string, type: string, config: array<string, mixed>}>} */
     private function productSet(): array
     {
         return [
@@ -102,6 +174,7 @@ final class CustomFieldInstaller
                             ['value' => 'sperrgut', 'label' => ['de-DE' => 'Sperrgut', 'en-GB' => 'Bulky goods']],
                             ['value' => 'spedition', 'label' => ['de-DE' => 'Spedition', 'en-GB' => 'Freight']],
                             ['value' => 'abholung', 'label' => ['de-DE' => 'Nur Abholung', 'en-GB' => 'Collection only']],
+                            ['value' => 'anfrage', 'label' => ['de-DE' => 'Nur auf Anfrage', 'en-GB' => 'On request only']],
                         ],
                     ],
                 ],
@@ -127,7 +200,7 @@ final class CustomFieldInstaller
         ];
     }
 
-    /** @return array<string, mixed> */
+    /** @return array{id: string, name: string, config: array<string, mixed>, relations: list<array<string, string>>, customFields: list<array{name: string, type: string, config: array<string, mixed>}>} */
     private function orderSet(): array
     {
         $field = static fn (string $name, string $type, string $de, string $en, int $pos): array => [
@@ -153,6 +226,9 @@ final class CustomFieldInstaller
                 $field(self::ORDER_SALE, CustomFieldTypes::FLOAT, 'Verkauf (Versandkosten)', 'Sale (shipping costs)', 5),
                 $field(self::ORDER_DIMS_MISSING, CustomFieldTypes::BOOL, 'Maße fehlen', 'Dimensions missing', 6),
                 $field(self::ORDER_DELIVERY, CustomFieldTypes::TEXT, 'Zustellung voraussichtlich', 'Estimated delivery', 7),
+                $field(self::ORDER_BEIPACK_TO_NUMBER, CustomFieldTypes::TEXT, 'Beipack zu Bestellung', 'Add-on to order', 8),
+                $field(self::ORDER_REQUEST, CustomFieldTypes::BOOL, 'Versandkosten auf Anfrage', 'Shipping costs on request', 9),
+                $field(self::ORDER_REQUEST_STATUS, CustomFieldTypes::TEXT, 'Anfrage-Status (open/priced)', 'Request status (open/priced)', 10),
             ],
         ];
     }

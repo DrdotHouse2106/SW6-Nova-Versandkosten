@@ -45,6 +45,8 @@ final class OptionPresenter
             'recommended' => (bool) ($option['recommended'] ?? false),
             'carrierName' => (string) ($option['carrierName'] ?? ''),
             'reasonCode' => (string) ($option['reasonCode'] ?? ''),
+            'onRequest' => ($option['key'] ?? '') === 'anfrage',
+            'meta' => \is_array($option['meta'] ?? null) ? $option['meta'] : [],
         ];
     }
 }

@@ -37,21 +37,32 @@ class QuoteService implements ResetInterface
 
     public function calculate(LineItemCollection $lineItems, SalesChannelContext $context): ?ShippingResult
     {
-        $tariffs = $this->tariffs->get();
-        if ($tariffs === null) {
+        if ($this->tariffs->get() === null) {
             return null;
         }
 
         $salesChannelId = $context->getSalesChannelId();
         $items = $this->classifier->itemsFromCart($lineItems, $salesChannelId);
-        if ($items === []) {
+        $location = $context->getShippingLocation();
+
+        return $this->calculateItems(
+            $items,
+            (string) $location->getCountry()->getIso(),
+            (string) ($location->getAddress()?->getZipcode() ?? ''),
+            (string) ($location->getAddress()?->getCompany() ?? ''),
+            $salesChannelId,
+        );
+    }
+
+    /**
+     * @param list<\Nova\Versandkosten\Calculator\Item> $items
+     */
+    public function calculateItems(array $items, string $country, string $postcode, string $company, string $salesChannelId): ?ShippingResult
+    {
+        $tariffs = $this->tariffs->get();
+        if ($tariffs === null || $items === []) {
             return null;
         }
-
-        $location = $context->getShippingLocation();
-        $country = (string) $location->getCountry()->getIso();
-        $postcode = (string) ($location->getAddress()?->getZipcode() ?? '');
-        $company = (string) ($location->getAddress()?->getCompany() ?? '');
 
         $key = md5(serialize([$items, $country, $postcode, $company, $salesChannelId]));
         if (\array_key_exists($key, $this->memo)) {

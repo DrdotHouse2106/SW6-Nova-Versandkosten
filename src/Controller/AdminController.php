@@ -7,15 +7,19 @@ use Nova\Versandkosten\Calculator\PriceCheck;
 use Nova\Versandkosten\Calculator\Tariff\TariffCsv;
 use Nova\Versandkosten\Calculator\Tariff\TariffException;
 use Nova\Versandkosten\Calculator\Tariff\TariffLoader;
+use Nova\Versandkosten\Service\EnergySurchargeService;
+use Nova\Versandkosten\Service\RequestOrderService;
 use Nova\Versandkosten\Service\Settings;
 use Nova\Versandkosten\Service\TariffStore;
+use Shopware\Core\Framework\Context;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Admin-API für „Einstellungen → Erweiterungen → Nova Versandkosten“: Tarifimport (JSON oder CSV),
- * Export und Preisprüfung. Lesen: system_config:read, Import: system_config:update.
+ * Admin-API für „Erweiterungen → Nova Versandkosten“: Tarifimport (JSON oder CSV), Export,
+ * Preisprüfung, Energiezuschläge (Lesen: system_config:read, Ändern: system_config:update) sowie
+ * „Versandkosten auf Anfrage“ an der Bestellung (order:read / order:update).
  */
 #[Route(defaults: ['_routeScope' => ['api']])]
 class AdminController
@@ -27,7 +31,72 @@ class AdminController
         private readonly TariffStore $store,
         private readonly Settings $settings,
         private readonly Connection $connection,
+        private readonly EnergySurchargeService $energy,
+        private readonly RequestOrderService $requests,
     ) {
+    }
+
+    #[Route(path: '/api/_action/nova-versandkosten/energy', name: 'api.action.nova_versandkosten.energy', defaults: ['_acl' => ['system_config:read']], methods: ['GET'])]
+    public function energy(): JsonResponse
+    {
+        return new JsonResponse($this->energy->status());
+    }
+
+    #[Route(path: '/api/_action/nova-versandkosten/energy/fetch', name: 'api.action.nova_versandkosten.energy.fetch', defaults: ['_acl' => ['system_config:update']], methods: ['POST'])]
+    public function energyFetch(Context $context): JsonResponse
+    {
+        return new JsonResponse($this->energy->fetch($context));
+    }
+
+    #[Route(path: '/api/_action/nova-versandkosten/order/{orderId}', name: 'api.action.nova_versandkosten.order', defaults: ['_acl' => ['order:read']], methods: ['GET'])]
+    public function orderInfo(string $orderId, Context $context): JsonResponse
+    {
+        $order = $this->requests->loadOrder($orderId, $context);
+        if ($order === null) {
+            return new JsonResponse(['errors' => ['Bestellung nicht gefunden.']], 404);
+        }
+        $request = RequestOrderService::isRequestOrder($order);
+
+        return new JsonResponse([
+            'showDimsMissing' => $this->settings->bool('showDimsMissing', $order->getSalesChannelId(), true),
+            'request' => $request,
+            'paymentUrl' => $request ? $this->requests->paymentUrl($order) : null,
+            'shippingTotal' => $order->getShippingTotal(),
+            'amountTotal' => $order->getAmountTotal(),
+            'taxStatus' => $order->getTaxStatus(),
+            'currency' => $order->getCurrency()?->getIsoCode(),
+        ]);
+    }
+
+    #[Route(path: '/api/_action/nova-versandkosten/order/{orderId}/request-price', name: 'api.action.nova_versandkosten.order.request_price', defaults: ['_acl' => ['order:update']], methods: ['POST'])]
+    public function requestPrice(string $orderId, Request $request, Context $context): JsonResponse
+    {
+        $value = $request->request->get('shippingCosts');
+        if (\is_string($value)) {
+            $value = str_replace(',', '.', trim($value));
+        }
+        if (!is_numeric($value) || (float) $value < 0 || (float) $value > 100000) {
+            return new JsonResponse(['errors' => ['Bitte gültige Versandkosten eingeben.']], 400);
+        }
+
+        try {
+            $result = $this->requests->applyPrice($orderId, (float) $value, $request->request->getBoolean('notify', true), $context);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse(['errors' => [$e->getMessage()]], 400);
+        }
+
+        return new JsonResponse(['ok' => true] + $result);
+    }
+
+    #[Route(path: '/api/_action/nova-versandkosten/order/{orderId}/request-mail', name: 'api.action.nova_versandkosten.order.request_mail', defaults: ['_acl' => ['order:update']], methods: ['POST'])]
+    public function requestMail(string $orderId, Context $context): JsonResponse
+    {
+        $order = $this->requests->loadOrder($orderId, $context);
+        if ($order === null) {
+            return new JsonResponse(['errors' => ['Bestellung nicht gefunden.']], 404);
+        }
+
+        return new JsonResponse(['ok' => $this->requests->sendCustomerMail($order, $context)]);
     }
 
     #[Route(path: '/api/_action/nova-versandkosten/tariffs', name: 'api.action.nova_versandkosten.tariffs', defaults: ['_acl' => ['system_config:read']], methods: ['GET'])]

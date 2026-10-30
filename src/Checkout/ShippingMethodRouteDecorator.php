@@ -2,6 +2,8 @@
 
 namespace Nova\Versandkosten\Checkout;
 
+use Nova\Versandkosten\Calculator\OptionResult;
+use Nova\Versandkosten\Service\BeipackService;
 use Nova\Versandkosten\Service\MethodMap;
 use Nova\Versandkosten\Service\Settings;
 use Shopware\Core\Checkout\Cart\SalesChannel\CartService;
@@ -18,6 +20,10 @@ use Symfony\Component\HttpFoundation\Request;
  * (Erweiterung „novaVersandkosten“ an der Versandart, für Storefront und Store-API).
  *
  * Fremde Versandarten (z. B. „Abholung auf Treffen“ aus Nova Termine) bleiben unberührt.
+ *
+ * „Zu meiner Bestellung beipacken“ erscheint nur, wenn es etwas zum Beipacken gibt: eine gewählte,
+ * noch gültige Bestellung, eigene offene Bestellungen (Kundenkonto) oder – für Gäste, wenn eingestellt –
+ * das Formular „Bestellnummer + E-Mail + PLZ“.
  */
 class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
 {
@@ -25,6 +31,7 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
         private readonly AbstractShippingMethodRoute $decorated,
         private readonly CartService $cartService,
         private readonly Settings $settings,
+        private readonly BeipackService $beipack,
     ) {
     }
 
@@ -51,12 +58,16 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
 
         $cart = $this->cartService->getCart($context->getToken(), $context);
         $data = $cart->getExtension(ShippingCostProcessor::EXTENSION);
-        if (!$data instanceof ArrayStruct) {
-            // Keine Tarife importiert oder leerer Warenkorb: Shopware-Verhalten unverändert
-            return $response;
-        }
-        $options = $data->get('options');
+        $options = $data instanceof ArrayStruct ? $data->get('options') : null;
         if (!\is_array($options)) {
+            // Keine Tarife importiert oder leerer Warenkorb: Shopware-Verhalten unverändert – außer für die
+            // Sonder-Versandarten, die ohne Berechnung keinen Sinn ergeben
+            foreach ($methods->getElements() as $id => $method) {
+                if (\in_array(MethodMap::optionFor($method->getTechnicalName()), [OptionResult::BEIPACK, OptionResult::REQUEST], true)) {
+                    $methods->remove((string) $id);
+                }
+            }
+
             return $response;
         }
 
@@ -64,6 +75,15 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
         foreach ($methods->getElements() as $id => $method) {
             $key = MethodMap::optionFor($method->getTechnicalName());
             if ($key === null) {
+                continue;
+            }
+            if ($key === OptionResult::BEIPACK) {
+                $state = $this->beipackState($options[$key] ?? null, $data instanceof ArrayStruct ? $data->get('beipack') : null, $cart, $context);
+                if ($state === null) {
+                    $methods->remove((string) $id);
+                    continue;
+                }
+                $method->addExtension(ShippingCostProcessor::EXTENSION, new ArrayStruct($state));
                 continue;
             }
             $option = $options[$key] ?? null;
@@ -75,5 +95,45 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
         }
 
         return $response;
+    }
+
+    /**
+     * Anzeige-Daten für „beipacken“ oder null (ausblenden).
+     *
+     * @return array<string, mixed>|null
+     */
+    private function beipackState(mixed $option, mixed $info, \Shopware\Core\Checkout\Cart\Cart $cart, SalesChannelContext $context): ?array
+    {
+        // Versandart ist gewählt: Ergebnis der Berechnung
+        if (\is_array($option) && \is_array($info)) {
+            $state = (string) ($info['state'] ?? '');
+            if ($state === 'invalid' || empty($option['available'])) {
+                return null;
+            }
+            $presented = OptionPresenter::present($option, $context, false);
+            $presented['beipack'] = true;
+            $presented['orderNumber'] = $info['orderNumber'] ?? null;
+            if ($state === 'select') {
+                $presented['price'] = null;
+            }
+
+            return $presented;
+        }
+
+        // Nicht gewählt: anbieten, wenn eine gültige Auswahl oder passende Bestellungen vorhanden sind
+        $base = ['key' => OptionResult::BEIPACK, 'beipack' => true, 'available' => true, 'price' => null, 'hints' => [], 'packageCount' => 0, 'vatIncluded' => true, 'recommended' => false, 'delivery' => null];
+        $selection = $this->beipack->selection($cart);
+        if ($selection !== null) {
+            [$row, $reason] = $this->beipack->validate($selection, $context);
+            if ($row !== null && $reason === null) {
+                return $base + ['orderNumber' => (string) $row['order_number']];
+            }
+        }
+        $customer = $context->getCustomer();
+        if ($customer !== null && !$customer->getGuest()) {
+            return $this->beipack->candidates($context) !== [] ? $base + ['orderNumber' => null] : null;
+        }
+
+        return $this->settings->bool('beipackGuestForm', $context->getSalesChannelId(), true) ? $base + ['orderNumber' => null] : null;
     }
 }

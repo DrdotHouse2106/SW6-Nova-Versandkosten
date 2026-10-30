@@ -4,6 +4,7 @@ namespace Nova\Versandkosten;
 
 use Doctrine\DBAL\Connection;
 use Nova\Versandkosten\Installer\CustomFieldInstaller;
+use Nova\Versandkosten\Installer\MailTemplateInstaller;
 use Nova\Versandkosten\Installer\ShippingMethodInstaller;
 use Nova\Versandkosten\Service\MethodMap;
 use Shopware\Core\Framework\Context;
@@ -46,6 +47,7 @@ class NovaVersandkosten extends Plugin
         if ($sets instanceof EntityRepository) {
             (new CustomFieldInstaller($sets, $connection))->uninstall($uninstallContext->getContext());
         }
+        (new MailTemplateInstaller($connection))->uninstall();
 
         // Versandarten können an Bestellungen hängen und werden deshalb nur deaktiviert, nicht gelöscht.
         $connection->executeStatement(
@@ -66,5 +68,6 @@ class NovaVersandkosten extends Plugin
 
         (new ShippingMethodInstaller($methods, $connection))->install($context);
         (new CustomFieldInstaller($sets, $connection))->install($context);
+        (new MailTemplateInstaller($connection))->install();
     }
 }

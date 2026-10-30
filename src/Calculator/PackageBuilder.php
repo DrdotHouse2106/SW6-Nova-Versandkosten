@@ -7,6 +7,7 @@ namespace Nova\Versandkosten\Calculator;
  *
  * 1. Ein Artikel „Spedition“ → ganze Sendung Spedition (keine Pakete).
  * 2. Ein Artikel „nur Abholung“ → ganze Sendung nur Abholung (hat Vorrang vor Spedition).
+ *    Ein Artikel „nur auf Anfrage“ → ganze Sendung auf Anfrage (Vorrang vor Spedition, nach Abholung).
  * 3. Sonst:
  *    - Sperrgut „Einzelpaket“: jedes Stück ein eigenes Paket.
  *    - Sperrgut „zusammen packbar“: Stücke desselben Artikels teilen sich Pakete bis zum Höchstgewicht.
@@ -24,6 +25,7 @@ final class PackageBuilder
     public const MODE_PARCEL = 'parcel';
     public const MODE_FREIGHT = 'freight';
     public const MODE_PICKUP = 'pickup';
+    public const MODE_REQUEST = 'request';
 
     /**
      * @param list<Item> $items
@@ -35,7 +37,9 @@ final class PackageBuilder
         foreach ($items as $item) {
             if ($item->category === Item::PICKUP_ONLY) {
                 $mode = self::MODE_PICKUP;
-            } elseif ($item->category === Item::FREIGHT && $mode !== self::MODE_PICKUP) {
+            } elseif ($item->category === Item::ON_REQUEST && $mode !== self::MODE_PICKUP) {
+                $mode = self::MODE_REQUEST;
+            } elseif ($item->category === Item::FREIGHT && $mode === self::MODE_PARCEL) {
                 $mode = self::MODE_FREIGHT;
             }
         }

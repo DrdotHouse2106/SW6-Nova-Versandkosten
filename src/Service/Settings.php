@@ -6,6 +6,7 @@ use Nova\Versandkosten\Calculator\ChannelRules;
 use Nova\Versandkosten\Calculator\DeliveryEstimator;
 use Nova\Versandkosten\Calculator\HolidayCalendar;
 use Nova\Versandkosten\Calculator\Item;
+use Nova\Versandkosten\Energy\EnergyState;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Symfony\Contracts\Service\ResetInterface;
 
@@ -15,6 +16,12 @@ use Symfony\Contracts\Service\ResetInterface;
 class Settings implements ResetInterface
 {
     private const PREFIX = 'NovaVersandkosten.config.';
+
+    /** Abgerufene Energiezuschläge (global, nicht im Konfigurationsformular) */
+    public const ENERGY_STATE_KEY = 'NovaVersandkosten.energyState';
+
+    /** Reihen im Energie-Zustand: Dienstleister → Einstellungsname des Schlüssels in der Tarifdatei */
+    public const ENERGY_CARRIERS = ['dhl' => 'energyKeyDhl', 'dpd' => 'energyKeyDpd'];
 
     /** @var array<string, ChannelRules> */
     private array $rules = [];
@@ -103,12 +110,7 @@ class Settings implements ResetInterface
             return $this->rules[$key];
         }
 
-        $energy = [];
-        foreach ($this->lines('energyPercent', $salesChannelId) as $line) {
-            if (preg_match('/^([a-z0-9_\-]+)\s*[=:]\s*([\d.,]+)\s*%?$/i', $line, $m)) {
-                $energy[strtolower($m[1])] = (float) str_replace(',', '.', $m[2]);
-            }
-        }
+        $energy = $this->energyPercent($salesChannelId, new \DateTimeImmutable('now', new \DateTimeZone('Europe/Berlin')));
 
         $date = function (string $name) use ($salesChannelId): ?\DateTimeImmutable {
             $value = $this->string($name, $salesChannelId);
@@ -155,10 +157,68 @@ class Settings implements ResetInterface
                 Item::BULKY => self::dims($this->string('defaultDimsBulky', $salesChannelId), [130.0, 40.0, 40.0]),
                 Item::FREIGHT => self::dims($this->string('defaultDimsFreight', $salesChannelId), [120.0, 80.0, 100.0]),
                 Item::PICKUP_ONLY => self::dims($this->string('defaultDimsParcel', $salesChannelId), [30.0, 20.0, 15.0]),
+                Item::ON_REQUEST => self::dims($this->string('defaultDimsParcel', $salesChannelId), [30.0, 20.0, 15.0]),
             ],
             defaultWeightKg: max(0.01, $this->float('defaultWeight', $salesChannelId, 1.0) ?? 1.0),
             transitTable: ChannelRules::parseTransitTable($this->string('transitTable', $salesChannelId)),
+            requestTriggers: array_values(array_filter([
+                $this->bool('requestOnFreight', $salesChannelId, true) ? ChannelRules::REQUEST_FREIGHT : null,
+                $this->bool('requestOnNoTariff', $salesChannelId, true) ? ChannelRules::REQUEST_NO_TARIFF : null,
+                $this->bool('requestOnItems', $salesChannelId, true) ? ChannelRules::REQUEST_ITEMS : null,
+                $this->bool('requestWithFreight', $salesChannelId, true) ? ChannelRules::REQUEST_WITH_FREIGHT : null,
+                $this->bool('requestAlways', $salesChannelId, false) ? ChannelRules::REQUEST_ALWAYS : null,
+            ])),
         );
+    }
+
+    /**
+     * Energiezuschlag je Dienstleister-Schlüssel: manuelle Werte aus dem Textfeld, für Dienstleister im
+     * Modus „automatisch“ ersetzt durch den abgerufenen, am Tag gültigen Wert (DPD: Straße + optional
+     * Emergency Fuel Surcharge). Gibt es (noch) keinen abgerufenen Wert, gilt der manuelle.
+     *
+     * @return array<string, float>
+     */
+    public function energyPercent(?string $salesChannelId, \DateTimeImmutable $date): array
+    {
+        $energy = EnergyState::parseLines($this->lines('energyPercent', $salesChannelId));
+
+        foreach ($this->energyAuto($salesChannelId, $date) as $key => $value) {
+            $energy[$key] = $value;
+        }
+
+        return $energy;
+    }
+
+    /**
+     * Automatisch abgerufene Werte (nur Dienstleister im Modus „automatisch“), Schlüssel aus der Tarifdatei.
+     *
+     * @return array<string, float>
+     */
+    public function energyAuto(?string $salesChannelId, \DateTimeImmutable $date): array
+    {
+        $state = $this->energyState();
+        $out = [];
+        foreach (self::ENERGY_CARRIERS as $carrier => $keySetting) {
+            if ($this->string('energyMode' . ucfirst($carrier), $salesChannelId, 'auto') !== 'auto') {
+                continue;
+            }
+            $value = EnergyState::valueAt($state, $carrier, $date, $carrier !== 'dpd' || $this->bool('energyDpdEmergency', $salesChannelId, true));
+            if ($value === null) {
+                continue;
+            }
+            $key = strtolower($this->string($keySetting, $salesChannelId, $carrier) ?: $carrier);
+            $out[$key] = $value;
+        }
+
+        return $out;
+    }
+
+    /** @return array<string, mixed> */
+    public function energyState(): array
+    {
+        $value = $this->config->get(self::ENERGY_STATE_KEY);
+
+        return \is_array($value) ? $value : [];
     }
 
     public function estimator(?string $salesChannelId): ?DeliveryEstimator

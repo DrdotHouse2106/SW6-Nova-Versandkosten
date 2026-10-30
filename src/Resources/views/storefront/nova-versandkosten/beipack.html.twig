@@ -1,0 +1,75 @@
+{# Auswahl „Zu meiner Bestellung beipacken“ (nur wenn diese Versandart gewählt ist). Gezeigt werden nur
+   eigene bzw. per Code/Bestellnummer bestätigte Bestellungen. #}
+{% set novaBeipack = page.extensions.novaVersandkostenBeipack ?? null %}
+{% if novaBeipack %}
+    {% block nova_versandkosten_beipack %}
+        <div class="nova-versandkosten-beipack card mt-3">
+            <div class="card-body">
+                <p class="fw-bold mb-2">{{ 'novaVersandkosten.beipack.title'|trans|sw_sanitize }}</p>
+
+                {% if novaBeipack.selected %}
+                    {% block nova_versandkosten_beipack_selected %}
+                        <p class="mb-2">
+                            {{ 'novaVersandkosten.beipack.selectedOrder'|trans({'%number%': novaBeipack.selected.orderNumber, '%date%': novaBeipack.selected.date})|sw_sanitize }}<br>
+                            <span class="text-muted">{{ 'novaVersandkosten.beipack.address'|trans|sw_sanitize }} {{ novaBeipack.selected.address }}</span>
+                        </p>
+                        {% if novaBeipack.price is not null %}
+                            <table class="table table-sm mb-2 nova-versandkosten-beipack-price">
+                                <tr><td>{{ 'novaVersandkosten.beipack.combined'|trans|sw_sanitize }}</td><td class="text-end">{{ novaBeipack.combined|currency }}</td></tr>
+                                <tr><td>{{ 'novaVersandkosten.beipack.paid'|trans|sw_sanitize }}</td><td class="text-end">− {{ novaBeipack.paid|currency }}</td></tr>
+                                <tr class="fw-bold"><td>{{ 'novaVersandkosten.beipack.difference'|trans|sw_sanitize }}</td><td class="text-end">{{ novaBeipack.price|currency }}</td></tr>
+                            </table>
+                        {% endif %}
+                    {% endblock %}
+                {% elseif novaBeipack.state == 'invalid' and novaBeipack.reason %}
+                    <div class="alert alert-danger" role="alert">{{ novaBeipack.reason }}</div>
+                {% endif %}
+
+                {% if novaBeipack.candidates is not empty %}
+                    {% block nova_versandkosten_beipack_select %}
+                        <form action="{{ path('frontend.nova_versandkosten.beipack.select') }}" method="post" class="row g-2 align-items-end">
+                            <div class="col-md-8">
+                                <label class="form-label" for="novaBeipackOrder">{{ 'novaVersandkosten.beipack.choose'|trans|sw_sanitize }}</label>
+                                <select class="form-select" id="novaBeipackOrder" name="orderId" required>
+                                    {% for candidate in novaBeipack.candidates %}
+                                        <option value="{{ candidate.id }}" {% if novaBeipack.selected and novaBeipack.selected.id == candidate.id %}selected{% endif %}>
+                                            {{ candidate.orderNumber }} · {{ candidate.date }} · {{ candidate.address }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary w-100">{{ 'novaVersandkosten.beipack.apply'|trans|sw_sanitize }}</button>
+                            </div>
+                        </form>
+                    {% endblock %}
+                {% elseif novaBeipack.isCustomer and not novaBeipack.selected %}
+                    <p class="text-muted mb-0">{{ 'novaVersandkosten.beipack.noOrders'|trans({'%days%': novaBeipack.maxAgeDays})|sw_sanitize }}</p>
+                {% endif %}
+
+                {% if novaBeipack.guestForm and not novaBeipack.selected %}
+                    {% block nova_versandkosten_beipack_verify %}
+                        <p class="mb-2">{{ 'novaVersandkosten.beipack.guestHelp'|trans|sw_sanitize }}</p>
+                        <form action="{{ path('frontend.nova_versandkosten.beipack.verify') }}" method="post" class="row g-2 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label" for="novaBeipackNumber">{{ 'novaVersandkosten.beipack.orderNumber'|trans|sw_sanitize }}</label>
+                                <input class="form-control" id="novaBeipackNumber" name="orderNumber" required autocomplete="off">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="novaBeipackEmail">{{ 'novaVersandkosten.beipack.email'|trans|sw_sanitize }}</label>
+                                <input class="form-control" id="novaBeipackEmail" name="email" type="email" required autocomplete="email">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label" for="novaBeipackZip">{{ 'novaVersandkosten.beipack.zipcode'|trans|sw_sanitize }}</label>
+                                <input class="form-control" id="novaBeipackZip" name="zipcode" required autocomplete="postal-code">
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-primary w-100">{{ 'novaVersandkosten.beipack.check'|trans|sw_sanitize }}</button>
+                            </div>
+                        </form>
+                    {% endblock %}
+                {% endif %}
+            </div>
+        </div>
+    {% endblock %}
+{% endif %}

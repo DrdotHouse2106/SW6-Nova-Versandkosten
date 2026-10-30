@@ -2,9 +2,13 @@
     "nova-versandkosten": {
         "general": {
             "title": "Nova Versandkosten",
-            "description": "Import tariffs and check shipping prices"
+            "description": "Import tariffs, check shipping prices, fetch energy surcharges"
         },
-        "tabs": { "tariffs": "Tariffs", "check": "Price check" },
+        "tabs": {
+            "tariffs": "Tariffs",
+            "check": "Price check",
+            "energy": "Energy surcharges"
+        },
         "tariffs": {
             "current": "Current tariff file",
             "none": "No tariff file imported yet. Without tariffs Shopware calculates as before.",
@@ -45,14 +49,58 @@
         "order": {
             "title": "Shipping costs",
             "delivery": "Estimated delivery",
-            "dimsMissing": "Dimensions missing – please measure when packing.",
+            "dimsMissing": "Dimensions/weight missing for at least one item – calculated by shipping category (default values).",
             "weight": "Weight",
             "dims": "Dimensions",
             "tier": "Surcharge",
             "purchase": "Purchase net (estimated)",
             "saleNet": "Sale net",
             "sale": "gross",
-            "difference": "Difference"
+            "difference": "Difference",
+            "beipackTo": "ADD-ON to order {number} – ship together with it.",
+            "beipackOrders": "Added to this order:",
+            "basedOn": "calculated as {option}: together {combined}, already paid {paid}"
+        },
+        "request": {
+            "title": "Shipping costs on request",
+            "open": "The customer chose “shipping costs on request”. The order was placed with 0.00 shipping; payment is open.",
+            "priced": "Shipping costs entered on {date}.",
+            "label": "Shipping costs ({currency}, gross or tax-free like the order)",
+            "notify": "Notify customer by e-mail (total + payment link)",
+            "apply": "Apply shipping costs and notify customer",
+            "applyOnly": "Apply shipping costs",
+            "resend": "Send e-mail again",
+            "paymentUrl": "Payment link",
+            "saved": "Shipping costs applied. New total: {total}.",
+            "mailSent": "E-mail sent to the customer.",
+            "mailFailed": "E-mail could not be sent (check the mail template).",
+            "error": "Saving failed."
+        },
+        "energy": {
+            "title": "Energy surcharges",
+            "help": "Fetched automatically every day (scheduled task “nova_versandkosten.energy_fetch”). In “automatic” mode (settings per sales channel) the value valid on the day applies; on errors the last value stays and a notification is created. The manual value only applies in “manual” mode or until the first fetch.",
+            "fetch": "Fetch now",
+            "carrier": "Source",
+            "current": "Valid today",
+            "validFrom": "valid from",
+            "components": "Components",
+            "fetchedAt": "Last fetched",
+            "source": "Page",
+            "error": "Error on last attempt",
+            "none": "not fetched yet",
+            "total": "Result for the calculation (default settings)",
+            "mode": "Mode",
+            "modeAuto": "automatic",
+            "modeManual": "manual",
+            "effective": "Effective (key = carrier in the tariff file)",
+            "history": "Latest entries",
+            "fetched": "Energy surcharges fetched.",
+            "fetchedWithErrors": "Fetch partly failed – last values stay valid.",
+            "loadError": "Loading failed.",
+            "dhl": "DHL",
+            "dpd": "DPD road",
+            "dpd_efs": "DPD Emergency Fuel Surcharge",
+            "dpdTotal": "DPD total (road + emergency)"
         }
     }
 }

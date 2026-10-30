@@ -17,6 +17,7 @@ final class ChannelRules
      * @param list<string> $freeCountries Länder, in denen die Versandkostenfrei-Sonderregel gilt
      * @param array<string, array{0: float, 1: float, 2: float}> $defaultDims Standardmaße je Einordnung (cm)
      * @param list<array{option: string, countries: string, min: int, max: int}> $transitTable Laufzeiten
+     * @param list<string> $requestTriggers wann „Versandkosten auf Anfrage“ angeboten wird (REQUEST_*)
      */
     public function __construct(
         public readonly string $homeCountry = 'DE',
@@ -41,10 +42,30 @@ final class ChannelRules
             Item::BULKY => [130.0, 40.0, 40.0],
             Item::FREIGHT => [120.0, 80.0, 100.0],
             Item::PICKUP_ONLY => [30.0, 20.0, 15.0],
+            Item::ON_REQUEST => [30.0, 20.0, 15.0],
         ],
         public readonly float $defaultWeightKg = 1.0,
         public readonly array $transitTable = [],
+        public readonly array $requestTriggers = [],
     ) {
+    }
+
+    /** Spedition nötig, aber ohne Preis (kein Cargoboard-Schlüssel, Fehler ohne Ersatzpreis) */
+    public const REQUEST_FREIGHT = 'freight';
+    /** Für das Land gibt es keinen Tarif */
+    public const REQUEST_NO_TARIFF = 'noTariff';
+    /** Warenkorb enthält einen Artikel „nur auf Anfrage“ */
+    public const REQUEST_ITEMS = 'items';
+    /** zusätzlich zur Spedition (Kunde kann alternativ anfragen, z. B. eigene Tour) */
+    public const REQUEST_WITH_FREIGHT = 'withFreight';
+    /** immer anbieten */
+    public const REQUEST_ALWAYS = 'always';
+
+    public const REQUEST_TRIGGERS = [self::REQUEST_FREIGHT, self::REQUEST_NO_TARIFF, self::REQUEST_ITEMS, self::REQUEST_WITH_FREIGHT, self::REQUEST_ALWAYS];
+
+    public function requestWhen(string $trigger): bool
+    {
+        return \in_array($trigger, $this->requestTriggers, true);
     }
 
     public function fixedPrice(string $option): ?float

@@ -13,6 +13,9 @@
                 <button type="button" role="tab" :class="{ 'is--active': tab === 'check' }" :aria-selected="tab === 'check'" @click="setTab('check')">
                     {{ $tc('nova-versandkosten.tabs.check') }}
                 </button>
+                <button type="button" role="tab" :class="{ 'is--active': tab === 'energy' }" :aria-selected="tab === 'energy'" @click="setTab('energy')">
+                    {{ $tc('nova-versandkosten.tabs.energy') }}
+                </button>
             </div>
 
             <template v-if="tab === 'tariffs'">
@@ -68,6 +71,63 @@
                     <div class="nova-versandkosten-index__actions">
                         <mt-button variant="secondary" :disabled="isLoading" @click="submit(true)">{{ $tc('nova-versandkosten.tariffs.check') }}</mt-button>
                         <mt-button variant="primary" :disabled="isLoading" @click="submit(false)">{{ $tc('nova-versandkosten.tariffs.save') }}</mt-button>
+                    </div>
+                </mt-card>
+            </template>
+
+            <template v-else-if="tab === 'energy'">
+                <mt-card position-identifier="nova-versandkosten-energy" :title="$tc('nova-versandkosten.energy.title')" :is-loading="energyLoading">
+                    <p>{{ $tc('nova-versandkosten.energy.help') }}</p>
+                    <template v-if="energy">
+                        <table class="nova-versandkosten-index__table">
+                            <thead>
+                                <tr>
+                                    <th>{{ $tc('nova-versandkosten.energy.carrier') }}</th>
+                                    <th>{{ $tc('nova-versandkosten.energy.current') }}</th>
+                                    <th>{{ $tc('nova-versandkosten.energy.components') }}</th>
+                                    <th>{{ $tc('nova-versandkosten.energy.fetchedAt') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(s, key) in energy.series" :key="key">
+                                    <td>
+                                        {{ $tc('nova-versandkosten.energy.' + key) }}<br>
+                                        <a v-if="s.source" :href="s.source.url" target="_blank" rel="noopener" class="nova-versandkosten-index__muted">{{ $tc('nova-versandkosten.energy.source') }}</a>
+                                    </td>
+                                    <td>
+                                        <strong>{{ s.current ? percent(s.current.percent) : $tc('nova-versandkosten.energy.none') }}</strong>
+                                        <span v-if="s.current" class="nova-versandkosten-index__muted"><br>{{ $tc('nova-versandkosten.energy.validFrom') }} {{ s.current.validFrom }}</span>
+                                    </td>
+                                    <td>{{ components(s.current) }}</td>
+                                    <td>
+                                        {{ s.source && s.source.fetchedAt ? formatDate(s.source.fetchedAt) : '–' }}
+                                        <span v-if="s.source && s.source.error" class="nova-versandkosten-index__error"><br>{{ $tc('nova-versandkosten.energy.error') }}: {{ s.source.error }}</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <h3>{{ $tc('nova-versandkosten.energy.total') }}</h3>
+                        <table class="nova-versandkosten-index__table">
+                            <tbody>
+                                <tr>
+                                    <td>{{ $tc('nova-versandkosten.energy.dhl') }}</td>
+                                    <td>{{ percent(energy.total.dhl) }}</td>
+                                    <td>{{ $tc('nova-versandkosten.energy.mode') }}: {{ energy.modes.dhl === 'manual' ? $tc('nova-versandkosten.energy.modeManual') : $tc('nova-versandkosten.energy.modeAuto') }}</td>
+                                </tr>
+                                <tr>
+                                    <td>{{ $tc('nova-versandkosten.energy.dpdTotal') }}</td>
+                                    <td>{{ percent(energy.total.dpd) }}</td>
+                                    <td>{{ $tc('nova-versandkosten.energy.mode') }}: {{ energy.modes.dpd === 'manual' ? $tc('nova-versandkosten.energy.modeManual') : $tc('nova-versandkosten.energy.modeAuto') }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p>
+                            {{ $tc('nova-versandkosten.energy.effective') }}:
+                            <span v-for="(v, k) in energy.effective" :key="k" class="nova-versandkosten-index__badge is--ok">{{ k }} = {{ percent(v) }}</span>
+                        </p>
+                    </template>
+                    <div class="nova-versandkosten-index__actions">
+                        <mt-button variant="primary" size="small" :disabled="energyLoading" @click="fetchEnergy">{{ $tc('nova-versandkosten.energy.fetch') }}</mt-button>
                     </div>
                 </mt-card>
             </template>

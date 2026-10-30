@@ -24,6 +24,8 @@ Component.register('nova-versandkosten-index', {
             errors: [],
             check: null,
             checkLoading: false,
+            energy: null,
+            energyLoading: false,
         };
     },
 
@@ -142,6 +144,53 @@ Component.register('nova-versandkosten-index', {
             if (tab === 'check' && !this.check) {
                 this.loadCheck();
             }
+            if (tab === 'energy' && !this.energy) {
+                this.loadEnergy();
+            }
+        },
+
+        async loadEnergy() {
+            this.energyLoading = true;
+            try {
+                const response = await this.http.get('_action/nova-versandkosten/energy', { headers: this.headers() });
+                this.energy = response.data;
+            } catch {
+                this.createNotificationError({ message: this.$tc('nova-versandkosten.energy.loadError') });
+            } finally {
+                this.energyLoading = false;
+            }
+        },
+
+        async fetchEnergy() {
+            this.energyLoading = true;
+            try {
+                const response = await this.http.post('_action/nova-versandkosten/energy/fetch', {}, { headers: this.headers() });
+                this.energy = response.data;
+                const failed = Object.values(this.energy.series || {}).some((s) => s.source && s.source.error);
+                if (failed) {
+                    this.createNotificationWarning({ message: this.$tc('nova-versandkosten.energy.fetchedWithErrors') });
+                } else {
+                    this.createNotificationSuccess({ message: this.$tc('nova-versandkosten.energy.fetched') });
+                }
+            } catch {
+                this.createNotificationError({ message: this.$tc('nova-versandkosten.energy.loadError') });
+            } finally {
+                this.energyLoading = false;
+            }
+        },
+
+        percent(value) {
+            if (value === null || value === undefined) {
+                return '–';
+            }
+            return Number(value).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' %';
+        },
+
+        components(entry) {
+            if (!entry || !entry.components) {
+                return '';
+            }
+            return Object.entries(entry.components).map(([k, v]) => `${k} ${this.percent(v)}`).join(' · ');
         },
 
         money(value) {

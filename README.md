@@ -18,7 +18,8 @@ gehen – mit Preis, voraussichtlichem Zustelldatum und Hinweisen.
   Höchstgewicht (Standard 25 kg), Sperrgut als Einzelpaket oder „zusammen packbar“.
 - **Stufen je Dienstleister**: Warenpost (Warenwertgrenze), Kleinpaket, DPD, DHL – mit Höchstmaßen,
   Gurtmaß, Sperrgut-/Übermaß-/Übergröße-Zuschlägen aus der Tarifdatei.
-- **Zuschläge**: Maut, Sicherheitsgebühr, Energiezuschlag (% je Dienstleister, monatlich pflegbar),
+- **Zuschläge**: Maut, Sicherheitsgebühr, Energiezuschlag (% je Dienstleister, **täglich automatisch
+  von DHL und DPD abgerufen** oder manuell),
   Peak und Peak-in-Peak (wahlweise weitergeben, mit Hinweis in der Kasse), Inselzuschläge nach PLZ,
   Zollabfertigung und Währungszuschlag je Land.
 - **Verkaufspreis je Verkaufskanal**: Festpreise im Heimatland (je weiteres Paket ein weiterer
@@ -36,7 +37,12 @@ gehen – mit Preis, voraussichtlichem Zustelldatum und Hinweisen.
 - **Tarifimport** als JSON oder CSV (Excel) in der Administration, gespeichert in der Datenbank.
 - **Preisprüfung**: alle Festpreise je Kanal gegen den aktuellen Einkauf, Warnung bei Unterdeckung.
 - **Google/Produktexport**: Twig-Funktion `nova_versand_label(product, context)` → `paket`,
-  `sperrgut`, `spedition` oder `abholung`.
+  `sperrgut`, `spedition`, `abholung` oder `anfrage`.
+- **Zur offenen Bestellung beipacken** (neu in 1.1.0): Kunden und Gäste packen neue Artikel zu einer
+  noch nicht versendeten Bestellung; berechnet wird nur die Differenz der Versandkosten.
+- **Versandkosten auf Anfrage** (neu in 1.1.0): Bestellung ohne Versandpreis, der Shop trägt die
+  Versandkosten nachträglich ein, der Kunde bekommt Gesamtbetrag und Bezahl-Link per E-Mail;
+  unbezahlte Anfragen werden nach X Tagen storniert.
 
 Die konkreten Einkaufspreise gehören nicht ins Plugin: Jeder Shop importiert seine eigenen Tarife.
 Alle Preise in dieser Anleitung und in `examples/` sind **erfundene Platzhalter**.
@@ -53,10 +59,17 @@ Administration neu laden (Strg+F5).
 
 Beim Installieren legt das Plugin an:
 
-- sechs **inaktive** Versandarten (keinem Verkaufskanal zugeordnet): *Warenpost*, *DHL Kleinpaket*,
-  *DPD Paket*, *DHL Paket*, *Spedition*, *Abholung* – erkennbar am technischen Namen
-  `nova_versandkosten_…`. Vorhandene Versandarten mit diesem Namen bleiben unverändert.
-- Zusatzfelder am Produkt („Versandeinordnung“, „Sperrgut-Packart“) und an der Bestellung.
+- acht **inaktive** Versandarten (keinem Verkaufskanal zugeordnet): *Warenpost*, *DHL Kleinpaket*,
+  *DPD Paket*, *DHL Paket*, *Spedition*, *Abholung*, *Versandkosten auf Anfrage*
+  (`nova_versandkosten_anfrage`) und *Zu meiner Bestellung beipacken* (`nova_versandkosten_beipack`) –
+  erkennbar am technischen Namen `nova_versandkosten_…`. Vorhandene Versandarten mit diesem Namen
+  bleiben unverändert; beim Update auf 1.1.0 kommen nur die zwei neuen dazu.
+- Zusatzfelder am Produkt („Versandeinordnung“, „Sperrgut-Packart“) und an der Bestellung (beim Update
+  werden fehlende Felder und der neue Wert „Nur auf Anfrage“ ergänzt).
+- die E-Mail-Vorlage „Nova Versandkosten: Versandkosten nachberechnet“ (deutsch/englisch).
+- zwei geplante Aufgaben (täglich): `nova_versandkosten.energy_fetch` (Energiezuschläge abrufen) und
+  `nova_versandkosten.request_cancel` (unbezahlte Anfragen stornieren). Sie brauchen einen laufenden
+  Scheduled-Task-Runner (Cron oder `bin/console scheduled-task:run`).
 
 Warum vom Plugin angelegte, inaktive Versandarten? Die Zuordnung läuft über den technischen Namen –
 das ist robuster als IDs in der Konfiguration, und nichts erscheint im Shop, bevor Tarife importiert
@@ -87,8 +100,11 @@ schon vorhandene Versandart lässt sich übernehmen, indem man ihr einen dieser 
    Festpreise liegen unter dem aktuellen Einkauf.
 7. **Testbestellung** in jedem Kanal: Warenkorb mit kleinem Artikel, Sperrgut und (falls genutzt)
    Speditionsware; in der Bestellung die Karte „Versandkosten“ prüfen.
-8. **Monatlich:** Energiezuschläge (%) in den Einstellungen nachtragen; vor November den
-   Peak-in-Peak-Zeitraum eintragen.
+8. **Energiezuschläge:** *Erweiterungen → Nova Versandkosten → Energiezuschläge → Jetzt abrufen* –
+   danach läuft der Abruf täglich. Vor November den Peak-in-Peak-Zeitraum eintragen.
+9. **Optional:** Versandarten *Versandkosten auf Anfrage* und *Zu meiner Bestellung beipacken*
+   aktivieren und zuordnen (siehe eigene Abschnitte unten), Link „Noch etwas vergessen?“ in die
+   Bestellbestätigung einbauen.
 
 Abholung auf Treffen/Messe aus *Nova Termine* ist eine eigene Versandart und wird von diesem Plugin
 nicht verändert.
@@ -101,12 +117,21 @@ nicht verändert.
 | Sperrgut | immer Sperrgut-/Übermaß-Zuschlag (z. B. keine Quaderform); Packart „Einzelpaket“ (jedes Stück ein Paket) oder „zusammen packbar“ (Stücke desselben Artikels teilen sich Pakete) |
 | Spedition | ganze Sendung nur per Spedition, Abholung oder Tour-Anfrage |
 | Nur Abholung | ganze Sendung nur Abholung |
+| Nur auf Anfrage | ganze Sendung nur „Versandkosten auf Anfrage“ (und Abholung) |
 
 Ist das Zusatzfeld leer, wird die Einordnung aus der Eigenschaft (Name einstellbar, Standard
 „Versandart“) abgeleitet: hat der Artikel einen „Paket“-Wert (Standard: DHL, DPD, …) → Paket;
 sonst einen „Sperrgut“-Wert (DHL Sperrgut, DPD Sperrgut, …) → Sperrgut; sonst „Spedition“/„Kurier“
-→ Spedition; sonst „Abholung“ → nur Abholung. Die Wertnamen sind je Kanal einstellbar. Ohne beides:
-Paket.
+→ Spedition; sonst „Abholung“ → nur Abholung; sonst „Anfrage“/„auf Anfrage“ → nur auf Anfrage. Die
+Wertnamen sind je Kanal einstellbar. Ohne beides: Paket.
+
+**Maße und Gewicht:** In der Regel genügt das **Gewicht**. Maße (verpackt) lohnen sich nur für
+Grenzfälle – Artikel, die nahe an den Höchstmaßen liegen oder je nach Verpackung Sperrgut werden.
+Fehlen Maße, gilt die Einordnung: „Paket“ wird mit Standardmaßen innerhalb der normalen Grenzen
+gerechnet (kein Aufschlag), Sperrgut wird nach Einordnung berechnet. Fehlende Maße kosten also nichts
+extra. Die Bestellung bekommt trotzdem das Zusatzfeld „Maße fehlen“ (z. B. für Lieferschein/ERP);
+ob der Hinweis an der Bestellkarte in der Administration und in den internen E-Mails erscheint,
+steuert die Einstellung „Hinweis ‚Maße fehlen‘ ausgeben“ (Standard an). Kunden sehen ihn nie.
 
 ## Rechenregel
 
@@ -252,7 +277,157 @@ surcharge;dpd_europa;;;Währungszuschlag;;CH;;;;;;;10;percent;;;;;
 | Artikeldaten | Eigenschaftsname, Wertnamen je Einordnung, Standardmaße und -gewicht |
 | Lieferzeit | Anzeige an/aus, Annahmeschluss, Bearbeitungstage, Feiertage (Bundesland), Schließtage, Laufzeiten (`option;länder;min-max`, z. B. `dpd;DE;1-2`, `*;EU;3-5`, `warenpost;*;4-10`) |
 | Spedition | Cargoboard-API-Schlüssel, Sandbox, Aufschlag, Ersatzpreis, Ladungsträger, Abhol-PLZ/-Land, Privatempfänger, Zeitlimit, Zwischenspeicher |
-| Anfrage/Kontrolle | Knopf „Lieferung per Tour anfragen“, Empfänger, E-Mail bei negativer Marge |
+| Versandkosten auf Anfrage | wann anbieten (Spedition ohne Preis, zusätzlich zu Spedition, Länder ohne Tarif, Artikel „nur auf Anfrage“, immer), Zahlarten in der Kasse, Empfänger „Versandkosten eintragen“, Stornieren nach X Tagen |
+| Beipacken | Höchstalter der Bestellung (Tage), Formular für Gäste |
+| Zuschläge (Energie) | automatisch/manuell je Dienstleister, DPD Emergency Fuel Surcharge, Schlüssel in der Tarifdatei, E-Mail bei Abruf-Fehlern |
+| Anfrage/Kontrolle | Knopf „Lieferung per Tour anfragen“, Empfänger, Hinweis „Maße fehlen“ ausgeben, E-Mail bei negativer Marge |
+
+## Zur offenen Bestellung beipacken
+
+Ein Kunde hat bestellt, die Bestellung ist noch nicht versendet – und er hat etwas vergessen. Mit der
+Versandart **„Zu meiner Bestellung beipacken“** (`nova_versandkosten_beipack`) bestellt er die neuen
+Artikel und zahlt nur die Differenz der Versandkosten.
+
+**Wer darf zu welcher Bestellung beipacken?**
+
+- Nur zu **eigenen** Bestellungen: Kunden mit Konto wählen in der Kasse aus ihren Bestellungen; Gäste
+  kommen über den Link aus der Bestellbestätigung (Shopwares geheimer Bestell-Code `deepLinkCode`)
+  oder geben Bestellnummer + E-Mail + PLZ ein (höchstens 5 Versuche je Stunde und IP). Daten fremder
+  Bestellungen werden nie angezeigt; Fehlermeldungen verraten nicht, welche Angabe nicht passte.
+- Die Bestellung muss **offen** sein: Lieferstatus „offen“ (nicht versendet, nicht teilweise
+  versendet), nicht storniert oder abgeschlossen, nicht älter als X Tage (Einstellung, Standard 14),
+  gleicher Verkaufskanal, gleiches Lieferland. Beipack-Bestellungen selbst können kein Ziel sein.
+- Beim **Abschluss** prüft das Plugin alles erneut (Shopware rechnet beim Bestellen neu). Wurde die
+  alte Bestellung inzwischen versendet oder storniert, ist die Versandart gesperrt und Shopware
+  wechselt auf eine andere.
+
+**Preis:** Versand für (Artikel der alten Bestellung + frühere Beipack-Bestellungen + Warenkorb) mit
+derselben Versandoption wie die alte Bestellung (aus deren Zusatzfeldern; geht diese nicht mehr oder
+fehlt sie: die günstigste passende) **minus** bereits bezahlter Versand, mindestens 0,00 €. Beispiele
+(Platzhalterpreise): alt Kleinpaket 7,50 €, zusammen DPD 7,50 € → 0,00 €; alt Warenpost 5,00 €,
+zusammen Kleinpaket 7,50 € → 2,50 €. Die Kasse zeigt die Rechnung („Versand für alle Artikel
+zusammen – bereits bezahlt = Nachzahlung“).
+
+**Was passiert mit der Bestellung?**
+
+- Lieferadresse = Lieferadresse der alten Bestellung (das Paket geht ja dorthin).
+- Bestellkommentar beginnt mit **„BEIPACK zu Bestellung &lt;Nr&gt;“** (ein Kundenkommentar bleibt dahinter
+  erhalten) – Warenwirtschaft und Kommissionierung sehen es sofort.
+- Zusatzfelder: an der neuen Bestellung `nova_versandkosten_beipack_zu` (ID) und
+  `nova_versandkosten_beipack_zu_nr` (Nummer), an der alten `nova_versandkosten_beipack_bestellungen`
+  (Liste). Die alte Bestellung bekommt außerdem einen Eintrag im internen Kommentar, und die Karte
+  „Versandkosten“ in der Administration zeigt beide Seiten mit Link.
+
+**Einrichtung:**
+
+1. *Einstellungen → Versand* → „Zu meiner Bestellung beipacken“ aktivieren, dem Verkaufskanal zuordnen
+   (der Platzhalterpreis 0,00 € bleibt; den Preis setzt das Plugin).
+2. Einstellungen „Zur offenen Bestellung beipacken“: Höchstalter in Tagen, Formular für Gäste an/aus.
+3. Link in die Bestellbestätigung einbauen: *Einstellungen → E-Mail-Vorlagen →
+   „Bestellbestätigung“* (je Sprache) an passender Stelle einfügen:
+
+```twig
+{% if order.deepLinkCode %}
+<p>Noch etwas vergessen?
+    <a href="{{ rawUrl('frontend.nova_versandkosten.beipack.link', { deepLinkCode: order.deepLinkCode }, salesChannel.domains|first.url) }}">Jetzt zu dieser Bestellung beipacken</a>
+</p>
+{% endif %}
+```
+
+   Für die Textversion:
+   `Noch etwas vergessen? {{ rawUrl('frontend.nova_versandkosten.beipack.link', { deepLinkCode: order.deepLinkCode }, salesChannel.domains|first.url) }}`
+
+   Der Link merkt sich die Bestellung im Warenkorb und wählt die Versandart vor. Derselbe Link
+   erscheint automatisch auf der Seite „Vielen Dank für Ihre Bestellung“, sobald die Versandart aktiv
+   und zugeordnet ist.
+
+Die Versandart erscheint in der Kasse nur, wenn es etwas zum Beipacken gibt (gewählte gültige
+Bestellung, eigene offene Bestellungen oder – für Gäste – das Formular).
+
+## Versandkosten auf Anfrage
+
+Für Fälle ohne festen Preis – Spedition ohne Cargoboard-Preis, Länder ohne Tarif, Sonderteile – gibt
+es die Versandart **„Versandkosten auf Anfrage“** (`nova_versandkosten_anfrage`). Die Bestellung wird
+mit Versandkosten 0,00 € angelegt, die Zahlung bleibt offen.
+
+**Wann wird sie angeboten?** (Einstellungen „Versandkosten auf Anfrage“, je Verkaufskanal)
+
+| Einstellung | Standard |
+|---|---|
+| wenn Spedition nötig ist, aber keinen Preis hat | an |
+| zusätzlich zu Spedition mit Preis („Versandkosten erscheinen Ihnen zu hoch? Wir prüfen gern eine günstigere Lösung (z. B. eigene Tour).“) | an |
+| für Länder ohne Tarif | an |
+| für Artikel mit Einordnung „Nur auf Anfrage“ | an |
+| immer | aus |
+
+**In der Kasse** steht deutlich: „Die Versandkosten werden nachberechnet. Ihre Bestellung wird erst
+verbindlich, wenn Sie den Gesamtbetrag bezahlen.“ – ebenso auf der Abschlussseite.
+
+**Zahlarten:** Mit „auf Anfrage“ sind in der Kasse nur Zahlarten wählbar, die beim Bestellen **kein
+Geld einziehen** – Einstellung „Zahlarten in der Kasse“, leer = alle Vorkasse-Zahlarten (Shopware-
+Handler „Vorkasse“). Online-Zahlarten (PayPal, Kreditkarte …) gehören nicht in diese Liste: Sie würden
+beim Bestellen sofort den Betrag ohne Versand abbuchen. Bezahlt wird später so, wie Shopware 6.7
+„Zahlung nachholen“ löst:
+
+- **Kunden mit Konto:** *Mein Konto → Bestellungen → Bestellung → Zahlungsart ändern*
+  (`/account/order/edit/<Bestell-ID>`). Angeboten werden alle Zahlarten, bei denen in *Einstellungen →
+  Zahlungsarten* „Nach Bestellabschluss änderbar“ aktiv ist, solange die Zahlung offen ist – also auch
+  PayPal oder Karte, dann mit dem neuen Gesamtbetrag.
+- **Gäste:** Bestellseite mit Shopwares Bestell-Code (`/account/order/<deepLinkCode>`), Anmeldung mit
+  E-Mail-Adresse und PLZ der Rechnungsadresse, danach derselbe Weg.
+
+**Ablauf für den Shop:**
+
+1. Der Shop bekommt eine E-Mail „Versandkosten eintragen für Bestellung &lt;Nr&gt;“ (Empfänger einstellbar,
+   leer = Shop-E-Mail) mit Link in die Administration.
+2. In der Bestellung (*Details*) die Karte **„Versandkosten auf Anfrage“**: Versandkosten (brutto; bei
+   steuerfreien Bestellungen wie die Bestellung) eintragen → **„Versandkosten übernehmen und Kunde
+   benachrichtigen“**. Das Plugin geht den Shopware-Weg wie „Bestellung bearbeiten“: Arbeitskopie
+   (Version) anlegen, Versandkosten als manuellen Preis setzen, Bestellung nachberechnen (Steuern aus
+   den Positionen), Kopie übernehmen. Der Betrag der offenen Zahlung wird angepasst.
+3. Der Kunde bekommt die E-Mail „Nova Versandkosten: Versandkosten nachberechnet“ mit Gesamtbetrag und
+   Bezahl-Link (anpassbar unter *Einstellungen → E-Mail-Vorlagen*). Die Karte zeigt den Link ebenfalls
+   und kann die E-Mail erneut senden.
+4. Ohne Zahlung storniert die geplante Aufgabe `nova_versandkosten.request_cancel` die Bestellung nach
+   X Tagen (Einstellung, Standard 14, 0 = aus) – Bestellung, offene Zahlung und Lieferung.
+
+**Hinweis in der Bestellbestätigung (empfohlen):** in die Vorlage „Bestellbestätigung“ einfügen:
+
+```twig
+{% if order.customFields.nova_versandkosten_anfrage|default(false) %}
+<p><strong>Die Versandkosten werden nachberechnet. Ihre Bestellung wird erst verbindlich, wenn Sie den Gesamtbetrag bezahlen.</strong>
+Wir melden uns mit den Versandkosten und einem Link zum Bezahlen.</p>
+{% endif %}
+```
+
+**AGB:** Eine Bestellung mit „Versandkosten auf Anfrage“ ist rechtlich zunächst nur eine Anfrage; der
+Vertrag kommt erst mit der Zahlung des mitgeteilten Gesamtbetrags zustande. Das sollte in den AGB
+stehen. Wer *Nova Rechtstexte* (ab 1.8.4) nutzt, bekommt dafür den Baustein `[[wenn versandanfrage]]`
+– er wird automatisch aktiv, wenn Nova Versandkosten installiert und die Versandart aktiv ist. Keine
+Rechtsberatung – im Zweifel anwaltlich prüfen lassen.
+
+## Energiezuschläge automatisch
+
+Die geplante Aufgabe `nova_versandkosten.energy_fetch` (täglich) und der Knopf *Erweiterungen → Nova
+Versandkosten → Energiezuschläge → Jetzt abrufen* lesen die öffentlichen Tabellen:
+
+| Dienstleister | Quelle | Wert |
+|---|---|---|
+| DHL | [dhl.de/energiezuschlag](https://www.dhl.de/energiezuschlag) | Tabelle „Zuschlagshöhe ab 1./11./21. des Monats“ = langfristige + kurzfristige Komponente (fehlt sie, werden beide Tabellen addiert) |
+| DPD | [dpd.de/energiezuschlag](https://www.dpd.de/energiezuschlag) | „Energiezuschlag Straße“ ab Gültigkeitsdatum |
+| DPD | [Emergency Fuel Surcharge](https://www.dpd.com/de/de/support/versandbestimmungen/emergency-fuel-surcharge/) | monatlicher Zuschlag seit Mai 2026, wird zur Straße addiert (abschaltbar) |
+
+- Gespeichert werden die ganzen Tabellen mit „gültig ab“; gerechnet wird mit dem **am Tag gültigen**
+  Wert – der neue Monatswert gilt also pünktlich, auch wenn ein Abruf ausfällt.
+- **Plausibilitätsprüfung** (0–60 %). Bei Fehlern (Seite nicht erreichbar, geändert, unplausibel)
+  bleibt der letzte Wert, es gibt eine Benachrichtigung in der Administration und optional eine
+  E-Mail.
+- Je Dienstleister „automatisch“ oder „manuell“ (Einstellungen → Zuschläge); manuell gilt der Wert
+  aus dem Feld „Energiezuschlag (%) je Dienstleister“. Bis zum ersten erfolgreichen Abruf gilt
+  ebenfalls der manuelle Wert. Die Schlüssel `dhl`/`dpd` sind einstellbar (falls die Tarifdatei andere
+  Dienstleister-Schlüssel nutzt).
+- Die Seite *Energiezuschläge* zeigt je Quelle den heute gültigen Wert, die Bestandteile, Abrufzeit,
+  Quelle und den letzten Fehler.
 
 ## Zusatzfelder an der Bestellung
 
@@ -266,7 +441,13 @@ surcharge;dpd_europa;;;Währungszuschlag;;CH;;;;;;;10;percent;;;;;
 | `nova_versandkosten_sale`, `nova_versandkosten_sale_net` | Versandkosten wie berechnet (brutto bzw. netto) |
 | `nova_versandkosten_dims_missing` | Maße/Gewicht fehlten an mindestens einem Artikel |
 | `nova_versandkosten_delivery` | „Di, 04.11. – Mi, 05.11.“ |
-| `nova_versandkosten_details` | Warenwert, Modus, Hinweise, Cargoboard-Angebots-ID |
+| `nova_versandkosten_details` | Warenwert, Modus, Hinweise, Cargoboard-Angebots-ID, bei Beipack Grundlage (zusammen/bezahlt) |
+| `nova_versandkosten_beipack_zu`, `nova_versandkosten_beipack_zu_nr` | Beipack: ID/Nummer der Bestellung, zu der beigepackt wird |
+| `nova_versandkosten_beipack_bestellungen` | an der alten Bestellung: Liste `{id, orderNumber, date}` der Beipack-Bestellungen |
+| `nova_versandkosten_anfrage`, `nova_versandkosten_anfrage_status`, `nova_versandkosten_anfrage_preis_am` | Versandkosten auf Anfrage: Kennzeichen, `open`/`priced`, Zeitpunkt |
+
+Bei Beipack-Bestellungen steht in `nova_versandkosten_option` die Option, nach der gerechnet wurde
+(z. B. `dpd`), und in `nova_versandkosten_sale` die Nachzahlung.
 
 ## Google / Produktexport
 
@@ -290,12 +471,16 @@ Artikel aus dem Feed lassen; `abholung`-Artikel nicht in den Feed).
   Privatkunde ja/nein, außerhalb der EU der Warenwert (Zoll). **Kein Name, keine Straße, keine
   E-Mail.** Den Hinweis in der Datenschutzerklärung entsprechend ergänzen.
 - Der Knopf „Lieferung per Tour anfragen“ öffnet nur das E-Mail-Programm des Kunden.
+- Der Abruf der Energiezuschläge ruft nur die öffentlichen Seiten von DHL (dhl.de) und DPD (dpd.de,
+  dpd.com) ab – ohne Kunden- oder Shopdaten.
+- Beipacken: Gespeichert wird nur die ID der gewählten Bestellung am Warenkorb; für die
+  Versuchsbegrenzung ein Hash der IP-Adresse (höchstens eine Stunde im Cache).
 
 ## Geplant
 
 - Eigene Preisliste mit Volumengewicht (z. B. für einen Kanal mit Lieferanten-Preisliste)
 - Express-/Zeitzustellung, Paketshop-Zustellung, Weltweit-Tarife mit Volumengewicht
-- Variabler Transportkostenzuschlag International je kg; automatischer Abruf der Energiezuschläge
+- Variabler Transportkostenzuschlag International je kg
 - Kontaktformular statt E-Mail für die Tour-Anfrage; Versandseite (Tabellen) als Erlebniswelt-Element
 - Lieferzeiten an Google (Merchant Center) übertragen; Monats-Liefertermine anderer Plugins einbeziehen
   (heute: Erscheinungsdatum des Produkts)
@@ -315,7 +500,8 @@ Die eigenen Tarife und Testfälle mit echten Preisen gehören **nicht** ins Repo
 nimmt die Pfade als Umgebungsvariablen.
 
 Template-Blöcke: `nova_versandkosten_method_info` (in `component/shipping/shipping-method.html.twig`),
-`nova_versandkosten_request` (`nova-versandkosten/request.html.twig`). Versandarten-Erweiterung
+`nova_versandkosten_request` (`nova-versandkosten/request.html.twig`), `nova_versandkosten_beipack`
+(`nova-versandkosten/beipack.html.twig`), `nova_versandkosten_finish` (Abschlussseite). Versandarten-Erweiterung
 `shippingMethod.extensions.novaVersandkosten` (auch in der Store-API): `price`, `vatIncluded`,
 `packageCount`, `delivery`, `hints`, `recommended`. Warenkorb-Erweiterung `novaVersandkosten`:
 alle Optionen mit Paketen.
@@ -354,9 +540,32 @@ für Land/Warenkorb gibt es keinen passenden Tarif.
 ### Bestellung zeigt „Maße fehlen“
 
 **Ursache:** Mindestens ein Artikel hatte kein Gewicht oder keine vollständigen Maße; gerechnet wurde
-mit den Standardwerten.
+mit der Einordnung (Standardwerte). Das kostet nichts extra.
 
-**Lösung:** Gewicht und verpackte Maße am Artikel nachtragen.
+**Lösung:** Gewicht nachtragen; Maße nur bei Grenzfällen. Wer den Hinweis nicht sehen will: Einstellung
+„Hinweis ‚Maße fehlen‘ ausgeben“ ausschalten (das Zusatzfeld bleibt).
+
+### „Zu meiner Bestellung beipacken“ erscheint nicht
+
+**Ursache:** Versandart inaktiv/nicht zugeordnet, keine offene Bestellung (versendet, storniert, älter
+als die eingestellten Tage, anderes Lieferland), oder für Gäste ist das Formular ausgeschaltet.
+
+**Lösung:** Versandart prüfen; Gäste nutzen den Link aus der Bestellbestätigung.
+
+### Bei „Versandkosten auf Anfrage“ ist keine Zahlart wählbar
+
+**Ursache:** Es gibt im Verkaufskanal keine aktive Vorkasse-Zahlart, und in „Zahlarten in der Kasse“
+ist nichts eingetragen.
+
+**Lösung:** Vorkasse aktivieren und zuordnen oder die gewünschten Zahlarten eintragen.
+
+### Energiezuschlag wird nicht abgerufen
+
+**Ursache:** Geplante Aufgaben laufen nicht, der Server darf nicht ins Internet, oder die Seite von
+DHL/DPD hat sich geändert (Benachrichtigung „Energiezuschlag konnte nicht abgerufen werden“).
+
+**Lösung:** Scheduled-Task-Runner prüfen, *Jetzt abrufen* testen; bis zur Klärung „manuell“ wählen und
+den Wert eintragen. Bei geänderter Seite bitte ein Issue anlegen.
 
 ## Lizenz
 

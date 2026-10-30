@@ -1,8 +1,8 @@
 {
     "name": "nova/nova-versandkosten",
-    "description": "Versandkosten aus Einkaufstarifen, Paketbildung und Kanalregeln berechnen – mit Sperrgut, Peak, Ausland, Spedition (Cargoboard), Zustelldatum und Margenkontrolle",
+    "description": "Versandkosten aus Einkaufstarifen, Paketbildung und Kanalregeln berechnen – mit Sperrgut, Peak, Ausland, Spedition (Cargoboard), Zustelldatum, Margenkontrolle, Beipacken zur offenen Bestellung, Versandkosten auf Anfrage und automatischen Energiezuschlägen",
     "type": "shopware-platform-plugin",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "license": "MIT",
     "authors": [
         {
@@ -30,8 +30,8 @@
             "en-GB": "Nova Shipping Costs"
         },
         "description": {
-            "de-DE": "Versandkosten je Warenkorb aus den eigenen Einkaufstarifen berechnen: Paketbildung, Warenpost/Kleinpaket/DPD/DHL, Sperrgut und Übermaß, Peak-Zuschläge, Ausland ohne MwSt. außerhalb der EU, Spedition über Cargoboard, voraussichtliches Zustelldatum und Margenkontrolle an der Bestellung.",
-            "en-GB": "Calculate shipping costs per cart from your own carrier purchase tariffs: parcel building, letter parcel/small parcel/DPD/DHL, bulky and oversize, peak surcharges, abroad without VAT outside the EU, freight via Cargoboard, estimated delivery date and margin control on the order."
+            "de-DE": "Versandkosten je Warenkorb aus den eigenen Einkaufstarifen berechnen: Paketbildung, Warenpost/Kleinpaket/DPD/DHL, Sperrgut und Übermaß, Peak-Zuschläge, Ausland ohne MwSt. außerhalb der EU, Spedition über Cargoboard, voraussichtliches Zustelldatum und Margenkontrolle an der Bestellung. Neu: zur offenen Bestellung beipacken, Versandkosten auf Anfrage, Energiezuschläge automatisch von DHL und DPD.",
+            "en-GB": "Calculate shipping costs per cart from your own carrier purchase tariffs: parcel building, letter parcel/small parcel/DPD/DHL, bulky and oversize, peak surcharges, abroad without VAT outside the EU, freight via Cargoboard, estimated delivery date and margin control on the order. New: add to an open order, shipping costs on request, automatic energy surcharges from DHL and DPD."
         },
         "manufacturerLink": {
             "de-DE": "https://github.com/DrdotHouse2106/SW6-Nova-Versandkosten",

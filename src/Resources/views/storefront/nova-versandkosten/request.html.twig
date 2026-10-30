@@ -2,6 +2,13 @@
 {% if novaVkPage %}
     {% block nova_versandkosten_request %}
         <div class="nova-versandkosten-request mt-3">
+            {% if novaVkPage.requestSelected ?? false %}
+                {% block nova_versandkosten_request_notice %}
+                    <div class="alert alert-warning nova-versandkosten-request-notice" role="alert">
+                        <strong>{{ 'novaVersandkosten.request.notice'|trans|sw_sanitize }}</strong>
+                    </div>
+                {% endblock %}
+            {% endif %}
             {% if novaVkPage.freightOnRequest %}
                 <p class="nova-versandkosten-freight-request mb-2">{{ 'novaVersandkosten.freightOnRequest'|trans|sw_sanitize }}</p>
             {% endif %}

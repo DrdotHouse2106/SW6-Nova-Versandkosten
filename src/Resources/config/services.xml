@@ -35,11 +35,66 @@
             <tag name="kernel.reset" method="reset"/>
         </service>
 
+        <service id="Nova\Versandkosten\Service\BeipackService">
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
+            <argument type="service" id="Nova\Versandkosten\Service\QuoteService"/>
+            <argument type="service" id="Nova\Versandkosten\Service\ProductClassifier"/>
+            <tag name="kernel.reset" method="reset"/>
+        </service>
+
+        <service id="Nova\Versandkosten\Service\RequestOrderService">
+            <argument type="service" id="order.repository"/>
+            <argument type="service" id="order_delivery.repository"/>
+            <argument type="service" id="order_transaction.repository"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\Order\RecalculationService"/>
+            <argument type="service" id="Shopware\Core\Content\Mail\Service\MailService"/>
+            <argument type="service" id="Shopware\Core\System\StateMachine\StateMachineRegistry"/>
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
+            <argument type="service" id="logger"/>
+        </service>
+
+        <service id="Nova\Versandkosten\Service\EnergySurchargeService">
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
+            <argument type="service" id="Shopware\Core\Framework\Notification\NotificationService"/>
+            <argument type="service" id="Shopware\Core\Content\Mail\Service\MailService"/>
+            <argument type="service" id="logger"/>
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+        </service>
+
+        <service id="Nova\Versandkosten\Service\AttemptLimiter">
+            <argument type="service" id="cache.object"/>
+        </service>
+
+        <!-- Geplante Aufgaben (täglich) -->
+        <service id="Nova\Versandkosten\ScheduledTask\EnergyFetchTask">
+            <tag name="shopware.scheduled.task"/>
+        </service>
+        <service id="Nova\Versandkosten\ScheduledTask\EnergyFetchTaskHandler">
+            <argument type="service" id="scheduled_task.repository"/>
+            <argument type="service" id="logger"/>
+            <argument type="service" id="Nova\Versandkosten\Service\EnergySurchargeService"/>
+            <tag name="messenger.message_handler"/>
+        </service>
+        <service id="Nova\Versandkosten\ScheduledTask\RequestCancelTask">
+            <tag name="shopware.scheduled.task"/>
+        </service>
+        <service id="Nova\Versandkosten\ScheduledTask\RequestCancelTaskHandler">
+            <argument type="service" id="scheduled_task.repository"/>
+            <argument type="service" id="logger"/>
+            <argument type="service" id="Nova\Versandkosten\Service\RequestOrderService"/>
+            <argument type="service" id="logger"/>
+            <tag name="messenger.message_handler"/>
+        </service>
+
         <!-- Kasse: Preis setzen (nach Shopwares DeliveryProcessor -5000, vor Versand-Promotions -5100) -->
         <service id="Nova\Versandkosten\Checkout\ShippingCostProcessor">
             <argument type="service" id="Nova\Versandkosten\Service\QuoteService"/>
             <argument type="service" id="Shopware\Core\Checkout\Cart\Price\QuantityPriceCalculator"/>
             <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
+            <argument type="service" id="Nova\Versandkosten\Service\BeipackService"/>
             <tag name="shopware.cart.processor" priority="-5050"/>
         </service>
 
@@ -54,17 +109,31 @@
             <argument type="service" id="Nova\Versandkosten\Checkout\ShippingMethodRouteDecorator.inner"/>
             <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
             <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
+            <argument type="service" id="Nova\Versandkosten\Service\BeipackService"/>
+        </service>
+
+        <!-- Versandkosten auf Anfrage: nur Zahlarten ohne sofortigen Geldeinzug -->
+        <service id="Nova\Versandkosten\Checkout\CheckoutGatewayRouteDecorator"
+                 decorates="Shopware\Core\Checkout\Gateway\SalesChannel\CheckoutGatewayRoute"
+                 decoration-priority="-100"
+                 public="true">
+            <argument type="service" id="Nova\Versandkosten\Checkout\CheckoutGatewayRouteDecorator.inner"/>
+            <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
         </service>
 
         <service id="Nova\Versandkosten\Checkout\OrderSubscriber">
             <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
             <argument type="service" id="Shopware\Core\Content\Mail\Service\MailService"/>
             <argument type="service" id="logger"/>
+            <argument type="service" id="Nova\Versandkosten\Service\BeipackService"/>
+            <argument type="service" id="Nova\Versandkosten\Service\RequestOrderService"/>
+            <argument type="service" id="order.repository"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 
         <service id="Nova\Versandkosten\Storefront\CheckoutPageSubscriber">
             <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
+            <argument type="service" id="Nova\Versandkosten\Service\BeipackService"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 
@@ -79,6 +148,19 @@
             <argument type="service" id="Nova\Versandkosten\Service\TariffStore"/>
             <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
             <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <argument type="service" id="Nova\Versandkosten\Service\EnergySurchargeService"/>
+            <argument type="service" id="Nova\Versandkosten\Service\RequestOrderService"/>
+        </service>
+
+        <!-- Storefront: Bestellung zum Beipacken wählen -->
+        <service id="Nova\Versandkosten\Controller\BeipackController" public="true">
+            <argument type="service" id="Nova\Versandkosten\Service\BeipackService"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
+            <argument type="service" id="Shopware\Core\System\SalesChannel\SalesChannel\ContextSwitchRoute"/>
+            <argument type="service" id="Nova\Versandkosten\Service\AttemptLimiter"/>
+            <call method="setContainer">
+                <argument type="service" id="service_container"/>
+            </call>
         </service>
     </services>
 </container>

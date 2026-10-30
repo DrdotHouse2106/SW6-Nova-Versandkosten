@@ -136,6 +136,72 @@
 dpd=0</defaultValue>
         </input-field>
 
+        <input-field type="single-select">
+            <name>energyModeDhl</name>
+            <options>
+                <option><id>auto</id><name>Automatic (fetched daily)</name><name lang="de-DE">Automatisch (täglich abgerufen)</name></option>
+                <option><id>manual</id><name>Manual (value above)</name><name lang="de-DE">Manuell (Wert oben)</name></option>
+            </options>
+            <label>DHL energy surcharge</label>
+            <label lang="de-DE">Energiezuschlag DHL</label>
+            <helpText>Automatic: value from dhl.de/energiezuschlag (long-term + short-term component) valid on the day. Until the first successful fetch the manual value applies.</helpText>
+            <helpText lang="de-DE">Automatisch: am Tag gültiger Wert von dhl.de/energiezuschlag (langfristige + kurzfristige Komponente). Bis zum ersten erfolgreichen Abruf gilt der manuelle Wert.</helpText>
+            <defaultValue>auto</defaultValue>
+        </input-field>
+
+        <input-field type="single-select">
+            <name>energyModeDpd</name>
+            <options>
+                <option><id>auto</id><name>Automatic (fetched daily)</name><name lang="de-DE">Automatisch (täglich abgerufen)</name></option>
+                <option><id>manual</id><name>Manual (value above)</name><name lang="de-DE">Manuell (Wert oben)</name></option>
+            </options>
+            <label>DPD energy surcharge</label>
+            <label lang="de-DE">Energiezuschlag DPD</label>
+            <helpText>Automatic: “Energiezuschlag Straße” from dpd.de/energiezuschlag valid on the day.</helpText>
+            <helpText lang="de-DE">Automatisch: am Tag gültiger „Energiezuschlag Straße“ von dpd.de/energiezuschlag.</helpText>
+            <defaultValue>auto</defaultValue>
+        </input-field>
+
+        <input-field type="bool">
+            <name>energyDpdEmergency</name>
+            <label>DPD: add Emergency Fuel Surcharge</label>
+            <label lang="de-DE">DPD: Emergency Fuel Surcharge hinzurechnen</label>
+            <helpText>Adds the monthly Emergency Fuel Surcharge (since May 2026) to the road surcharge.</helpText>
+            <helpText lang="de-DE">Rechnet den monatlichen Emergency Fuel Surcharge (seit Mai 2026) zum Energiezuschlag Straße hinzu.</helpText>
+            <defaultValue>true</defaultValue>
+        </input-field>
+
+        <input-field type="text">
+            <name>energyKeyDhl</name>
+            <label>Carrier key DHL in the tariff file</label>
+            <label lang="de-DE">Dienstleister-Schlüssel DHL in der Tarifdatei</label>
+            <defaultValue>dhl</defaultValue>
+        </input-field>
+
+        <input-field type="text">
+            <name>energyKeyDpd</name>
+            <label>Carrier key DPD in the tariff file</label>
+            <label lang="de-DE">Dienstleister-Schlüssel DPD in der Tarifdatei</label>
+            <defaultValue>dpd</defaultValue>
+        </input-field>
+
+        <input-field type="bool">
+            <name>energyMailOnError</name>
+            <label>E-mail if fetching fails</label>
+            <label lang="de-DE">E-Mail, wenn der Abruf fehlschlägt</label>
+            <helpText>An administration notification is always created.</helpText>
+            <helpText lang="de-DE">Eine Benachrichtigung in der Administration gibt es immer.</helpText>
+            <defaultValue>false</defaultValue>
+        </input-field>
+
+        <input-field type="text">
+            <name>energyMailRecipient</name>
+            <label>Recipient for fetch errors</label>
+            <label lang="de-DE">Empfänger für Abruf-Fehler</label>
+            <helpText>Empty = shop email address.</helpText>
+            <helpText lang="de-DE">Leer = E-Mail-Adresse des Shops.</helpText>
+        </input-field>
+
         <input-field type="bool">
             <name>offerDpdOutsideEu</name>
             <label>Offer DPD outside the EU</label>
@@ -231,6 +297,15 @@ Kurier</defaultValue>
             <label lang="de-DE">Eigenschaftswerte → nur Abholung</label>
             <defaultValue>Abholung
 nur Abholung</defaultValue>
+        </input-field>
+
+        <input-field type="textarea">
+            <name>valuesRequest</name>
+            <label>Property values → on request only</label>
+            <label lang="de-DE">Eigenschaftswerte → nur auf Anfrage</label>
+            <defaultValue>Anfrage
+auf Anfrage
+nur auf Anfrage</defaultValue>
         </input-field>
 
         <input-field type="text">
@@ -436,6 +511,99 @@ warenpost;*;4-10
     </card>
 
     <card>
+        <title>Shipping costs on request</title>
+        <title lang="de-DE">Versandkosten auf Anfrage</title>
+
+        <input-field type="bool">
+            <name>requestOnFreight</name>
+            <label>Offer when freight has no price</label>
+            <label lang="de-DE">Anbieten, wenn Spedition keinen Preis hat</label>
+            <helpText>Shipping method “nova_versandkosten_anfrage” (create inactive, activate under Settings → Shipping). The order is placed with shipping costs 0.00, payment stays open.</helpText>
+            <helpText lang="de-DE">Versandart „nova_versandkosten_anfrage“ (inaktiv angelegt, unter Einstellungen → Versand aktivieren). Die Bestellung wird mit Versandkosten 0,00 angelegt, die Zahlung bleibt offen.</helpText>
+            <defaultValue>true</defaultValue>
+        </input-field>
+
+        <input-field type="bool">
+            <name>requestWithFreight</name>
+            <label>Also offer in addition to freight</label>
+            <label lang="de-DE">Anfrage zusätzlich zu Spedition anbieten</label>
+            <helpText>If freight is offered with a price, the customer can request a cheaper solution (e.g. own tour) instead.</helpText>
+            <helpText lang="de-DE">Wird Spedition mit Preis angeboten, kann der Kunde stattdessen eine günstigere Lösung (z. B. eigene Tour) anfragen.</helpText>
+            <defaultValue>true</defaultValue>
+        </input-field>
+
+        <input-field type="bool">
+            <name>requestOnNoTariff</name>
+            <label>Offer for countries without tariff</label>
+            <label lang="de-DE">Anbieten für Länder ohne Tarif</label>
+            <defaultValue>true</defaultValue>
+        </input-field>
+
+        <input-field type="bool">
+            <name>requestOnItems</name>
+            <label>Offer for items “on request only”</label>
+            <label lang="de-DE">Anbieten für Artikel „nur auf Anfrage“</label>
+            <defaultValue>true</defaultValue>
+        </input-field>
+
+        <input-field type="bool">
+            <name>requestAlways</name>
+            <label>Always offer</label>
+            <label lang="de-DE">Immer anbieten</label>
+            <defaultValue>false</defaultValue>
+        </input-field>
+
+        <component name="sw-entity-multi-id-select">
+            <name>requestPaymentMethodIds</name>
+            <entity>payment_method</entity>
+            <label>Payment methods at checkout</label>
+            <label lang="de-DE">Zahlarten in der Kasse</label>
+            <helpText>Only these payment methods can be chosen with “on request”. Empty = prepayment. Do not choose online payments (PayPal, card): they would charge the amount without shipping immediately. After the shipping costs are entered, the customer can switch to any payment method with “Allow payment change after checkout”.</helpText>
+            <helpText lang="de-DE">Nur diese Zahlarten sind bei „auf Anfrage“ wählbar. Leer = Vorkasse. Keine Online-Zahlarten (PayPal, Karte) wählen: Sie würden sofort den Betrag ohne Versand abbuchen. Nach dem Eintragen der Versandkosten kann der Kunde jede Zahlart mit „Nach Bestellabschluss änderbar“ wählen.</helpText>
+        </component>
+
+        <input-field type="text">
+            <name>requestNotifyEmail</name>
+            <label>Recipient “enter shipping costs”</label>
+            <label lang="de-DE">Empfänger „Versandkosten eintragen“</label>
+            <helpText>Empty = shop email address.</helpText>
+            <helpText lang="de-DE">Leer = E-Mail-Adresse des Shops.</helpText>
+        </input-field>
+
+        <input-field type="int">
+            <name>requestCancelDays</name>
+            <label>Cancel unpaid requests after (days)</label>
+            <label lang="de-DE">Unbezahlte Anfragen stornieren nach (Tagen)</label>
+            <helpText>0 = never. Runs daily as scheduled task.</helpText>
+            <helpText lang="de-DE">0 = nie. Läuft täglich als geplante Aufgabe.</helpText>
+            <defaultValue>14</defaultValue>
+        </input-field>
+    </card>
+
+    <card>
+        <title>Add to an open order</title>
+        <title lang="de-DE">Zur offenen Bestellung beipacken</title>
+
+        <input-field type="int">
+            <name>beipackMaxAgeDays</name>
+            <label>Orders not older than (days)</label>
+            <label lang="de-DE">Bestellungen nicht älter als (Tage)</label>
+            <helpText>Shipping method “nova_versandkosten_beipack”. Only own orders that have not been shipped or cancelled. 0 = no limit.</helpText>
+            <helpText lang="de-DE">Versandart „nova_versandkosten_beipack“. Nur eigene Bestellungen, die weder versendet noch storniert sind. 0 = ohne Grenze.</helpText>
+            <defaultValue>14</defaultValue>
+        </input-field>
+
+        <input-field type="bool">
+            <name>beipackGuestForm</name>
+            <label>Guests: form “order number + e-mail + postcode”</label>
+            <label lang="de-DE">Gäste: Formular „Bestellnummer + E-Mail + PLZ“</label>
+            <helpText>Limited to 5 attempts per hour and IP. The link from the order confirmation works without it.</helpText>
+            <helpText lang="de-DE">Höchstens 5 Versuche je Stunde und IP. Der Link aus der Bestellbestätigung funktioniert auch ohne.</helpText>
+            <defaultValue>true</defaultValue>
+        </input-field>
+    </card>
+
+    <card>
         <title>Request and control</title>
         <title lang="de-DE">Anfrage und Kontrolle</title>
 
@@ -454,6 +622,15 @@ warenpost;*;4-10
             <label lang="de-DE">Empfänger für Anfragen</label>
             <helpText>Empty = shop email address from the basic information.</helpText>
             <helpText lang="de-DE">Leer = E-Mail-Adresse des Shops aus den Stammdaten.</helpText>
+        </input-field>
+
+        <input-field type="bool">
+            <name>showDimsMissing</name>
+            <label>Show “dimensions missing” note</label>
+            <label lang="de-DE">Hinweis „Maße fehlen“ ausgeben</label>
+            <helpText>Internal only (order card in the administration). The custom field is always stored (e.g. for the delivery note/ERP). Missing dimensions are never penalised: the shipping category applies.</helpText>
+            <helpText lang="de-DE">Nur intern (Karte an der Bestellung in der Administration). Das Zusatzfeld wird immer gespeichert (z. B. für Lieferschein/ERP). Fehlende Maße kosten nichts extra: Es gilt die Einordnung.</helpText>
+            <defaultValue>true</defaultValue>
         </input-field>
 
         <input-field type="bool">

@@ -10,7 +10,43 @@
             "basicTracking": "mit Basis-Sendungsverfolgung",
             "peak": "inkl. Saisonzuschlag von %carrier% (November/Dezember)",
             "free": "versandkostenfrei",
-            "freightEstimated": "Preis geschätzt – wir bestätigen ihn vor dem Versand"
+            "freightEstimated": "Preis geschätzt – wir bestätigen ihn vor dem Versand",
+            "onRequest": "Die Versandkosten werden nachberechnet.",
+            "onRequestAlternative": "Versandkosten erscheinen Ihnen zu hoch? Wir prüfen gern eine günstigere Lösung (z. B. eigene Tour)."
+        },
+        "request": {
+            "price": "Versandkosten auf Anfrage",
+            "notice": "Die Versandkosten werden nachberechnet. Ihre Bestellung wird erst verbindlich, wenn Sie den Gesamtbetrag bezahlen.",
+            "finish": "Wir melden uns per E-Mail mit den Versandkosten und einem Link zum Bezahlen."
+        },
+        "beipack": {
+            "title": "Zu meiner Bestellung beipacken",
+            "priceAfterSelection": "Preis nach Auswahl der Bestellung",
+            "toOrder": "zu Bestellung %number%",
+            "selectedOrder": "Wird beigepackt zu Bestellung %number% vom %date%.",
+            "address": "Lieferung an:",
+            "combined": "Versand für alle Artikel zusammen",
+            "paid": "bereits bezahlt",
+            "difference": "Nachzahlung Versand",
+            "choose": "Ihre offene Bestellung",
+            "apply": "Übernehmen",
+            "noOrders": "Sie haben keine offene, noch nicht versendete Bestellung der letzten %days% Tage.",
+            "guestHelp": "Bestellnummer, E-Mail-Adresse und Postleitzahl Ihrer offenen Bestellung eingeben:",
+            "orderNumber": "Bestellnummer",
+            "email": "E-Mail-Adresse",
+            "zipcode": "PLZ",
+            "check": "Bestellung prüfen",
+            "notFound": "Diese Bestellung konnten wir nicht finden. Bitte prüfen Sie Ihre Angaben.",
+            "notPossible": "Zu Bestellung %number% kann nicht mehr beigepackt werden (bereits versendet, storniert oder zu alt).",
+            "tooManyAttempts": "Zu viele Versuche. Bitte versuchen Sie es in einer Stunde erneut.",
+            "linked": "Prima! Ihre nächste Bestellung packen wir zu Bestellung %number% dazu. Legen Sie die Artikel in den Warenkorb und wählen Sie in der Kasse „Zu meiner Bestellung beipacken“.",
+            "selected": "Bestellung %number% gewählt – Ihre Artikel werden beigepackt.",
+            "finish": "Diese Bestellung wird zu Bestellung %number% beigepackt.",
+            "forgot": "Noch etwas vergessen?",
+            "forgotLink": "Jetzt zu dieser Bestellung beipacken"
         }
+    },
+    "checkout": {
+        "nova-versandkosten-beipack-select": "Bitte wählen Sie die Bestellung, zu der beigepackt werden soll."
     }
 }

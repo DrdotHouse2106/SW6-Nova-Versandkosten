@@ -138,6 +138,7 @@ final class CaseRunner
             freightSurcharge: (float) ($c['freightSurcharge'] ?? 20),
             freightFallbackPrice: isset($c['freightFallbackPrice']) ? (float) $c['freightFallbackPrice'] : null,
             pickupEnabled: (bool) ($c['pickupEnabled'] ?? true),
+            requestTriggers: \is_array($c['requestTriggers'] ?? null) ? array_values(array_map('strval', $c['requestTriggers'])) : [],
         );
     }
 }

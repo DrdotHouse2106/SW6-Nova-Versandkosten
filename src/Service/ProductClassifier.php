@@ -8,6 +8,7 @@ use Nova\Versandkosten\Calculator\Item;
 use Nova\Versandkosten\Installer\CustomFieldInstaller;
 use Shopware\Core\Checkout\Cart\LineItem\LineItem;
 use Shopware\Core\Checkout\Cart\LineItem\LineItemCollection;
+use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Uuid\Uuid;
 use Symfony\Contracts\Service\ResetInterface;
 
@@ -105,6 +106,80 @@ class ProductClassifier implements ResetInterface
     }
 
     /**
+     * Artikel bereits bestellter (noch nicht versendeter) Bestellungen – für „Zur Bestellung beipacken“.
+     * Maße/Gewicht und Zusatzfelder kommen vom Produkt (Elternartikel als Ersatz), Eigenschaften,
+     * Hersteller und Tags aus der Bestellposition. Gelöschte Produkte zählen mit Standardmaßen.
+     *
+     * @param list<string> $orderIds
+     *
+     * @return list<Item>
+     */
+    public function itemsFromOrders(array $orderIds, ?string $salesChannelId): array
+    {
+        $orderIds = array_values(array_filter($orderIds, static fn (string $id) => Uuid::isValid($id)));
+        if ($orderIds === []) {
+            return [];
+        }
+
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT LOWER(HEX(li.id)) AS id, LOWER(HEX(li.product_id)) AS product_id, li.label, li.quantity, li.unit_price, li.payload,
+                    COALESCE(p.weight, pp.weight) AS weight, COALESCE(p.length, pp.length) AS length,
+                    COALESCE(p.width, pp.width) AS width, COALESCE(p.height, pp.height) AS height,
+                    COALESCE(pt.custom_fields, ppt.custom_fields) AS custom_fields
+               FROM order_line_item li
+               LEFT JOIN product p ON p.id = li.product_id AND p.version_id = :live
+               LEFT JOIN product pp ON pp.id = p.parent_id AND pp.version_id = :live
+               LEFT JOIN product_translation pt ON pt.product_id = p.id AND pt.product_version_id = :live AND pt.language_id = :lang
+               LEFT JOIN product_translation ppt ON ppt.product_id = pp.id AND ppt.product_version_id = :live AND ppt.language_id = :lang
+              WHERE li.order_id IN (:ids) AND li.version_id = :live AND li.order_version_id = :live AND li.type = :type',
+            [
+                'ids' => array_map(static fn (string $id) => Uuid::fromHexToBytes($id), $orderIds),
+                'live' => Uuid::fromHexToBytes(Defaults::LIVE_VERSION),
+                'lang' => Uuid::fromHexToBytes(Defaults::LANGUAGE_SYSTEM),
+                'type' => LineItem::PRODUCT_LINE_ITEM_TYPE,
+            ],
+            ['ids' => ArrayParameterType::BINARY]
+        );
+
+        $freeManufacturers = $this->settings->ids('freeManufacturerIds', $salesChannelId);
+        $freeTags = $this->settings->ids('freeTagIds', $salesChannelId);
+
+        $items = [];
+        foreach ($rows as $row) {
+            $payload = json_decode((string) ($row['payload'] ?? ''), true);
+            $payload = \is_array($payload) ? $payload : [];
+            $customFields = json_decode((string) ($row['custom_fields'] ?? ''), true);
+            if (!\is_array($customFields)) {
+                $customFields = \is_array($payload['customFields'] ?? null) ? $payload['customFields'] : [];
+            }
+            [$category, $packing] = $this->classify($customFields, (array) ($payload['propertyIds'] ?? []), $salesChannelId);
+
+            $manufacturer = strtolower((string) ($payload['manufacturerId'] ?? ''));
+            $tags = array_map(static fn ($t) => strtolower((string) $t), (array) ($payload['tagIds'] ?? []));
+            $free = ($manufacturer !== '' && \in_array($manufacturer, $freeManufacturers, true))
+                || array_intersect($tags, $freeTags) !== [];
+
+            $num = static fn (mixed $v): ?float => is_numeric($v) && (float) $v > 0 ? (float) $v : null;
+
+            $items[] = new Item(
+                (string) ($row['product_id'] ?: $row['id']),
+                (string) ($row['label'] ?? ''),
+                $num($row['weight'] ?? null),
+                self::mmToCm($num($row['length'] ?? null)),
+                self::mmToCm($num($row['width'] ?? null)),
+                self::mmToCm($num($row['height'] ?? null)),
+                $category,
+                $packing,
+                max(1, (int) $row['quantity']),
+                (float) $row['unit_price'],
+                $free,
+            );
+        }
+
+        return $items;
+    }
+
+    /**
      * @param array<mixed> $customFields
      * @param array<mixed> $propertyIds
      *
@@ -153,6 +228,9 @@ class ProductClassifier implements ResetInterface
         }
         if ($match('valuesPickup')) {
             return [Item::PICKUP_ONLY, $packing];
+        }
+        if ($match('valuesRequest')) {
+            return [Item::ON_REQUEST, $packing];
         }
 
         return [Item::PARCEL, $packing];

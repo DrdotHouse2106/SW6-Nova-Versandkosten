@@ -18,7 +18,8 @@ estimated delivery date and notes.
   maximum weight (default 25 kg), bulky goods as single parcel or “combinable”.
 - **Tiers per carrier**: Warenpost (goods value limit), small parcel, DPD, DHL – with maximum
   dimensions, girth, bulky/oversize surcharges from the tariff file.
-- **Surcharges**: toll, security fee, energy surcharge (% per carrier, maintained monthly), peak and
+- **Surcharges**: toll, security fee, energy surcharge (% per carrier, **fetched daily from DHL and
+  DPD** or entered manually), peak and
   peak-in-peak (optionally passed on, with a note in the checkout), island surcharges by postcode,
   customs clearance and currency surcharge per country.
 - **Sale price per sales channel**: fixed prices in the home country (each further parcel costs
@@ -35,7 +36,12 @@ estimated delivery date and notes.
 - **Tariff import** as JSON or CSV (Excel) in the administration, stored in the database.
 - **Price check**: all fixed prices per channel against the current purchase price.
 - **Google/product export**: Twig function `nova_versand_label(product, context)` → `paket`,
-  `sperrgut`, `spedition` or `abholung`.
+  `sperrgut`, `spedition`, `abholung` or `anfrage`.
+- **Add to an open order** (new in 1.1.0): customers and guests add items to an order that has not
+  been shipped yet and only pay the difference in shipping costs.
+- **Shipping costs on request** (new in 1.1.0): order without a shipping price; the shop enters the
+  shipping costs afterwards, the customer receives the total and a payment link by e-mail; unpaid
+  requests are cancelled after X days.
 
 Real purchase prices do not belong in the plugin: each shop imports its own tariffs. All prices in
 this document and in `examples/` are **made-up placeholders**.
@@ -49,10 +55,14 @@ this document and in `examples/` are **made-up placeholders**.
 [releases](https://github.com/DrdotHouse2106/SW6-Nova-Versandkosten/releases) under *Extensions →
 My extensions → Upload extension*, install and activate. Reload the administration (Ctrl+F5).
 
-On installation the plugin creates six **inactive** shipping methods (not assigned to any sales
+On installation the plugin creates eight **inactive** shipping methods (not assigned to any sales
 channel): *Warenpost*, *DHL Kleinpaket*, *DPD Paket*, *DHL Paket*, *Spedition* (freight), *Abholung*
-(collection) – identified by the technical name `nova_versandkosten_…` – plus custom fields on
-products and orders. Name, description, image, position and rules can be changed freely; only the
+(collection), *Versandkosten auf Anfrage* (`nova_versandkosten_anfrage`) and *Zu meiner Bestellung
+beipacken* (`nova_versandkosten_beipack`) – identified by the technical name `nova_versandkosten_…` –
+plus custom fields on products and orders, the mail template “Nova Versandkosten: Versandkosten
+nachberechnet” (German/English) and two daily scheduled tasks (`nova_versandkosten.energy_fetch`,
+`nova_versandkosten.request_cancel`; they need a running scheduled task runner). Updating to 1.1.0
+only adds what is missing. Name, description, image, position and rules can be changed freely; only the
 technical name must stay. An existing shipping method can be taken over by giving it one of these
 technical names.
 
@@ -65,12 +75,82 @@ technical names.
 3. **Activate shipping methods:** *Settings → Shipping*. The price “0.00” in the price matrix is only a
    placeholder; the plugin sets the real price. Keep tax type “Auto”.
 4. **Assign them to the sales channel** and choose a default shipping method.
-5. **Check product data:** weight (kg) and packed length/width/height (mm). Category via the custom
-   field “Versandeinordnung” or the property (default “Versandart”). Missing dimensions → defaults per
-   category and the order is flagged “dimensions missing”.
+5. **Check product data:** the **weight** (kg) is usually enough; packed length/width/height (mm) are
+   only worth maintaining for borderline items. Category via the custom field “Versandeinordnung”
+   (paket, sperrgut, spedition, abholung, anfrage) or the property (default “Versandart”). Missing
+   dimensions cost nothing extra: the category applies (parcel = within normal limits). The order is
+   still flagged “dimensions missing” (custom field); setting “Show ‘dimensions missing’ note”
+   (default on) controls the internal note in the administration and internal e-mails – customers
+   never see it.
 6. **Price check:** *Extensions → Nova Versandkosten → Price check*.
 7. **Test orders** in every channel; check the “Shipping costs” card on the order.
-8. **Monthly:** update energy surcharges; before November enter the peak-in-peak period.
+8. **Energy surcharges:** *Extensions → Nova Versandkosten → Energy surcharges → Fetch now*; then it
+   runs daily. Before November enter the peak-in-peak period.
+9. **Optional:** activate “shipping costs on request” and “add to my open order” (see below).
+
+## Add to an open order
+
+Shipping method `nova_versandkosten_beipack` (“Zu meiner Bestellung beipacken”). Only **own** orders:
+customers choose from their orders at checkout; guests use the link from the order confirmation
+(Shopware's secret `deepLinkCode`) or enter order number + e-mail + postcode (max. 5 attempts per hour
+and IP). The order must be open: delivery state “open”, not cancelled/completed, not older than X days
+(default 14), same sales channel and delivery country. Everything is checked again when the order is
+placed.
+
+**Price** = shipping for (items of the old order + earlier add-on orders + cart) with the same option
+as the old order (if it no longer fits or is unknown: the cheapest matching one) **minus** shipping
+already paid, at least 0.00. Examples (placeholders): old small parcel 7.50, together DPD 7.50 → 0.00;
+old Warenpost 5.00, together small parcel 7.50 → 2.50.
+
+The new order gets the delivery address of the old one, a customer comment starting with
+“BEIPACK zu Bestellung &lt;no&gt;”, references in both orders' custom fields and a note in the old order's
+internal comment.
+
+Link for the order confirmation mail (*Settings → Email templates → Order confirmation*):
+
+```twig
+{% if order.deepLinkCode %}
+<p>Forgot something?
+    <a href="{{ rawUrl('frontend.nova_versandkosten.beipack.link', { deepLinkCode: order.deepLinkCode }, salesChannel.domains|first.url) }}">Add it to this order now</a>
+</p>
+{% endif %}
+```
+
+The same link appears automatically on the checkout finish page once the shipping method is active.
+
+## Shipping costs on request
+
+Shipping method `nova_versandkosten_anfrage`. Offered (settings per sales channel) when freight has no
+price, in addition to priced freight (“Shipping costs seem too high? We are happy to check a cheaper
+solution.”), for countries without tariff, for items “on request only”, or always (off by default).
+The order is placed with shipping 0.00 and open payment; checkout and finish page say: “Shipping costs
+will be calculated afterwards. Your order only becomes binding once you pay the total amount.”
+
+- **Payment methods at checkout:** only methods that do not collect money when ordering (setting;
+  empty = prepayment). Do not add PayPal/cards – they would charge immediately without shipping.
+  Paying later works the Shopware 6.7 way: customers via *Account → Orders → Change payment method*
+  (`/account/order/edit/<id>`), guests via `/account/order/<deepLinkCode>` (sign-in with e-mail +
+  billing postcode). Offered there: all payment methods with “Allow payment change after checkout”.
+- **Shop:** receives an e-mail “Versandkosten eintragen für Bestellung &lt;no&gt;” with a link to the
+  administration. On the order (*Details*) the card “Shipping costs on request”: enter the shipping
+  costs → *Apply shipping costs and notify customer*. The plugin creates a version of the order, sets
+  the shipping costs as manual price, recalculates the order (taxes from the positions), merges the
+  version and adjusts the open payment amount. The customer gets the mail with total and payment link.
+- **Auto-cancel:** unpaid request orders are cancelled after X days (default 14, 0 = off).
+- Snippet for the order confirmation mail:
+  `{% if order.customFields.nova_versandkosten_anfrage|default(false) %}…{% endif %}`
+- **Terms and conditions:** such an order is only a request until the total is paid. *Nova
+  Rechtstexte* (1.8.4+) provides the block `[[wenn versandanfrage]]`. No legal advice.
+
+## Automatic energy surcharges
+
+Daily scheduled task + *Fetch now* button read the public tables of
+[DHL](https://www.dhl.de/energiezuschlag) (“Zuschlagshöhe ab 1./11./21.” = long-term + short-term
+component), [DPD](https://www.dpd.de/energiezuschlag) (“Energiezuschlag Straße”) and the DPD
+[Emergency Fuel Surcharge](https://www.dpd.com/de/de/support/versandbestimmungen/emergency-fuel-surcharge/)
+(added to road, can be switched off). Whole tables with “valid from” are stored, so the value valid on
+the day applies. Plausibility check 0–60 %; on errors the last value stays, an administration
+notification (optionally an e-mail) is created. Per carrier “automatic” or “manual”.
 
 ## Calculation rule
 
@@ -116,12 +196,14 @@ README (section “Tarifformat”); the field names are English. Convert without
   postcode and country of sender and recipient, weights, dimensions, load carrier, private customer
   yes/no, outside the EU the goods value (customs). **No name, no street, no e-mail.**
 - “Request delivery by tour” only opens the customer's e-mail program.
+- Energy surcharges: only the public pages of DHL and DPD are requested, without customer or shop data.
+- Add to order: only the chosen order ID is stored with the cart; for the attempt limit a hash of the
+  IP address (max. one hour in the cache).
 
 ## Planned
 
 Own price list with volumetric weight · express/time-definite delivery, parcel shop delivery,
-worldwide tariffs with volumetric weight · variable international transport surcharge, automatic
-energy surcharge retrieval · contact form instead of e-mail for tour requests, shipping info page
+worldwide tariffs with volumetric weight · variable international transport surcharge · contact form instead of e-mail for tour requests, shipping info page
 element · delivery times to Google Merchant Center · default shipping method per country ·
 Cargoboard booking and labels (belongs to the ERP).
 

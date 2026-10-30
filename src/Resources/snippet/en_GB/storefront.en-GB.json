@@ -10,7 +10,43 @@
             "basicTracking": "with basic tracking",
             "peak": "incl. %carrier% seasonal surcharge (November/December)",
             "free": "free shipping",
-            "freightEstimated": "Estimated price – we will confirm it before shipping"
+            "freightEstimated": "Estimated price – we will confirm it before shipping",
+            "onRequest": "Shipping costs will be calculated afterwards.",
+            "onRequestAlternative": "Shipping costs seem too high? We are happy to check a cheaper solution (e.g. our own tour)."
+        },
+        "request": {
+            "price": "Shipping costs on request",
+            "notice": "Shipping costs will be calculated afterwards. Your order only becomes binding once you pay the total amount.",
+            "finish": "We will send you the shipping costs and a payment link by e-mail."
+        },
+        "beipack": {
+            "title": "Add to my open order",
+            "priceAfterSelection": "Price after choosing the order",
+            "toOrder": "to order %number%",
+            "selectedOrder": "Will be added to order %number% of %date%.",
+            "address": "Delivery to:",
+            "combined": "Shipping for all items together",
+            "paid": "already paid",
+            "difference": "Additional shipping",
+            "choose": "Your open order",
+            "apply": "Apply",
+            "noOrders": "You have no open order of the last %days% days that has not been shipped yet.",
+            "guestHelp": "Enter order number, e-mail address and postcode of your open order:",
+            "orderNumber": "Order number",
+            "email": "E-mail address",
+            "zipcode": "Postcode",
+            "check": "Check order",
+            "notFound": "We could not find this order. Please check your details.",
+            "notPossible": "Items can no longer be added to order %number% (already shipped, cancelled or too old).",
+            "tooManyAttempts": "Too many attempts. Please try again in an hour.",
+            "linked": "Great! We will add your next order to order %number%. Put the items in your cart and choose “Add to my open order” at checkout.",
+            "selected": "Order %number% chosen – your items will be added.",
+            "finish": "This order will be added to order %number%.",
+            "forgot": "Forgot something?",
+            "forgotLink": "Add it to this order now"
         }
+    },
+    "checkout": {
+        "nova-versandkosten-beipack-select": "Please choose the order to which the items should be added."
     }
 }

@@ -1,43 +1,90 @@
 {% block sw_order_detail_details_shipping %}
 <mt-card
-    v-if="novaVersandkosten"
+    v-if="novaVkRequest"
+    class="nova-versandkosten-request-card"
+    position-identifier="nova-versandkosten-request-card"
+    :title="$tc('nova-versandkosten.request.title')"
+>
+    <p v-if="novaVkRequest.status !== 'priced'" style="color: #de294c; font-weight: 600;">{{ $tc('nova-versandkosten.request.open') }}</p>
+    <p v-else>{{ $tc('nova-versandkosten.request.priced', 0, { date: novaVkRequest.pricedAt ? new Date(novaVkRequest.pricedAt).toLocaleString() : '–' }) }}</p>
+    <div style="display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap;">
+        <label style="display: flex; flex-direction: column; gap: 4px;">
+            <span>{{ $tc('nova-versandkosten.request.label', 0, { currency: (novaVkInfo && novaVkInfo.currency) || '€' }) }}</span>
+            <input v-model="novaVkPrice" type="text" inputmode="decimal" style="padding: 6px 8px; border: 1px solid #d1d9e0; border-radius: 4px; width: 160px;" placeholder="0,00">
+        </label>
+        <label style="display: flex; gap: 6px; align-items: center;">
+            <input v-model="novaVkNotify" type="checkbox">
+            <span>{{ $tc('nova-versandkosten.request.notify') }}</span>
+        </label>
+    </div>
+    <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+        <mt-button variant="primary" size="small" :disabled="novaVkSaving || novaVkPrice === ''" @click="novaVkApply">
+            {{ novaVkNotify ? $tc('nova-versandkosten.request.apply') : $tc('nova-versandkosten.request.applyOnly') }}
+        </mt-button>
+        <mt-button v-if="novaVkRequest.status === 'priced'" variant="secondary" size="small" :disabled="novaVkSaving" @click="novaVkResend">
+            {{ $tc('nova-versandkosten.request.resend') }}
+        </mt-button>
+    </div>
+    <p v-if="novaVkInfo && novaVkInfo.paymentUrl" style="margin-top: 12px;">
+        {{ $tc('nova-versandkosten.request.paymentUrl') }}: <a :href="novaVkInfo.paymentUrl" target="_blank" rel="noopener">{{ novaVkInfo.paymentUrl }}</a>
+    </p>
+</mt-card>
+<mt-card
+    v-if="novaVersandkosten || novaVkBeipack"
     class="nova-versandkosten-order-card"
     position-identifier="nova-versandkosten-order-card"
     :title="$tc('nova-versandkosten.order.title')"
 >
-    <p v-if="novaVersandkosten.carrier || novaVersandkosten.product">
-        <strong>{{ novaVersandkosten.carrier }} {{ novaVersandkosten.product }}</strong>
-        <span v-if="novaVersandkosten.delivery"> · {{ $tc('nova-versandkosten.order.delivery') }} {{ novaVersandkosten.delivery }}</span>
-    </p>
-    <p v-if="novaVersandkosten.dimsMissing" style="color: #de294c; font-weight: 600;">
-        {{ $tc('nova-versandkosten.order.dimsMissing') }}
-    </p>
-    <table v-if="novaVersandkosten.packages.length" style="width: 100%; border-collapse: collapse; margin: 8px 0;">
-        <thead>
-            <tr>
-                <th style="text-align: left;">#</th>
-                <th style="text-align: left;">{{ $tc('nova-versandkosten.order.weight') }}</th>
-                <th style="text-align: left;">{{ $tc('nova-versandkosten.order.dims') }}</th>
-                <th style="text-align: left;">{{ $tc('nova-versandkosten.order.tier') }}</th>
+    <template v-if="novaVkBeipack">
+        <p v-if="novaVkBeipack.to" style="color: #de294c; font-weight: 600;">
+            <router-link v-if="novaVkBeipack.toId" :to="{ name: 'sw.order.detail', params: { id: novaVkBeipack.toId } }">{{ $tc('nova-versandkosten.order.beipackTo', 0, { number: novaVkBeipack.to }) }}</router-link>
+            <span v-else>{{ $tc('nova-versandkosten.order.beipackTo', 0, { number: novaVkBeipack.to }) }}</span>
+        </p>
+        <p v-if="novaVkBeipack.orders.length" style="font-weight: 600;">
+            {{ $tc('nova-versandkosten.order.beipackOrders') }}
+            <template v-for="(o, i) in novaVkBeipack.orders" :key="o.id">
+                <router-link :to="{ name: 'sw.order.detail', params: { id: o.id } }">{{ o.orderNumber }}</router-link><span v-if="i < novaVkBeipack.orders.length - 1">, </span>
+            </template>
+        </p>
+    </template>
+    <template v-if="novaVersandkosten">
+        <p v-if="novaVersandkosten.carrier || novaVersandkosten.product">
+            <strong>{{ novaVersandkosten.carrier }} {{ novaVersandkosten.product }}</strong>
+            <span v-if="novaVersandkosten.delivery"> · {{ $tc('nova-versandkosten.order.delivery') }} {{ novaVersandkosten.delivery }}</span>
+        </p>
+        <p v-if="novaVersandkosten.beipack" class="nova-versandkosten-muted">
+            {{ $tc('nova-versandkosten.order.basedOn', 0, { option: novaVersandkosten.option, combined: novaVkMoney(novaVersandkosten.beipack.combinedSale), paid: novaVkMoney(novaVersandkosten.beipack.paid) }) }}
+        </p>
+        <p v-if="novaVersandkosten.dimsMissing" style="color: #de294c; font-weight: 600;">
+            {{ $tc('nova-versandkosten.order.dimsMissing') }}
+        </p>
+        <table v-if="novaVersandkosten.packages.length" style="width: 100%; border-collapse: collapse; margin: 8px 0;">
+            <thead>
+                <tr>
+                    <th style="text-align: left;">#</th>
+                    <th style="text-align: left;">{{ $tc('nova-versandkosten.order.weight') }}</th>
+                    <th style="text-align: left;">{{ $tc('nova-versandkosten.order.dims') }}</th>
+                    <th style="text-align: left;">{{ $tc('nova-versandkosten.order.tier') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(p, i) in novaVersandkosten.packages" :key="i">
+                    <td>{{ i + 1 }}</td>
+                    <td>{{ p.weightKg }} kg</td>
+                    <td>{{ p.lengthCm }} × {{ p.widthCm }} × {{ p.heightCm }} cm</td>
+                    <td>{{ p.tier || '–' }}</td>
+                </tr>
+            </tbody>
+        </table>
+        <table style="border-collapse: collapse;">
+            <tr><td style="padding-right: 24px;">{{ $tc('nova-versandkosten.order.purchase') }}</td><td>{{ novaVkMoney(novaVersandkosten.purchase) }}</td></tr>
+            <tr><td style="padding-right: 24px;">{{ $tc('nova-versandkosten.order.saleNet') }}</td><td>{{ novaVkMoney(novaVersandkosten.saleNet) }} ({{ $tc('nova-versandkosten.order.sale') }} {{ novaVkMoney(novaVersandkosten.sale) }})</td></tr>
+            <tr :style="novaVersandkosten.difference < 0 ? 'color: #de294c; font-weight: 600;' : 'font-weight: 600;'">
+                <td style="padding-right: 24px;">{{ $tc('nova-versandkosten.order.difference') }}</td>
+                <td>{{ novaVkMoney(novaVersandkosten.difference) }}</td>
             </tr>
-        </thead>
-        <tbody>
-            <tr v-for="(p, i) in novaVersandkosten.packages" :key="i">
-                <td>{{ i + 1 }}</td>
-                <td>{{ p.weightKg }} kg</td>
-                <td>{{ p.lengthCm }} × {{ p.widthCm }} × {{ p.heightCm }} cm</td>
-                <td>{{ p.tier || '–' }}</td>
-            </tr>
-        </tbody>
-    </table>
-    <table style="border-collapse: collapse;">
-        <tr><td style="padding-right: 24px;">{{ $tc('nova-versandkosten.order.purchase') }}</td><td>{{ novaVkMoney(novaVersandkosten.purchase) }}</td></tr>
-        <tr><td style="padding-right: 24px;">{{ $tc('nova-versandkosten.order.saleNet') }}</td><td>{{ novaVkMoney(novaVersandkosten.saleNet) }} ({{ $tc('nova-versandkosten.order.sale') }} {{ novaVkMoney(novaVersandkosten.sale) }})</td></tr>
-        <tr :style="novaVersandkosten.difference < 0 ? 'color: #de294c; font-weight: 600;' : 'font-weight: 600;'">
-            <td style="padding-right: 24px;">{{ $tc('nova-versandkosten.order.difference') }}</td>
-            <td>{{ novaVkMoney(novaVersandkosten.difference) }}</td>
-        </tr>
-    </table>
+        </table>
+    </template>
 </mt-card>
 {% parent %}
 {% endblock %}

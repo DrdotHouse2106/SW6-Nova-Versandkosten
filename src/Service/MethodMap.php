@@ -21,6 +21,8 @@ final class MethodMap
         OptionResult::DHL => ['DHL Paket', 'DHL parcel'],
         OptionResult::FREIGHT => ['Spedition', 'Freight forwarding'],
         OptionResult::PICKUP => ['Abholung', 'Collection'],
+        OptionResult::REQUEST => ['Versandkosten auf Anfrage', 'Shipping costs on request'],
+        OptionResult::BEIPACK => ['Zu meiner Bestellung beipacken', 'Add to my open order'],
     ];
 
     public static function technicalName(string $option): string

@@ -1,0 +1,25 @@
+{% sw_extends '@Storefront/storefront/page/checkout/finish/index.html.twig' %}
+
+{% block page_checkout_finish_details %}
+    {% set novaVkFinish = page.extensions.novaVersandkosten ?? null %}
+    {% if novaVkFinish %}
+        {% block nova_versandkosten_finish %}
+            {% if novaVkFinish.requestOrder %}
+                <div class="alert alert-warning nova-versandkosten-request-notice" role="alert">
+                    <strong>{{ 'novaVersandkosten.request.notice'|trans|sw_sanitize }}</strong>
+                    {{ 'novaVersandkosten.request.finish'|trans|sw_sanitize }}
+                </div>
+            {% endif %}
+            {% if novaVkFinish.beipackTo %}
+                <div class="alert alert-info" role="alert">{{ 'novaVersandkosten.beipack.finish'|trans({'%number%': novaVkFinish.beipackTo})|sw_sanitize }}</div>
+            {% endif %}
+            {% if novaVkFinish.beipackDeepLinkCode %}
+                <p class="nova-versandkosten-beipack-link">
+                    {{ 'novaVersandkosten.beipack.forgot'|trans|sw_sanitize }}
+                    <a href="{{ path('frontend.nova_versandkosten.beipack.link', { deepLinkCode: novaVkFinish.beipackDeepLinkCode }) }}">{{ 'novaVersandkosten.beipack.forgotLink'|trans|sw_sanitize }}</a>
+                </p>
+            {% endif %}
+        {% endblock %}
+    {% endif %}
+    {{ parent() }}
+{% endblock %}

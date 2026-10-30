@@ -7,18 +7,35 @@
     {% if novaVk %}
         {% block nova_versandkosten_method_info %}
             <div class="nova-versandkosten-info small">
-                <span class="nova-versandkosten-price fw-bold">{{ novaVk.price|currency }}</span>
-                {% if not novaVk.vatIncluded %}
-                    <span class="text-muted">({{ 'novaVersandkosten.noVat'|trans|sw_sanitize }})</span>
-                {% endif %}
-                {% if novaVk.packageCount > 1 %}
-                    <span class="text-muted">· {{ 'novaVersandkosten.packages'|trans({'%count%': novaVk.packageCount})|sw_sanitize }}</span>
-                {% endif %}
-                {% if novaVk.recommended %}
-                    <span class="badge bg-success-subtle text-success-emphasis">{{ 'novaVersandkosten.recommended'|trans|sw_sanitize }}</span>
-                {% endif %}
-                {% if novaVk.delivery %}
-                    <div class="nova-versandkosten-delivery text-muted">{{ 'novaVersandkosten.delivery'|trans({'%dates%': novaVk.delivery})|sw_sanitize }}</div>
+                {% if novaVk.onRequest %}
+                    {% block nova_versandkosten_method_info_request %}
+                        <span class="nova-versandkosten-price fw-bold">{{ 'novaVersandkosten.request.price'|trans|sw_sanitize }}</span>
+                    {% endblock %}
+                {% elseif novaVk.beipack ?? false %}
+                    {% block nova_versandkosten_method_info_beipack %}
+                        {% if novaVk.price is not null %}
+                            <span class="nova-versandkosten-price fw-bold">{{ novaVk.price|currency }}</span>
+                        {% else %}
+                            <span class="nova-versandkosten-price text-muted">{{ 'novaVersandkosten.beipack.priceAfterSelection'|trans|sw_sanitize }}</span>
+                        {% endif %}
+                        {% if novaVk.orderNumber %}
+                            <span class="text-muted">· {{ 'novaVersandkosten.beipack.toOrder'|trans({'%number%': novaVk.orderNumber})|sw_sanitize }}</span>
+                        {% endif %}
+                    {% endblock %}
+                {% else %}
+                    <span class="nova-versandkosten-price fw-bold">{{ novaVk.price|currency }}</span>
+                    {% if not novaVk.vatIncluded %}
+                        <span class="text-muted">({{ 'novaVersandkosten.noVat'|trans|sw_sanitize }})</span>
+                    {% endif %}
+                    {% if novaVk.packageCount > 1 %}
+                        <span class="text-muted">· {{ 'novaVersandkosten.packages'|trans({'%count%': novaVk.packageCount})|sw_sanitize }}</span>
+                    {% endif %}
+                    {% if novaVk.recommended %}
+                        <span class="badge bg-success-subtle text-success-emphasis">{{ 'novaVersandkosten.recommended'|trans|sw_sanitize }}</span>
+                    {% endif %}
+                    {% if novaVk.delivery %}
+                        <div class="nova-versandkosten-delivery text-muted">{{ 'novaVersandkosten.delivery'|trans({'%dates%': novaVk.delivery})|sw_sanitize }}</div>
+                    {% endif %}
                 {% endif %}
                 {% for hint in novaVk.hints %}
                     <div class="nova-versandkosten-hint text-muted">{{ ('novaVersandkosten.hint.' ~ hint.code)|trans({'%carrier%': hint.carrier})|sw_sanitize }}</div>

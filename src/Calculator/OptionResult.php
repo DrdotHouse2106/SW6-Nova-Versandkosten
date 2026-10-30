@@ -13,8 +13,15 @@ final class OptionResult
     public const DHL = 'dhl';
     public const FREIGHT = 'spedition';
     public const PICKUP = 'abholung';
+    /** Versandkosten auf Anfrage: Bestellung mit 0,00 €, der Shop trägt den Preis nachträglich ein */
+    public const REQUEST = 'anfrage';
+    /** Zu einer offenen Bestellung beipacken (Preis = Differenz, siehe Beipack) */
+    public const BEIPACK = 'beipack';
 
-    public const ALL = [self::WARENPOST, self::KLEINPAKET, self::DPD, self::DHL, self::FREIGHT, self::PICKUP];
+    public const ALL = [self::WARENPOST, self::KLEINPAKET, self::DPD, self::DHL, self::FREIGHT, self::PICKUP, self::REQUEST];
+
+    /** Optionen mit echtem Versand (für „günstigste passende“) */
+    public const SHIPPING = [self::WARENPOST, self::KLEINPAKET, self::DPD, self::DHL, self::FREIGHT];
 
     /** Grund-Code, wenn nicht verfügbar: Spedition ohne Preis → „auf Anfrage“ */
     public const REASON_ON_REQUEST = 'onRequest';
@@ -60,6 +67,9 @@ final class OptionResult
     public bool $recommended = false;
 
     public bool $peakApplied = false;
+
+    /** @var array<string, mixed> Zusatzangaben (z. B. Beipack: Grundlage, bereits bezahlt) */
+    public array $meta = [];
 
     public function __construct(public readonly string $key)
     {
@@ -113,6 +123,7 @@ final class OptionResult
             'deliveryFrom' => $this->deliveryFrom?->format('Y-m-d'),
             'deliveryTo' => $this->deliveryTo?->format('Y-m-d'),
             'recommended' => $this->recommended,
+            'meta' => $this->meta,
         ];
     }
 }

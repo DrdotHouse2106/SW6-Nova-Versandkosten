@@ -47,8 +47,7 @@ final class ShippingCalculator
 
         foreach ([OptionResult::WARENPOST, OptionResult::KLEINPAKET, OptionResult::DPD, OptionResult::DHL] as $key) {
             if ($packaging->mode !== PackageBuilder::MODE_PARCEL) {
-                $options[$key] = OptionResult::unavailable($key, $packaging->mode === PackageBuilder::MODE_FREIGHT
-                    ? 'Warenkorb enthält Speditionsware' : 'Warenkorb enthält einen Artikel „nur Abholung“');
+                $options[$key] = OptionResult::unavailable($key, self::modeReason($packaging->mode));
                 continue;
             }
             if (!$countryAllowed) {
@@ -64,6 +63,7 @@ final class ShippingCalculator
             $anyParcel = $anyParcel || $option->available;
         }
         $options[OptionResult::FREIGHT] = $this->freightOption($packaging, $destination, $rules, $freight, $goodsValue, $isEu, $anyParcel, $countryAllowed);
+        $options[OptionResult::REQUEST] = $this->requestOption($packaging, $destination, $rules, $tariffs, $options, $isEu, $countryAllowed);
 
         $pickup = new OptionResult(OptionResult::PICKUP);
         $pickup->available = $rules->pickupEnabled;
@@ -76,7 +76,7 @@ final class ShippingCalculator
 
         if ($estimator !== null) {
             foreach ($options as $option) {
-                if (!$option->available || $option->key === OptionResult::PICKUP) {
+                if (!$option->available || $option->key === OptionResult::PICKUP || $option->key === OptionResult::REQUEST) {
                     continue;
                 }
                 if ($option->transitMin === null) {
@@ -90,7 +90,7 @@ final class ShippingCalculator
             }
         } else {
             foreach ($options as $option) {
-                if ($option->available && $option->transitMin === null && $option->key !== OptionResult::PICKUP) {
+                if ($option->available && $option->transitMin === null && $option->key !== OptionResult::PICKUP && $option->key !== OptionResult::REQUEST) {
                     $transit = $rules->transitDays($option->key, $country);
                     if ($transit !== null) {
                         [$option->transitMin, $option->transitMax] = $transit;
@@ -282,8 +282,8 @@ final class ShippingCalculator
         bool $countryAllowed,
     ): OptionResult {
         $key = OptionResult::FREIGHT;
-        if ($packaging->mode === PackageBuilder::MODE_PICKUP) {
-            return OptionResult::unavailable($key, 'Warenkorb enthält einen Artikel „nur Abholung“');
+        if ($packaging->mode === PackageBuilder::MODE_PICKUP || $packaging->mode === PackageBuilder::MODE_REQUEST) {
+            return OptionResult::unavailable($key, self::modeReason($packaging->mode));
         }
         if ($packaging->mode === PackageBuilder::MODE_PARCEL && $anyParcel) {
             return OptionResult::unavailable($key, 'Paketversand möglich');
@@ -324,6 +324,82 @@ final class ShippingCalculator
     }
 
     /**
+     * „Versandkosten auf Anfrage“ (Bestellung mit 0,00 €, Preis trägt der Shop nach). Angeboten, wenn
+     * eine der eingestellten Bedingungen zutrifft:
+     * - items: Warenkorb enthält einen Artikel „nur auf Anfrage“,
+     * - freight: Spedition wäre nötig, hat aber keinen Preis,
+     * - noTariff: für das Land gibt es keinen Paket-Tarif und keine Spedition,
+     * - withFreight: zusätzlich, wenn Spedition (mit Preis) angeboten wird – Alternative, wenn der
+     *   Speditionspreis zu hoch erscheint,
+     * - always: immer (außer bei „nur Abholung“).
+     *
+     * @param array<string, OptionResult> $options
+     */
+    private function requestOption(
+        Packaging $packaging,
+        Destination $destination,
+        ChannelRules $rules,
+        TariffSet $tariffs,
+        array $options,
+        bool $isEu,
+        bool $countryAllowed,
+    ): OptionResult {
+        $key = OptionResult::REQUEST;
+        if ($packaging->mode === PackageBuilder::MODE_PICKUP) {
+            return OptionResult::unavailable($key, self::modeReason($packaging->mode));
+        }
+        if (!$countryAllowed) {
+            return OptionResult::unavailable($key, 'Land nicht freigeschaltet');
+        }
+
+        $anyParcel = false;
+        $anyTariff = false;
+        foreach ([OptionResult::WARENPOST, OptionResult::KLEINPAKET, OptionResult::DPD, OptionResult::DHL] as $parcelKey) {
+            $anyParcel = $anyParcel || (isset($options[$parcelKey]) && $options[$parcelKey]->available);
+            $anyTariff = $anyTariff || $tariffs->productsFor($parcelKey, $destination->country) !== [];
+        }
+        $freightAvailable = isset($options[OptionResult::FREIGHT]) && $options[OptionResult::FREIGHT]->available;
+
+        $trigger = null;
+        if ($packaging->mode === PackageBuilder::MODE_REQUEST) {
+            $trigger = $rules->requestWhen(ChannelRules::REQUEST_ITEMS) ? ChannelRules::REQUEST_ITEMS : null;
+        } elseif (!$anyParcel && !$freightAvailable && !$anyTariff && $packaging->mode === PackageBuilder::MODE_PARCEL && $rules->requestWhen(ChannelRules::REQUEST_NO_TARIFF)) {
+            $trigger = ChannelRules::REQUEST_NO_TARIFF;
+        } elseif (!$anyParcel && !$freightAvailable && $rules->requestWhen(ChannelRules::REQUEST_FREIGHT)) {
+            $trigger = ChannelRules::REQUEST_FREIGHT;
+        }
+        if ($trigger === null && $freightAvailable && $rules->requestWhen(ChannelRules::REQUEST_WITH_FREIGHT)) {
+            $trigger = ChannelRules::REQUEST_WITH_FREIGHT;
+        }
+        if ($trigger === null && $rules->requestWhen(ChannelRules::REQUEST_ALWAYS)) {
+            $trigger = ChannelRules::REQUEST_ALWAYS;
+        }
+        if ($trigger === null) {
+            return OptionResult::unavailable($key, 'Versand auf Anfrage für diesen Warenkorb nicht eingestellt');
+        }
+
+        $result = new OptionResult($key);
+        $result->available = true;
+        $result->carrier = 'request';
+        $result->carrierName = '';
+        $result->vatIncluded = $isEu;
+        $result->saleCents = 0;
+        $result->hints[] = ['code' => $trigger === ChannelRules::REQUEST_WITH_FREIGHT ? 'onRequestAlternative' : 'onRequest'];
+        $result->meta = ['trigger' => $trigger];
+
+        return $result;
+    }
+
+    private static function modeReason(string $mode): string
+    {
+        return match ($mode) {
+            PackageBuilder::MODE_FREIGHT => 'Warenkorb enthält Speditionsware',
+            PackageBuilder::MODE_REQUEST => 'Warenkorb enthält einen Artikel „nur auf Anfrage“',
+            default => 'Warenkorb enthält einen Artikel „nur Abholung“',
+        };
+    }
+
+    /**
      * Empfehlung: außerhalb der EU DHL (Zollanmeldung einfach), sonst die günstigste Paketoption.
      *
      * @param array<string, OptionResult> $options
@@ -337,7 +413,7 @@ final class ShippingCalculator
         }
         $best = null;
         foreach ($options as $option) {
-            if (!$option->available || $option->key === OptionResult::PICKUP) {
+            if (!$option->available || $option->key === OptionResult::PICKUP || $option->key === OptionResult::REQUEST) {
                 continue;
             }
             if ($best === null || $option->saleCents < $best->saleCents) {
