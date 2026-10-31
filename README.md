@@ -47,6 +47,7 @@ gehen – mit Preis, voraussichtlichem Zustelldatum und Hinweisen.
   Hänger, Bestellschluss), Versandart „Lieferung mit unserer Tour“ nur für Adressen nahe der Strecke,
   Preis nach Einordnung und Abweichung, Termin-Auswahl in der Kasse, Liste „Tour-Lieferungen“ zum
   Beladen, Hinweis an Bestellungen „Versandkosten auf Anfrage“ in Reichweite einer Strecke.
+  **Preisprofile** (neu in 1.2.1): der Tourpreis je nachdem, wer fährt – Auswahl am Tourtermin.
 - **Tour-Benachrichtigung** (neu in 1.2.0): Kunden (Schalter je Lieferadresse im Konto) und Gäste
   (Formular mit Double-Opt-in und Captcha) werden auf Knopfdruck informiert, wenn ein Tourtermin in
   ihre Nähe fährt – ohne die Strecke zu verraten.
@@ -462,6 +463,36 @@ sich die Variante jederzeit festlegen oder ändern (z. B. vor der ersten Buchung
 - Beispiel (Platzhalter): Lieferadresse 8 km neben der Strecke → Abweichung 8 × 1,3 = 10,4 km → für
   Kleinteile zu weit, für Speditionsware bei Termin mit Hänger 190 €.
 
+### Preisprofile (wer fährt)
+
+Der Tourpreis kann davon abhängen, **wer fährt** – z. B. darf eine weite Speditionsfahrt günstiger
+sein, wenn der Inhaber selbst fährt, als wenn ein Mitarbeiter fährt. Dafür gibt es **Preisprofile**
+unter *Bestellungen → Touren → Preisprofile*:
+
+| Feld | Bedeutung |
+|---|---|
+| **Name** | nur intern, z. B. „Profil A“ / „Profil B“ – **wird Kunden nie angezeigt** |
+| **Preis Kleinteile/Paket/Sperrgut** + **bis Abweichung (km)** | wie in den Einstellungen, z. B. 50 € bis 10 km |
+| **Speditionsstufen** (nur mit Hänger) | „bis km = Preis“ je Zeile, z. B. `30=190` und `60=290`; leer = mit diesem Profil keine Speditionsware |
+| **Reihenfolge** | Sortierung in der Auswahl |
+
+Beispiel (Platzhalter): **Profil A** – Spedition `60=190` (190 € bis 60 km); **Profil B** – Spedition
+`30=190` und `60=290`. Eine Speditionsware 45 km neben der Strecke kostet mit Profil A 190 €, mit
+Profil B 290 €.
+
+- **Am Tourtermin** wählen Sie das Preisprofil; ohne Auswahl gilt das **Standardprofil** = die Werte
+  aus den Einstellungen „Eigene Touren“ (je Verkaufskanal). Ohne eigene Profile ändert sich also
+  nichts gegenüber 1.2.0.
+- Das Profil des Termins gilt überall: Preis und Verfügbarkeit in der Kasse, erneute Prüfung beim
+  Bestellen, Reichweite der Tour-Benachrichtigung (Interessenten im Korridor = bis zur größten
+  Stufe des Profils), Markierung „außerhalb des Preisrahmens“ in den Tour-Lieferungen und der
+  Hinweis an „Versandkosten auf Anfrage“. Für Strecken ohne Termin (Hinweis, Abonnenten-Filter) zählt
+  die größte Reichweite aller Profile.
+- Umwegfaktor und Lieferländer bleiben die der Einstellungen (je Verkaufskanal); Profile gelten für
+  alle Verkaufskanäle. Preise brutto.
+- Wird ein Profil gelöscht, fallen seine Termine auf das Standardprofil zurück. Bereits bestellte
+  Touren behalten ihren Preis.
+
 ### Einrichtung
 
 1. *Einstellungen → Versand* → „Lieferung mit unserer Tour“ aktivieren und dem Verkaufskanal zuordnen
@@ -473,9 +504,12 @@ sich die Variante jederzeit festlegen oder ändern (z. B. vor der ersten Buchung
    Mittelpunkt aller PLZ). Reihenfolge mit ↑/↓, Bezeichnung frei änderbar.
 4. *Tourtermine → Neuer Tourtermin*: Strecke wählen (oder „eigene Wegpunkte“ für eine einmalige
    Fahrt), Datum, ggf. Bestellschluss, „mit Hänger“. Status „offen“ lassen. Einmalige Fahrten lassen
-   sich mit „Als Strecken-Vorlage speichern“ für später sichern.
+   sich mit „Als Strecken-Vorlage speichern“ für später sichern. Optional: **Preisprofil** wählen
+   (wer fährt, siehe oben).
 5. Rechte: *Einstellungen → Benutzer & Rechte → Rollen → Bestellungen → Touren* (ansehen, bearbeiten,
    anlegen, löschen). Für „Tour-Lieferungen“ braucht die Rolle zusätzlich Bestellungen lesen.
+   Preisprofile: ansehen mit „ansehen“, anlegen/ändern mit „bearbeiten“, löschen mit „löschen“
+   (bestehende Rollen werden beim Update auf 1.2.1 ergänzt).
 
 ### In der Kasse
 

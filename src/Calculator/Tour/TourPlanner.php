@@ -10,7 +10,8 @@ namespace Nova\Versandkosten\Calculator\Tour;
  * - Speditionsware nur bei Terminen „mit Hänger“.
  * - Offener Termin: alle Varianten zählen, es gilt die mit der geringsten Abweichung (diese wird bei
  *   der ersten Buchung festgelegt). Festgelegter Termin: nur die festgelegte Variante.
- * - Abweichung = Luftlinie zur Variante × Umwegfaktor; Preis nach Einordnung und Abweichung.
+ * - Abweichung = Luftlinie zur Variante × Umwegfaktor; Preis nach Einordnung und Abweichung – aus dem
+ *   Preisprofil des Termins (wer fährt), ohne Profil aus dem Standardprofil.
  */
 final class TourPlanner
 {
@@ -34,7 +35,7 @@ final class TourPlanner
             return new TourMatch($date->id, false, TourMatch::REASON_NO_ROUTE, tier: $tier);
         }
         [$variant, $deviation, $along] = $nearest;
-        $price = $pricing->priceCents($tier, $deviation, $date->trailer);
+        $price = $date->pricing($pricing)->priceCents($tier, $deviation, $date->trailer);
         if ($price === null) {
             return new TourMatch($date->id, false, TourMatch::REASON_TOO_FAR, $variant->id, $variant->name, $deviation, $along, null, $tier);
         }
@@ -89,13 +90,13 @@ final class TourPlanner
 
     /**
      * Liegt der Punkt im Korridor des Termins (für Benachrichtigungen)? Offener Termin: irgendeine
-     * Variante; festgelegter: nur diese. Reichweite: mit Hänger bis zur größten Speditionsstufe, sonst
-     * bis zur Grenze für Kleinteile.
+     * Variante; festgelegter: nur diese. Reichweite (aus dem Preisprofil des Termins): mit Hänger bis zur
+     * größten Speditionsstufe, sonst bis zur Grenze für Kleinteile.
      */
     public static function inCorridor(TourDate $date, GeoPoint $point, TourPricing $pricing): ?float
     {
         $nearest = self::nearestVariant($date->bookableVariants(), $point, $pricing);
-        if ($nearest === null || $nearest[1] > $pricing->maxReachKm($date->trailer) + 1e-9) {
+        if ($nearest === null || $nearest[1] > $date->pricing($pricing)->maxReachKm($date->trailer) + 1e-9) {
             return null;
         }
 

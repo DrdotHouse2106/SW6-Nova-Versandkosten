@@ -11,6 +11,9 @@
         <mt-button v-if="tab === 'routes' && acl.can('nova_vk_tour.editor')" variant="primary" @click="$router.push({ name: 'nova.vk.tour.route' })">
             {{ $tc('nova-vk-tour.routes.new') }}
         </mt-button>
+        <mt-button v-if="tab === 'profiles' && acl.can('nova_vk_tour.editor')" variant="primary" @click="editProfile(null)">
+            {{ $tc('nova-vk-tour.profiles.new') }}
+        </mt-button>
     </template>
 
     <template #content>
@@ -18,6 +21,7 @@
             <div class="nova-vk-tour__tabs" role="tablist">
                 <button type="button" role="tab" :class="{ 'is--active': tab === 'dates' }" :aria-selected="tab === 'dates'" @click="setTab('dates')">{{ $tc('nova-vk-tour.tabs.dates') }}</button>
                 <button type="button" role="tab" :class="{ 'is--active': tab === 'routes' }" :aria-selected="tab === 'routes'" @click="setTab('routes')">{{ $tc('nova-vk-tour.tabs.routes') }}</button>
+                <button type="button" role="tab" :class="{ 'is--active': tab === 'profiles' }" :aria-selected="tab === 'profiles'" @click="setTab('profiles')">{{ $tc('nova-vk-tour.tabs.profiles') }}</button>
                 <button type="button" role="tab" :class="{ 'is--active': tab === 'subscribers' }" :aria-selected="tab === 'subscribers'" @click="setTab('subscribers')">{{ $tc('nova-vk-tour.tabs.subscribers') }}</button>
             </div>
 
@@ -33,6 +37,7 @@
                             <th>{{ $tc('nova-vk-tour.dates.tour') }}</th>
                             <th>{{ $tc('nova-vk-tour.dates.status') }}</th>
                             <th>{{ $tc('nova-vk-tour.dates.trailer') }}</th>
+                            <th>{{ $tc('nova-vk-tour.dates.priceProfile') }}</th>
                             <th>{{ $tc('nova-vk-tour.dates.deadline') }}</th>
                             <th>{{ $tc('nova-vk-tour.dates.deliveries') }}</th>
                         </tr>
@@ -43,6 +48,7 @@
                             <td>{{ d.label || $tc('nova-vk-tour.dates.oneOff') }}<span v-if="d.waypoints.length" class="nova-vk-tour__muted"> ({{ $tc('nova-vk-tour.dates.ownWaypoints') }})</span></td>
                             <td>{{ statusLabel(d.status) }}<span v-if="d.variantName" class="nova-vk-tour__muted"> · {{ d.variantName }}</span></td>
                             <td>{{ d.trailer ? '✓' : '–' }}</td>
+                            <td>{{ d.priceProfileName || $tc('nova-vk-tour.profiles.default') }}</td>
                             <td>{{ formatDate(d.orderDeadline) }}</td>
                             <td>{{ d.deliveries }}</td>
                         </tr>
@@ -73,6 +79,73 @@
                     </tbody>
                 </table>
                 <p v-else>{{ $tc('nova-vk-tour.routes.none') }}</p>
+            </mt-card>
+
+            <mt-card v-if="tab === 'profiles'" position-identifier="nova-vk-tour-profiles" :title="$tc('nova-vk-tour.tabs.profiles')" :is-loading="loading">
+                <p class="nova-vk-tour__muted">{{ $tc('nova-vk-tour.profiles.help') }}</p>
+                <table class="nova-vk-tour__table">
+                    <thead>
+                        <tr>
+                            <th>{{ $tc('nova-vk-tour.profiles.name') }}</th>
+                            <th>{{ $tc('nova-vk-tour.profiles.small') }}</th>
+                            <th>{{ $tc('nova-vk-tour.profiles.freight') }}</th>
+                            <th>{{ $tc('nova-vk-tour.profiles.used') }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-if="overview.defaultProfile">
+                            <td>{{ $tc('nova-vk-tour.profiles.default') }}<div class="nova-vk-tour__muted">{{ $tc('nova-vk-tour.profiles.defaultHelp') }}</div></td>
+                            <td>{{ $tc('nova-vk-tour.profiles.smallText', 0, { price: overview.defaultProfile.smallPrice, km: overview.defaultProfile.smallMaxKm }) }}</td>
+                            <td>{{ formatTiers(overview.defaultProfile.freightTiers) }}</td>
+                            <td>{{ overview.dates.filter((d) => !d.priceProfileId).length }}</td>
+                            <td></td>
+                        </tr>
+                        <tr v-for="p in overview.profiles" :key="p.id">
+                            <td><strong>{{ p.name }}</strong></td>
+                            <td>{{ $tc('nova-vk-tour.profiles.smallText', 0, { price: p.smallPrice, km: p.smallMaxKm }) }}</td>
+                            <td>{{ formatTiers(p.freightTiers) }}</td>
+                            <td>{{ overview.dates.filter((d) => d.priceProfileId === p.id).length }}</td>
+                            <td class="nova-vk-tour__actions">
+                                <mt-button v-if="acl.can('nova_vk_tour.editor')" variant="secondary" size="small" @click="editProfile(p)">{{ $tc('nova-vk-tour.profiles.edit') }}</mt-button>
+                                <mt-button v-if="acl.can('nova_vk_tour.deleter')" variant="critical" size="small" @click="deleteProfile(p)">{{ $tc('nova-vk-tour.general.delete') }}</mt-button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p v-if="!overview.profiles || !overview.profiles.length">{{ $tc('nova-vk-tour.profiles.none') }}</p>
+
+                <div v-if="profile" class="nova-vk-tour__editor">
+                    <h3>{{ profile.id ? $tc('nova-vk-tour.profiles.edit') : $tc('nova-vk-tour.profiles.new') }}</h3>
+                    <div class="nova-vk-tour__grid">
+                        <label>
+                            <span>{{ $tc('nova-vk-tour.profiles.name') }} *</span>
+                            <input v-model="profile.name" class="nova-vk-tour__input" type="text" maxlength="255" :placeholder="$tc('nova-vk-tour.profiles.namePlaceholder')">
+                            <span class="nova-vk-tour__muted">{{ $tc('nova-vk-tour.profiles.nameHelp') }}</span>
+                        </label>
+                        <label>
+                            <span>{{ $tc('nova-vk-tour.profiles.smallPrice') }} *</span>
+                            <input v-model="profile.smallPrice" class="nova-vk-tour__input nova-vk-tour__input--short" type="number" min="0" step="0.01">
+                        </label>
+                        <label>
+                            <span>{{ $tc('nova-vk-tour.profiles.smallMaxKm') }} *</span>
+                            <input v-model="profile.smallMaxKm" class="nova-vk-tour__input nova-vk-tour__input--short" type="number" min="0" step="0.1">
+                        </label>
+                        <label>
+                            <span>{{ $tc('nova-vk-tour.profiles.freightTiers') }}</span>
+                            <textarea v-model="profile.freightTiers" class="nova-vk-tour__input" rows="3" placeholder="30=190&#10;60=290"></textarea>
+                            <span class="nova-vk-tour__muted">{{ $tc('nova-vk-tour.profiles.freightTiersHelp') }}</span>
+                        </label>
+                        <label>
+                            <span>{{ $tc('nova-vk-tour.profiles.position') }}</span>
+                            <input v-model="profile.position" class="nova-vk-tour__input nova-vk-tour__input--short" type="number" min="0" step="1">
+                        </label>
+                    </div>
+                    <div class="nova-vk-tour__actions">
+                        <mt-button variant="secondary" size="small" @click="profile = null">{{ $tc('nova-vk-tour.profiles.cancel') }}</mt-button>
+                        <mt-button variant="primary" size="small" :disabled="profileSaving" @click="saveProfile">{{ $tc('nova-vk-tour.general.save') }}</mt-button>
+                    </div>
+                </div>
             </mt-card>
 
             <mt-card v-if="tab === 'subscribers'" position-identifier="nova-vk-tour-subscribers" :title="$tc('nova-vk-tour.subscribers.title')" :is-loading="subscribersLoading">

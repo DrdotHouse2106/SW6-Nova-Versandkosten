@@ -46,6 +46,7 @@ estimated delivery date and notes.
   trailer, order deadline), shipping method “Lieferung mit unserer Tour” only for addresses close to
   the route, price by category and deviation, date choice at checkout, list “tour deliveries” for
   loading, hint on “shipping costs on request” orders within reach of a route.
+  **Price profiles** (new in 1.2.1): tour price depending on who drives – chosen per tour date.
 - **Tour notification** (new in 1.2.0): customers (switch per delivery address in the account) and
   guests (form with double opt-in and captcha) are informed at the push of a button when a tour date
   comes near them – without revealing the route.
@@ -179,10 +180,25 @@ beyond: no tour. The **highest category** in the cart sets the price; items “c
 request only” exclude the tour. Domestic addresses only (countries configurable, default DE). No
 tariff file needed.
 
+**Price profiles (who drives):** the tour price can depend on who drives. *Orders → Tours → Price
+profiles*: name (internal only, e.g. “Profile A” / “Profile B” – **never shown to customers**), price
+for small parts/parcels/bulky goods up to a maximum deviation, freight tiers (“up to km = price” per
+line, e.g. `30=190` and `60=290`; empty = no freight goods with this profile) and order. Example
+(placeholders): profile A freight `60=190`, profile B `30=190` and `60=290` – freight 45 km beside the
+route costs 190 € with A and 290 € with B. Choose the profile **on the tour date**; without a choice
+the **default profile** = the “Own tours” settings (per sales channel) applies, so nothing changes
+compared to 1.2.0 without own profiles. The date's profile is used everywhere: checkout price and
+availability, check when ordering, reach of the tour notification, “out of range” marking in the tour
+deliveries and the hint on “shipping costs on request” (routes without a date: largest reach of all
+profiles). Detour factor and delivery countries stay as in the settings; profiles apply to all sales
+channels. Deleting a profile makes its dates fall back to the default profile; existing orders keep
+their price.
+
 **Setup:** activate and assign the shipping method · settings “Own tours” · *Orders → Tours → Routes →
 New route* (waypoints via “postcode or place” search, ↑/↓ to reorder) · *Tour dates → New tour date*
-(route or own waypoints, date, deadline, trailer; one-off trips can be saved as route template) · role
-permissions under *Orders → Tours*.
+(route or own waypoints, date, deadline, trailer, optional price profile; one-off trips can be saved as
+route template) · role permissions under *Orders → Tours* (price profiles: view/edit/delete with the
+same roles; existing roles are extended on the update to 1.2.1).
 
 **Checkout:** shown only if at least one open/fixed date fits (deadline not passed, deviation within
 limits, trailer for freight, country allowed, postcode known). The customer must choose the date

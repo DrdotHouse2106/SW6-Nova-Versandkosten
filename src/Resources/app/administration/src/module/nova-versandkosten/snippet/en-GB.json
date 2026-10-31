@@ -119,7 +119,8 @@
         "tabs": {
             "dates": "Tour dates",
             "routes": "Routes",
-            "subscribers": "Notification"
+            "subscribers": "Notification",
+            "profiles": "Price profiles"
         },
         "status": {
             "open": "open (all variants)",
@@ -152,7 +153,9 @@
             "saveAsRoute": "Save as route template",
             "saveAsRouteName": "Name of the new route",
             "savedAsRoute": "Route created.",
-            "confirmDelete": "Delete this tour date? Orders keep their data."
+            "confirmDelete": "Delete this tour date? Orders keep their data.",
+            "priceProfile": "Price profile",
+            "priceProfileHelp": "Who drives? Sets prices and reach of this date (checkout, check when ordering, notification). Customers only see the price, never the profile name."
         },
         "routes": {
             "new": "New route",
@@ -174,6 +177,30 @@
             "removeVariant": "Remove variant",
             "addVariant": "Add variant",
             "confirmDelete": "Delete this route with all variants? Tour dates remain but lose the route."
+        },
+        "profiles": {
+            "help": "The tour price can depend on who drives. Each profile has a price for small parts/parcels/bulky goods up to a maximum deviation and freight tiers. Choose the profile on the tour date; without a choice the default profile from the “Own tours” settings applies. Detour factor and delivery countries stay as in the settings.",
+            "new": "New price profile",
+            "edit": "Edit",
+            "cancel": "Cancel",
+            "none": "No own price profiles yet – all dates use the default profile.",
+            "default": "Default profile",
+            "defaultHelp": "from the “Own tours” settings",
+            "name": "Name",
+            "namePlaceholder": "e.g. owner drives",
+            "nameHelp": "Internal only, never shown to customers.",
+            "small": "Small parts/parcels/bulky",
+            "freight": "Freight goods",
+            "used": "Dates",
+            "smallPrice": "Price small parts/parcels/bulky (€, gross)",
+            "smallMaxKm": "up to deviation (km)",
+            "freightTiers": "Freight tiers (trailer only)",
+            "freightTiersHelp": "One tier per line “up to km = price”, e.g. “30=190” and “60=290”. Empty = no freight goods with this profile.",
+            "position": "Order",
+            "smallText": "{price} € up to {km} km",
+            "tierText": "{price} € up to {km} km",
+            "noFreight": "none",
+            "confirmDelete": "Delete price profile “{name}”? {count} date(s) use it and fall back to the default profile."
         },
         "waypoints": {
             "empty": "No waypoints yet.",

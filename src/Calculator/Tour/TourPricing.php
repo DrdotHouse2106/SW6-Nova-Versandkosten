@@ -10,6 +10,9 @@ namespace Nova\Versandkosten\Calculator\Tour;
  * - Darüber: keine Tour.
  *
  * Abweichung = Luftlinie zur Strecke × Umwegfaktor (Standard 1,3). Preise brutto in Cent.
+ *
+ * Diese Werte sind das Standardprofil. Ein Tourtermin kann ein eigenes Preisprofil haben
+ * (TourPriceProfile, z. B. je nach Fahrer); dann gelten dessen Preise und Grenzen, siehe withProfile().
  */
 final class TourPricing
 {
@@ -34,11 +37,12 @@ final class TourPricing
 
     /**
      * Stufen aus dem Einstellungstext „30=190“ je Zeile (auch „30;190“, Komma als Dezimalzeichen).
-     * Ungültige Zeilen werden übersprungen; leer = Standard.
+     * Ungültige Zeilen werden übersprungen; leer = Standard (bzw. keine Stufen, wenn
+     * $defaultIfEmpty false ist – so bei Preisprofilen: dann keine Speditionsware).
      *
      * @return list<array{0: float, 1: int}>
      */
-    public static function parseTiers(string $text): array
+    public static function parseTiers(string $text, bool $defaultIfEmpty = true): array
     {
         $tiers = [];
         foreach (preg_split('/[\r\n]+/', $text) ?: [] as $line) {
@@ -57,7 +61,20 @@ final class TourPricing
         }
         usort($tiers, static fn (array $a, array $b) => $a[0] <=> $b[0]);
 
-        return $tiers === [] ? self::DEFAULT_FREIGHT_TIERS : $tiers;
+        return $tiers === [] && $defaultIfEmpty ? self::DEFAULT_FREIGHT_TIERS : $tiers;
+    }
+
+    /**
+     * Preise eines Tourtermins: mit Preisprofil dessen Preise und Grenzen (Umwegfaktor und Lieferländer
+     * bleiben), ohne Profil unverändert das Standardprofil.
+     */
+    public function withProfile(?TourPriceProfile $profile): self
+    {
+        if ($profile === null) {
+            return $this;
+        }
+
+        return new self($profile->smallPriceCents, $profile->smallMaxKm, $profile->freightTiers, $this->detourFactor, $this->countries);
     }
 
     public function isCountryAllowed(string $iso): bool

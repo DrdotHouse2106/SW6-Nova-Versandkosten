@@ -7,6 +7,7 @@ namespace Nova\Versandkosten\Calculator\Tour;
  *
  * Status: „open“ = alle Varianten zählen (noch keine Buchung), „fixed“ = Variante festgelegt (erste
  * Buchung oder Admin), „closed“ = keine Buchungen mehr. Bestellschluss = letzter Bestelltag (inklusive).
+ * Das Preisprofil (wer fährt) bestimmt Preise und Reichweite des Termins.
  */
 final class TourDate
 {
@@ -30,7 +31,15 @@ final class TourDate
         public readonly array $variants,
         public readonly ?string $fixedVariantId = null,
         public readonly string $name = '',
+        /** Preisprofil des Termins (wer fährt) – null = Standardprofil */
+        public readonly ?TourPriceProfile $priceProfile = null,
     ) {
+    }
+
+    /** Preise dieses Termins: Preisprofil, sonst das Standardprofil */
+    public function pricing(TourPricing $default): TourPricing
+    {
+        return $default->withProfile($this->priceProfile);
     }
 
     /**

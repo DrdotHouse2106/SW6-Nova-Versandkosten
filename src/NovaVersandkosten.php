@@ -7,6 +7,7 @@ use Nova\Versandkosten\Installer\CustomFieldInstaller;
 use Nova\Versandkosten\Installer\MailTemplateInstaller;
 use Nova\Versandkosten\Installer\ShippingMethodInstaller;
 use Nova\Versandkosten\Migration\Migration1793450000NovaVkTour;
+use Nova\Versandkosten\Migration\Migration1793460000NovaVkTourPriceProfile;
 use Nova\Versandkosten\Service\MethodMap;
 use Nova\Versandkosten\Service\Tour\PostcodeDirectory;
 use Shopware\Core\Framework\Context;
@@ -19,7 +20,7 @@ use Shopware\Core\Framework\Plugin\Context\UpdateContext;
 
 /**
  * Nova Versandkosten – Versandkosten aus Einkaufstarifen, Paketbildung und Kanalregeln berechnen;
- * ab 1.2.0 zusätzlich eigene Touren (Strecken, Tourtermine, Tour-Benachrichtigung).
+ * ab 1.2.0 zusätzlich eigene Touren (Strecken, Tourtermine, Tour-Benachrichtigung), ab 1.2.1 Preisprofile je Fahrer.
  *
  * Die Tabellen der Touren legt die Migration an (Migration1793450000NovaVkTour). Beim Installieren,
  * Aktualisieren und Aktivieren lädt das Plugin die mitgelieferten PLZ-Koordinaten (GeoNames, CC BY 4.0),
@@ -72,8 +73,8 @@ class NovaVersandkosten extends Plugin
         );
         $connection->executeStatement('DELETE FROM `system_config` WHERE `configuration_key` LIKE \'NovaVersandkosten.%\'');
 
-        // Eigene Touren: Tabellen entfernen (Reihenfolge wegen Fremdschlüsseln)
-        foreach (Migration1793450000NovaVkTour::TABLES as $table) {
+        // Eigene Touren: Tabellen entfernen (Reihenfolge wegen Fremdschlüsseln: Termine vor Preisprofilen)
+        foreach ([...Migration1793450000NovaVkTour::TABLES, ...Migration1793460000NovaVkTourPriceProfile::TABLES] as $table) {
             $connection->executeStatement('DROP TABLE IF EXISTS `' . $table . '`');
         }
     }

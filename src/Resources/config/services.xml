@@ -78,6 +78,9 @@
         <service id="Nova\Versandkosten\Core\Tour\TourDateDefinition">
             <tag name="shopware.entity.definition" entity="nova_vk_tour_date"/>
         </service>
+        <service id="Nova\Versandkosten\Core\Tour\TourPriceProfileDefinition">
+            <tag name="shopware.entity.definition" entity="nova_vk_tour_price_profile"/>
+        </service>
         <service id="Nova\Versandkosten\Core\Tour\TourSubscriberDefinition">
             <tag name="shopware.entity.definition" entity="nova_vk_tour_subscriber"/>
         </service>
@@ -222,6 +225,7 @@
             <argument type="service" id="nova_vk_tour_variant.repository"/>
             <argument type="service" id="nova_vk_tour_date.repository"/>
             <argument type="service" id="nova_vk_tour_subscriber.repository"/>
+            <argument type="service" id="nova_vk_tour_price_profile.repository"/>
             <argument type="service" id="Nova\Versandkosten\Service\Tour\TourRepository"/>
             <argument type="service" id="Nova\Versandkosten\Service\Tour\PostcodeDirectory"/>
             <argument type="service" id="Nova\Versandkosten\Service\Tour\TourNotificationService"/>

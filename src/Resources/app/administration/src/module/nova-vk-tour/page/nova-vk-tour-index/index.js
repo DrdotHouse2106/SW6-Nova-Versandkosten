@@ -1,9 +1,10 @@
 import template from './nova-vk-tour-index.html.twig';
 import '../../nova-vk-tour.scss';
-import { apiGet, apiDelete, apiDownload, errorText, formatDate, formatDateTime } from '../../api';
+import { apiGet, apiPost, apiDelete, apiDownload, errorText, formatDate, formatDateTime } from '../../api';
 
 /**
- * Übersicht: Tourtermine, Strecken, Tour-Benachrichtigung (Abonnenten mit Filter und CSV-Export).
+ * Übersicht: Tourtermine, Strecken, Preisprofile (wer fährt), Tour-Benachrichtigung (Abonnenten mit
+ * Filter und CSV-Export).
  */
 Shopware.Component.register('nova-vk-tour-index', {
     template,
@@ -16,7 +17,9 @@ Shopware.Component.register('nova-vk-tour-index', {
         return {
             tab: 'dates',
             loading: false,
-            overview: { routes: [], dates: [], settings: {} },
+            overview: { routes: [], dates: [], profiles: [], defaultProfile: null, settings: {} },
+            profile: null,
+            profileSaving: false,
             showPast: false,
             subscribers: [],
             subscribersLoading: false,
@@ -41,7 +44,7 @@ Shopware.Component.register('nova-vk-tour-index', {
         '$route.params.tab': {
             immediate: true,
             handler(tab) {
-                this.tab = ['dates', 'routes', 'subscribers'].includes(tab) ? tab : 'dates';
+                this.tab = ['dates', 'routes', 'profiles', 'subscribers'].includes(tab) ? tab : 'dates';
                 if (this.tab === 'subscribers') {
                     this.loadSubscribers();
                 }
@@ -74,6 +77,56 @@ Shopware.Component.register('nova-vk-tour-index', {
 
         statusLabel(status) {
             return this.$tc(`nova-vk-tour.status.${status}`);
+        },
+
+        editProfile(profile) {
+            this.profile = profile
+                ? { ...profile }
+                : {
+                    id: null,
+                    name: '',
+                    smallPrice: this.overview.defaultProfile?.smallPrice ?? 50,
+                    smallMaxKm: this.overview.defaultProfile?.smallMaxKm ?? 10,
+                    freightTiers: this.overview.defaultProfile?.freightTiers ?? '',
+                    position: (this.overview.profiles || []).length,
+                };
+        },
+
+        async saveProfile() {
+            this.profileSaving = true;
+            try {
+                await apiPost('price-profile', this.profile);
+                this.createNotificationSuccess({ message: this.$tc('nova-vk-tour.general.saved') });
+                this.profile = null;
+                await this.load();
+            } catch (error) {
+                this.createNotificationError({ message: errorText(error, this.$tc('nova-vk-tour.general.saveError')) });
+            } finally {
+                this.profileSaving = false;
+            }
+        },
+
+        async deleteProfile(profile) {
+            const used = this.overview.dates.filter((d) => d.priceProfileId === profile.id).length;
+            if (!window.confirm(this.$tc('nova-vk-tour.profiles.confirmDelete', 0, { name: profile.name, count: used }))) {
+                return;
+            }
+            try {
+                await apiDelete(`price-profile/${profile.id}`);
+                if (this.profile && this.profile.id === profile.id) {
+                    this.profile = null;
+                }
+                await this.load();
+            } catch (error) {
+                this.createNotificationError({ message: errorText(error, this.$tc('nova-vk-tour.general.saveError')) });
+            }
+        },
+
+        formatTiers(text) {
+            return String(text || '').split('\n').filter(Boolean).map((line) => {
+                const [km, price] = line.split('=');
+                return this.$tc('nova-vk-tour.profiles.tierText', 0, { km, price });
+            }).join(', ') || this.$tc('nova-vk-tour.profiles.noFreight');
         },
 
         async loadSubscribers() {

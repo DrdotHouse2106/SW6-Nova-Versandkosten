@@ -51,6 +51,15 @@
                         </select>
                         <span class="nova-vk-tour__muted">{{ $tc('nova-vk-tour.dates.variantHelp') }}</span>
                     </label>
+                    <label>
+                        <span>{{ $tc('nova-vk-tour.dates.priceProfile') }}</span>
+                        <select v-model="date.priceProfileId" class="nova-vk-tour__input" :disabled="!canEdit">
+                            <option value="">{{ $tc('nova-vk-tour.profiles.default') }}</option>
+                            <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
+                        </select>
+                        <span class="nova-vk-tour__muted">{{ profileSummary(profile) }}</span>
+                        <span class="nova-vk-tour__muted">{{ $tc('nova-vk-tour.dates.priceProfileHelp') }}</span>
+                    </label>
                     <label class="nova-vk-tour__check">
                         <input v-model="date.trailer" type="checkbox" :disabled="!canEdit"> {{ $tc('nova-vk-tour.dates.trailerHelp') }}
                     </label>

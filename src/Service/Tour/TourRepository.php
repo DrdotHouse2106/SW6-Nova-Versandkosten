@@ -7,6 +7,7 @@ use Doctrine\DBAL\Connection;
 use Nova\Versandkosten\Calculator\Tour\GeoPoint;
 use Nova\Versandkosten\Calculator\Tour\TourDate;
 use Nova\Versandkosten\Calculator\Tour\TourPlanner;
+use Nova\Versandkosten\Calculator\Tour\TourPriceProfile;
 use Nova\Versandkosten\Calculator\Tour\TourPricing;
 use Nova\Versandkosten\Calculator\Tour\TourVariant;
 use Nova\Versandkosten\Installer\CustomFieldInstaller as CF;
@@ -26,6 +27,9 @@ class TourRepository implements ResetInterface
     /** @var array<string, array<string, mixed>> Termin-ID → Zeile */
     private array $rows = [];
 
+    /** @var array<string, TourPriceProfile>|null Profil-ID → Preisprofil */
+    private ?array $profiles = null;
+
     public function __construct(private readonly Connection $connection)
     {
     }
@@ -34,6 +38,7 @@ class TourRepository implements ResetInterface
     {
         $this->bookable = null;
         $this->rows = [];
+        $this->profiles = null;
     }
 
     public static function today(): \DateTimeImmutable
@@ -53,7 +58,7 @@ class TourRepository implements ResetInterface
         }
         $rows = $this->connection->fetchAllAssociative(
             'SELECT LOWER(HEX(d.id)) AS id, LOWER(HEX(d.route_id)) AS route_id, LOWER(HEX(d.variant_id)) AS variant_id,
-                    d.name, d.tour_date, d.order_deadline, d.trailer, d.status, d.waypoints, r.name AS route_name
+                    LOWER(HEX(d.price_profile_id)) AS price_profile_id, d.name, d.tour_date, d.order_deadline, d.trailer, d.status, d.waypoints, r.name AS route_name
                FROM nova_vk_tour_date d LEFT JOIN nova_vk_tour_route r ON r.id = d.route_id
               WHERE d.status IN (:s) AND d.tour_date >= :today
               ORDER BY d.tour_date',
@@ -90,7 +95,7 @@ class TourRepository implements ResetInterface
         }
         $row = $this->connection->fetchAssociative(
             'SELECT LOWER(HEX(d.id)) AS id, LOWER(HEX(d.route_id)) AS route_id, LOWER(HEX(d.variant_id)) AS variant_id,
-                    d.name, d.tour_date, d.order_deadline, d.trailer, d.status, d.waypoints, d.notified_at, r.name AS route_name
+                    LOWER(HEX(d.price_profile_id)) AS price_profile_id, d.name, d.tour_date, d.order_deadline, d.trailer, d.status, d.waypoints, d.notified_at, r.name AS route_name
                FROM nova_vk_tour_date d LEFT JOIN nova_vk_tour_route r ON r.id = d.route_id
               WHERE d.id = :id',
             ['id' => Uuid::fromHexToBytes($id)]
@@ -143,7 +148,9 @@ class TourRepository implements ResetInterface
             if ($own !== [] && $status === TourDate::STATUS_FIXED) {
                 $fixed = TourVariant::CUSTOM;
             }
-            $out[] = new TourDate((string) $row['id'], $date, $deadline, (bool) $row['trailer'], $status, $list, $fixed, self::label($row));
+            $profileId = \is_string($row['price_profile_id'] ?? null) ? $row['price_profile_id'] : '';
+            $profile = $profileId !== '' ? ($this->profiles()[$profileId] ?? null) : null;
+            $out[] = new TourDate((string) $row['id'], $date, $deadline, (bool) $row['trailer'], $status, $list, $fixed, self::label($row), $profile);
         }
 
         return $out;
@@ -174,6 +181,46 @@ class TourRepository implements ResetInterface
         }
 
         return $out;
+    }
+
+    /**
+     * Alle Preisprofile (je Anfrage gemerkt), sortiert nach Position und Name.
+     *
+     * @return array<string, TourPriceProfile>
+     */
+    public function profiles(): array
+    {
+        if ($this->profiles !== null) {
+            return $this->profiles;
+        }
+        $this->profiles = [];
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT LOWER(HEX(id)) AS id, name, small_price, small_max_km, freight_tiers FROM nova_vk_tour_price_profile ORDER BY position, name'
+        );
+        foreach ($rows as $row) {
+            $this->profiles[(string) $row['id']] = new TourPriceProfile(
+                (string) $row['id'],
+                (string) $row['name'],
+                max(0, (int) $row['small_price']),
+                max(0.0, (float) $row['small_max_km']),
+                TourPriceProfile::tiersFromArray(json_decode((string) ($row['freight_tiers'] ?? ''), true)),
+            );
+        }
+
+        return $this->profiles;
+    }
+
+    /**
+     * Größte Reichweite über Standardprofil und alle Preisprofile (Strecken ohne Termin, Abonnenten-Filter).
+     */
+    public function maxReachKm(TourPricing $pricing, bool $trailer = true): float
+    {
+        $max = $pricing->maxReachKm($trailer);
+        foreach ($this->profiles() as $profile) {
+            $max = max($max, $pricing->withProfile($profile)->maxReachKm($trailer));
+        }
+
+        return $max;
     }
 
     public function variantName(?string $variantId): string
@@ -225,6 +272,7 @@ class TourRepository implements ResetInterface
 
     /**
      * Bestellungen mit diesem Tourtermin (Liste „Tour-Lieferungen“), sortiert entlang der Strecke.
+     * „Außerhalb der Reichweite“ richtet sich nach dem Preisprofil des Termins.
      *
      * @return list<array<string, mixed>>
      */
@@ -253,6 +301,7 @@ class TourRepository implements ResetInterface
         );
 
         $variants = $date->bookableVariants();
+        $datePricing = $date->pricing($pricing);
         $out = [];
         foreach ($rows as $row) {
             $fields = json_decode((string) ($row['custom_fields'] ?? ''), true);
@@ -273,7 +322,7 @@ class TourRepository implements ResetInterface
                 'variantName' => (string) ($fields[CF::ORDER_TOUR_VARIANT_NAME] ?? ''),
                 'currentDeviationKm' => $nearest === null ? null : round($nearest[1], 1),
                 'alongKm' => $nearest === null ? null : round($nearest[2], 1),
-                'outOfRange' => $nearest !== null && $pricing->priceCents((string) ($fields[CF::ORDER_TOUR_TIER] ?? 'klein'), $nearest[1], $date->trailer) === null,
+                'outOfRange' => $nearest !== null && $datePricing->priceCents((string) ($fields[CF::ORDER_TOUR_TIER] ?? 'klein'), $nearest[1], $date->trailer) === null,
                 'orderState' => (string) $row['order_state'],
                 'deliveryState' => (string) ($row['delivery_state'] ?? ''),
                 'paymentState' => (string) ($row['payment_state'] ?? ''),
@@ -287,13 +336,14 @@ class TourRepository implements ResetInterface
 
     /**
      * Strecken und buchbare Termine in Reichweite eines Punkts (Hinweis an „Versandkosten auf Anfrage“).
+     * Strecken ohne Termin: größte Reichweite aller Preisprofile; Termine: Reichweite ihres Profils.
      *
      * @return list<array{type: string, name: string, variant: string, km: float, date: string|null, trailer: bool}>
      */
     public function nearby(GeoPoint $point, TourPricing $pricing): array
     {
         $out = [];
-        $reach = $pricing->maxReachKm(true);
+        $reach = $this->maxReachKm($pricing);
         $routes = $this->connection->fetchAllAssociative('SELECT LOWER(HEX(id)) AS id, name FROM nova_vk_tour_route WHERE active = 1');
         $variants = $this->variantsByRoute(array_map(static fn (array $r) => (string) $r['id'], $routes));
         foreach ($routes as $route) {

@@ -5,6 +5,7 @@ namespace Nova\Versandkosten\Controller;
 use Doctrine\DBAL\Connection;
 use Nova\Versandkosten\Calculator\Tour\TourDate;
 use Nova\Versandkosten\Calculator\Tour\TourInput;
+use Nova\Versandkosten\Calculator\Tour\TourPriceProfile;
 use Nova\Versandkosten\Service\Settings;
 use Nova\Versandkosten\Service\Tour\PostcodeDirectory;
 use Nova\Versandkosten\Service\Tour\TourNotificationService;
@@ -18,10 +19,12 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Admin-API „Touren“ (Bestellungen → Touren): Strecken mit Varianten, Tourtermine, Tour-Lieferungen,
- * Wegpunkt-Suche (PLZ/Ort), Interessenten im Korridor, Benachrichtigung senden, Abonnenten und CSV.
+ * Admin-API „Touren“ (Bestellungen → Touren): Strecken mit Varianten, Tourtermine, Preisprofile (wer
+ * fährt), Tour-Lieferungen, Wegpunkt-Suche (PLZ/Ort), Interessenten im Korridor, Benachrichtigung senden,
+ * Abonnenten und CSV.
  *
- * Rechte: Lesen nova_vk_tour_route:read / nova_vk_tour_date:read, Ändern …:create/update/delete,
+ * Rechte: Lesen nova_vk_tour_route:read / nova_vk_tour_date:read / nova_vk_tour_price_profile:read,
+ * Ändern …:create/update/delete,
  * Lieferungen zusätzlich order:read, Abonnenten nova_vk_tour_subscriber:read/delete. Schreiben über die
  * DAL, damit Shopware die Rechte auch dort prüft.
  */
@@ -33,6 +36,7 @@ class TourAdminController
      * @param EntityRepository<\Shopware\Core\Framework\DataAbstractionLayer\EntityCollection<\Shopware\Core\Framework\DataAbstractionLayer\Entity>> $variants
      * @param EntityRepository<\Shopware\Core\Framework\DataAbstractionLayer\EntityCollection<\Shopware\Core\Framework\DataAbstractionLayer\Entity>> $dates
      * @param EntityRepository<\Shopware\Core\Framework\DataAbstractionLayer\EntityCollection<\Shopware\Core\Framework\DataAbstractionLayer\Entity>> $subscribers
+     * @param EntityRepository<\Shopware\Core\Framework\DataAbstractionLayer\EntityCollection<\Shopware\Core\Framework\DataAbstractionLayer\Entity>> $profiles
      */
     public function __construct(
         private readonly Connection $connection,
@@ -40,6 +44,7 @@ class TourAdminController
         private readonly EntityRepository $variants,
         private readonly EntityRepository $dates,
         private readonly EntityRepository $subscribers,
+        private readonly EntityRepository $profiles,
         private readonly TourRepository $tours,
         private readonly PostcodeDirectory $postcodes,
         private readonly TourNotificationService $notifications,
@@ -47,7 +52,7 @@ class TourAdminController
     ) {
     }
 
-    #[Route(path: '/api/_action/nova-versandkosten/tour/overview', name: 'api.action.nova_versandkosten.tour.overview', defaults: ['_acl' => ['nova_vk_tour_route:read', 'nova_vk_tour_date:read']], methods: ['GET'])]
+    #[Route(path: '/api/_action/nova-versandkosten/tour/overview', name: 'api.action.nova_versandkosten.tour.overview', defaults: ['_acl' => ['nova_vk_tour_route:read', 'nova_vk_tour_date:read', 'nova_vk_tour_price_profile:read']], methods: ['GET'])]
     public function overview(): JsonResponse
     {
         // Sicherheitsnetz: PLZ-Tabelle leer (z. B. Import beim Update gescheitert) → jetzt laden
@@ -81,21 +86,25 @@ class TourAdminController
 
         $dates = [];
         $rows = $this->connection->fetchAllAssociative(
-            'SELECT LOWER(HEX(d.id)) AS id, LOWER(HEX(d.route_id)) AS route_id, LOWER(HEX(d.variant_id)) AS variant_id, d.name, d.tour_date,
-                    d.order_deadline, d.trailer, d.status, d.waypoints, d.note, d.notified_at, r.name AS route_name, v.name AS variant_name
+            'SELECT LOWER(HEX(d.id)) AS id, LOWER(HEX(d.route_id)) AS route_id, LOWER(HEX(d.variant_id)) AS variant_id,
+                    LOWER(HEX(d.price_profile_id)) AS price_profile_id, d.name, d.tour_date, d.order_deadline, d.trailer, d.status, d.waypoints, d.note, d.notified_at, r.name AS route_name, v.name AS variant_name
                FROM nova_vk_tour_date d
                LEFT JOIN nova_vk_tour_route r ON r.id = d.route_id
                LEFT JOIN nova_vk_tour_variant v ON v.id = d.variant_id
               ORDER BY d.tour_date DESC'
         );
         $counts = $this->deliveryCounts();
+        $profiles = $this->tours->profiles();
         foreach ($rows as $row) {
+            $profileId = \is_string($row['price_profile_id'] ?? null) && isset($profiles[$row['price_profile_id']]) ? $row['price_profile_id'] : null;
             $dates[] = [
                 'id' => (string) $row['id'],
                 'routeId' => $row['route_id'],
                 'routeName' => (string) ($row['route_name'] ?? ''),
                 'variantId' => $row['variant_id'],
                 'variantName' => (string) ($row['variant_name'] ?? ''),
+                'priceProfileId' => $profileId,
+                'priceProfileName' => $profileId !== null ? $profiles[$profileId]->name : '',
                 'name' => (string) ($row['name'] ?? ''),
                 'label' => TourRepository::label($row),
                 'tourDate' => (string) $row['tour_date'],
@@ -109,14 +118,22 @@ class TourAdminController
             ];
         }
 
+        $pricing = $this->settings->tourPricing(null);
+
         return new JsonResponse([
             'routes' => array_values($routes),
             'dates' => $dates,
+            'profiles' => array_values(array_map(self::profileArray(...), $profiles)),
+            'defaultProfile' => [
+                'smallPrice' => $pricing->smallPriceCents / 100,
+                'smallMaxKm' => $pricing->smallMaxKm,
+                'freightTiers' => TourPriceProfile::tiersToText($pricing->freightTiers),
+            ],
             'settings' => [
                 'deadlineDays' => max(0, $this->settings->int('tourDeadlineDays', null, TourDate::DEFAULT_DEADLINE_DAYS)),
                 'notifyEnabled' => $this->notifications->enabled(null),
                 'postcodes' => $postcodes,
-                'pricing' => (array) $this->settings->tourPricing(null),
+                'pricing' => (array) $pricing,
             ],
         ]);
     }
@@ -226,11 +243,18 @@ class TourAdminController
             $variantId = null;
         }
 
+        // Preisprofil (wer fährt): leer = Standardprofil
+        $profileId = \is_string($data['priceProfileId'] ?? null) && Uuid::isValid($data['priceProfileId']) ? strtolower($data['priceProfileId']) : null;
+        if ($profileId !== null && !isset($this->tours->profiles()[$profileId])) {
+            return self::error('Das gewählte Preisprofil gibt es nicht (mehr).');
+        }
+
         $id = \is_string($data['id'] ?? null) && Uuid::isValid($data['id']) ? strtolower($data['id']) : Uuid::randomHex();
         $this->dates->upsert([[
             'id' => $id,
             'routeId' => $routeId,
             'variantId' => $own === [] ? $variantId : null,
+            'priceProfileId' => $profileId,
             'name' => $clean['name'],
             'tourDate' => $clean['tourDate'],
             'orderDeadline' => $clean['orderDeadline'],
@@ -250,6 +274,55 @@ class TourAdminController
         $this->dates->delete([['id' => $id]], $context);
 
         return new Response('', Response::HTTP_NO_CONTENT);
+    }
+
+    #[Route(path: '/api/_action/nova-versandkosten/tour/price-profile', name: 'api.action.nova_versandkosten.tour.price_profile.save', defaults: ['_acl' => ['nova_vk_tour_price_profile:create', 'nova_vk_tour_price_profile:update']], methods: ['POST'])]
+    public function saveProfile(Request $request, Context $context): JsonResponse
+    {
+        $data = $request->request->all();
+        [$clean, $errors] = TourInput::priceProfile($data);
+        if ($clean === null) {
+            return self::error(implode(' ', $errors));
+        }
+        $id = \is_string($data['id'] ?? null) && Uuid::isValid($data['id']) ? strtolower($data['id']) : Uuid::randomHex();
+        $this->profiles->upsert([[
+            'id' => $id,
+            'name' => $clean['name'],
+            'smallPrice' => $clean['smallPriceCents'],
+            'smallMaxKm' => $clean['smallMaxKm'],
+            'freightTiers' => $clean['freightTiers'],
+            'position' => max(0, min(9999, (int) ($data['position'] ?? 0))),
+        ]], $context);
+        $this->tours->reset();
+
+        return new JsonResponse(['id' => $id]);
+    }
+
+    /**
+     * Profil löschen: Termine mit diesem Profil fallen auf das Standardprofil zurück.
+     */
+    #[Route(path: '/api/_action/nova-versandkosten/tour/price-profile/{id}', name: 'api.action.nova_versandkosten.tour.price_profile.delete', requirements: ['id' => '[0-9a-f]{32}'], defaults: ['_acl' => ['nova_vk_tour_price_profile:delete', 'nova_vk_tour_date:update']], methods: ['DELETE'])]
+    public function deleteProfile(string $id, Context $context): Response
+    {
+        $this->profiles->delete([['id' => $id]], $context);
+        $this->tours->reset();
+
+        return new Response('', Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * @return array{id: string, name: string, smallPrice: float, smallMaxKm: float, freightTiers: string, freightTierList: list<array{km: float, price: float}>}
+     */
+    private static function profileArray(TourPriceProfile $profile): array
+    {
+        return [
+            'id' => $profile->id,
+            'name' => $profile->name,
+            'smallPrice' => $profile->smallPriceCents / 100,
+            'smallMaxKm' => $profile->smallMaxKm,
+            'freightTiers' => TourPriceProfile::tiersToText($profile->freightTiers),
+            'freightTierList' => array_map(static fn (array $t) => ['km' => $t[0], 'price' => $t[1] / 100], $profile->freightTiers),
+        ];
     }
 
     /**

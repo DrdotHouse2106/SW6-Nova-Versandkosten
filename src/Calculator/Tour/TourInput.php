@@ -91,4 +91,70 @@ final class TourInput
             'waypoints' => $waypoints,
         ], []];
     }
+
+    /**
+     * Preisprofil prüfen: Name, Preis Kleinteile/Paket/Sperrgut in Euro (Komma erlaubt), Höchstabweichung
+     * in km, Speditionsstufen als Text („30=190“ je Zeile) oder Liste [[km, Cent], …]. Leere Stufen =
+     * keine Speditionsware mit diesem Profil.
+     *
+     * @param array<string, mixed> $input
+     *
+     * @return array{0: array{name: string, smallPriceCents: int, smallMaxKm: float, freightTiers: list<array{0: float, 1: int}>}|null, 1: list<string>}
+     */
+    public static function priceProfile(array $input): array
+    {
+        $errors = [];
+        $name = self::text($input['name'] ?? '', 255);
+        if ($name === '') {
+            $errors[] = 'Bitte einen Namen angeben.';
+        }
+        $price = self::decimal($input['smallPrice'] ?? null);
+        if ($price === null || $price < 0 || $price > 100000) {
+            $errors[] = 'Bitte einen gültigen Preis für Kleinteile/Paket/Sperrgut angeben.';
+        }
+        $maxKm = self::decimal($input['smallMaxKm'] ?? null);
+        if ($maxKm === null || $maxKm < 0 || $maxKm > 1000) {
+            $errors[] = 'Bitte eine gültige Höchstabweichung (km) für Kleinteile/Paket/Sperrgut angeben.';
+        }
+        $tiersInput = $input['freightTiers'] ?? '';
+        if (\is_array($tiersInput)) {
+            $tiers = TourPriceProfile::tiersFromArray($tiersInput);
+        } else {
+            $text = self::text($tiersInput, 2000);
+            $tiers = TourPricing::parseTiers($text, false);
+            $lines = array_filter(array_map('trim', preg_split('/[\r\n]+/', $text) ?: []), static fn (string $l) => $l !== '' && !str_starts_with($l, '#'));
+            if (\count($tiers) !== \count($lines)) {
+                $errors[] = 'Speditionsstufen: bitte je Zeile „bis km = Preis“ angeben, z. B. „30=190“.';
+            }
+        }
+        foreach ($tiers as [$km]) {
+            if ($km > 1000) {
+                $errors[] = 'Speditionsstufen: höchstens 1000 km.';
+                break;
+            }
+        }
+        if ($errors !== [] || $price === null || $maxKm === null) {
+            return [null, $errors];
+        }
+
+        return [[
+            'name' => $name,
+            'smallPriceCents' => (int) round($price * 100),
+            'smallMaxKm' => round($maxKm, 2),
+            'freightTiers' => \array_slice($tiers, 0, 20),
+        ], []];
+    }
+
+    /** Zahl aus Eingabe (Komma oder Punkt als Dezimalzeichen) – null, wenn ungültig */
+    public static function decimal(mixed $value): ?float
+    {
+        if (\is_int($value) || \is_float($value)) {
+            return is_finite((float) $value) ? (float) $value : null;
+        }
+        if (!\is_string($value) || preg_match('/^\s*(\d+(?:[.,]\d+)?)\s*$/', $value, $m) !== 1) {
+            return null;
+        }
+
+        return (float) str_replace(',', '.', $m[1]);
+    }
 }

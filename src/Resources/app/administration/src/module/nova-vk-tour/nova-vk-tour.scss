@@ -161,3 +161,23 @@
         }
     }
 }
+
+.nova-vk-tour__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.nova-vk-tour__editor {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #d1d9e0;
+
+    h3 {
+        margin-bottom: 12px;
+    }
+
+    > .nova-vk-tour__actions {
+        margin-top: 12px;
+    }
+}

@@ -119,7 +119,8 @@
         "tabs": {
             "dates": "Tourtermine",
             "routes": "Strecken",
-            "subscribers": "Benachrichtigung"
+            "subscribers": "Benachrichtigung",
+            "profiles": "Preisprofile"
         },
         "status": {
             "open": "offen (alle Varianten)",
@@ -152,7 +153,9 @@
             "saveAsRoute": "Als Strecken-Vorlage speichern",
             "saveAsRouteName": "Name der neuen Strecke",
             "savedAsRoute": "Strecke angelegt.",
-            "confirmDelete": "Diesen Tourtermin löschen? Bestellungen behalten ihre Angaben."
+            "confirmDelete": "Diesen Tourtermin löschen? Bestellungen behalten ihre Angaben.",
+            "priceProfile": "Preisprofil",
+            "priceProfileHelp": "Wer fährt? Bestimmt Preise und Reichweite dieses Termins (Kasse, Prüfung beim Bestellen, Benachrichtigung). Der Kunde sieht nur den Preis, nie den Profilnamen."
         },
         "routes": {
             "new": "Neue Strecke",
@@ -174,6 +177,30 @@
             "removeVariant": "Variante entfernen",
             "addVariant": "Variante hinzufügen",
             "confirmDelete": "Diese Strecke mit allen Varianten löschen? Tourtermine bleiben, verlieren aber die Strecke."
+        },
+        "profiles": {
+            "help": "Der Tourpreis kann davon abhängen, wer fährt. Jedes Profil hat einen Preis für Kleinteile/Paketware/Sperrgut bis zu einer Höchstabweichung und Speditionsstufen. Am Tourtermin wählen Sie das Profil; ohne Auswahl gilt das Standardprofil aus den Einstellungen „Eigene Touren“. Umwegfaktor und Lieferländer bleiben die der Einstellungen.",
+            "new": "Neues Preisprofil",
+            "edit": "Bearbeiten",
+            "cancel": "Abbrechen",
+            "none": "Noch keine eigenen Preisprofile – alle Termine nutzen das Standardprofil.",
+            "default": "Standardprofil",
+            "defaultHelp": "aus den Einstellungen „Eigene Touren“",
+            "name": "Name",
+            "namePlaceholder": "z. B. Inhaber fährt",
+            "nameHelp": "Nur intern, wird Kunden nie angezeigt.",
+            "small": "Kleinteile/Paket/Sperrgut",
+            "freight": "Speditionsware",
+            "used": "Termine",
+            "smallPrice": "Preis Kleinteile/Paket/Sperrgut (€, brutto)",
+            "smallMaxKm": "bis Abweichung (km)",
+            "freightTiers": "Speditionsstufen (nur mit Hänger)",
+            "freightTiersHelp": "Eine Stufe je Zeile „bis km = Preis“, z. B. „30=190“ und „60=290“. Leer = mit diesem Profil keine Speditionsware.",
+            "position": "Reihenfolge",
+            "smallText": "{price} € bis {km} km",
+            "tierText": "{price} € bis {km} km",
+            "noFreight": "keine",
+            "confirmDelete": "Preisprofil „{name}“ löschen? {count} Termin(e) nutzen es und fallen auf das Standardprofil zurück."
         },
         "waypoints": {
             "empty": "Noch keine Wegpunkte.",

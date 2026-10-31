@@ -657,8 +657,8 @@ warenpost;*;4-10
             <name>tourSmallPrice</name>
             <label>Price small parts, parcels, bulky goods (gross)</label>
             <label lang="de-DE">Preis Kleinteile, Paketware, Sperrgut (brutto)</label>
-            <helpText>Shipping method “nova_versandkosten_tour”. Routes and tour dates: Orders → Tours.</helpText>
-            <helpText lang="de-DE">Versandart „nova_versandkosten_tour“. Strecken und Tourtermine: Bestellungen → Touren.</helpText>
+            <helpText>Shipping method “nova_versandkosten_tour”. Routes and tour dates: Orders → Tours. Price, limit and freight tiers here are the default profile; further price profiles (e.g. depending on who drives) under Orders → Tours → Price profiles, chosen per tour date.</helpText>
+            <helpText lang="de-DE">Versandart „nova_versandkosten_tour“. Strecken und Tourtermine: Bestellungen → Touren. Preis, Grenze und Speditionsstufen hier sind das Standardprofil; weitere Preisprofile (z. B. je nachdem, wer fährt) unter Bestellungen → Touren → Preisprofile, Auswahl am Tourtermin.</helpText>
             <defaultValue>50</defaultValue>
         </input-field>
 

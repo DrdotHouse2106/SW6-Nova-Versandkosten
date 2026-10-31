@@ -3,11 +3,11 @@
   "entryPoints": {
     "nova-versandkosten": {
       "css": [
-        "/bundles/novaversandkosten/administration/assets/nova-versandkosten-DSReAJkM.css"
+        "/bundles/novaversandkosten/administration/assets/nova-versandkosten-CNS7cRjz.css"
       ],
       "dynamic": [],
       "js": [
-        "/bundles/novaversandkosten/administration/assets/nova-versandkosten-qE4U_FOx.js"
+        "/bundles/novaversandkosten/administration/assets/nova-versandkosten-DcX5PyIU.js"
       ],
       "legacy": false,
       "preload": []

@@ -20,7 +20,8 @@ use Shopware\Core\Framework\DataAbstractionLayer\FieldCollection;
 
 /**
  * Tourtermin: Strecke (Vorlage) oder eigene Wegpunkte (einmalige Fahrt), Datum, Bestellschluss
- * (letzter Bestelltag), „mit Hänger“, Status open|fixed|closed und – sobald festgelegt – die Variante.
+ * (letzter Bestelltag), „mit Hänger“, Status open|fixed|closed, – sobald festgelegt – die Variante und
+ * das Preisprofil (wer fährt; leer = Standardprofil).
  */
 class TourDateDefinition extends EntityDefinition
 {
@@ -42,6 +43,7 @@ class TourDateDefinition extends EntityDefinition
             (new IdField('id', 'id'))->addFlags(new PrimaryKey(), new Required()),
             new FkField('route_id', 'routeId', TourRouteDefinition::class),
             new FkField('variant_id', 'variantId', TourVariantDefinition::class),
+            new FkField('price_profile_id', 'priceProfileId', TourPriceProfileDefinition::class),
             (new StringField('name', 'name'))->addFlags(new SearchRanking(SearchRanking::HIGH_SEARCH_RANKING)),
             (new DateField('tour_date', 'tourDate'))->addFlags(new Required()),
             (new DateField('order_deadline', 'orderDeadline'))->addFlags(new Required()),
@@ -52,6 +54,7 @@ class TourDateDefinition extends EntityDefinition
             new DateTimeField('notified_at', 'notifiedAt'),
             new ManyToOneAssociationField('route', 'route_id', TourRouteDefinition::class, 'id', false),
             new ManyToOneAssociationField('variant', 'variant_id', TourVariantDefinition::class, 'id', false),
+            new ManyToOneAssociationField('priceProfile', 'price_profile_id', TourPriceProfileDefinition::class, 'id', false),
         ]);
     }
 }

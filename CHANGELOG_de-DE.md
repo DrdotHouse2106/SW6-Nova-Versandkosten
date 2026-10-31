@@ -1,3 +1,9 @@
+# 1.2.1
+
+- Neu: **Preisprofile für Touren** – der Tourpreis kann davon abhängen, wer fährt. Unter *Bestellungen → Touren → Preisprofile* je Profil Name (nur intern), Preis Kleinteile/Paket/Sperrgut mit Höchstabweichung und Speditionsstufen (z. B. `30=190`, `60=290`; leer = keine Speditionsware). Am Tourtermin wird das Profil gewählt; Kasse, Prüfung beim Bestellen, Reichweite der Tour-Benachrichtigung, Tour-Lieferungen und Hinweis an „Versandkosten auf Anfrage“ nutzen das Profil des Termins. Der Profilname erscheint nie beim Kunden
+- Die bisherigen Einstellungen „Eigene Touren“ bleiben das **Standardprofil** – ohne eigene Profile ändert sich nichts
+- Neue Tabelle `nova_vk_tour_price_profile` und Spalte `price_profile_id` am Tourtermin (gelöschtes Profil → Standardprofil); bestehende Rollen „Touren“ erhalten die Rechte für Preisprofile; Deinstallieren ohne „Daten behalten“ entfernt auch die neue Tabelle
+
 # 1.2.0
 
 - Neu: **Eigene Touren** – Strecken (Vorlagen) mit einer oder mehreren Varianten und geordneten Wegpunkten (Eingabe als PLZ oder Ort), Tourtermine mit Strecke oder eigenen Wegpunkten (einmalige Fahrt, optional als Vorlage speichern), Datum, Bestellschluss (Standard 2 Tage vorher), „mit Hänger“, Status offen/festgelegt/geschlossen. Neue Administration *Bestellungen → Touren* mit Rollenrechten

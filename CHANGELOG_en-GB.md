@@ -1,3 +1,9 @@
+# 1.2.1
+
+- New: **Price profiles for tours** – the tour price can depend on who drives. Under *Orders → Tours → Price profiles* each profile has a name (internal only), a price for small parts/parcels/bulky goods with maximum deviation and freight tiers (e.g. `30=190`, `60=290`; empty = no freight goods). The profile is chosen on the tour date; checkout, the check when ordering, reach of the tour notification, tour deliveries and the hint on “shipping costs on request” use the date's profile. The profile name is never shown to customers
+- The existing “Own tours” settings remain the **default profile** – without own profiles nothing changes
+- New table `nova_vk_tour_price_profile` and column `price_profile_id` on the tour date (deleted profile → default profile); existing “Tours” roles get the price profile permissions; uninstalling without “keep data” also removes the new table
+
 # 1.2.0
 
 - New: **Own delivery tours** – routes (templates) with one or more variants and ordered waypoints (entered as postcode or place), tour dates with a route or own waypoints (one-off trip, optionally saved as template), date, order deadline (default 2 days before), “with trailer”, status open/fixed/closed. New administration *Orders → Tours* with role permissions

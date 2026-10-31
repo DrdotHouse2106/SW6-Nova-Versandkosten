@@ -299,7 +299,7 @@ class TourNotificationService
             $variants = $this->routeVariants($routeId);
         }
         $pricing = $this->settings->tourPricing(null);
-        $radius = $radiusKm ?? $pricing->maxReachKm(true);
+        $radius = $radiusKm ?? $this->tours->maxReachKm($pricing);
 
         $out = [];
         foreach ($rows as $row) {

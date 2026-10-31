@@ -10,7 +10,7 @@ function addDays(isoDate, days) {
 
 /**
  * Tourtermin anlegen/bearbeiten (Strecke oder eigene Wegpunkte, Datum, Bestellschluss, Hänger, Status,
- * Variante) mit den Tour-Lieferungen (Lade-Reihenfolge entlang der Strecke) und der Benachrichtigung
+ * Variante, Preisprofil = wer fährt) mit den Tour-Lieferungen (Lade-Reihenfolge entlang der Strecke) und der Benachrichtigung
  * der Interessenten im Korridor.
  */
 Shopware.Component.register('nova-vk-tour-date-detail', {
@@ -25,6 +25,8 @@ Shopware.Component.register('nova-vk-tour-date-detail', {
             loading: false,
             saving: false,
             routes: [],
+            profiles: [],
+            defaultProfile: null,
             settings: { deadlineDays: 2 },
             date: this.emptyDate(),
             deadlineTouched: false,
@@ -55,6 +57,10 @@ Shopware.Component.register('nova-vk-tour-date-detail', {
         ownWaypoints() {
             return !this.date.routeId;
         },
+
+        profile() {
+            return this.profiles.find((p) => p.id === this.date.priceProfileId) || this.defaultProfile;
+        },
     },
 
     watch: {
@@ -83,7 +89,7 @@ Shopware.Component.register('nova-vk-tour-date-detail', {
         formatDateTime,
 
         emptyDate() {
-            return { id: null, routeId: '', variantId: '', name: '', tourDate: '', orderDeadline: '', trailer: false, status: 'open', waypoints: [], note: '' };
+            return { id: null, routeId: '', variantId: '', name: '', tourDate: '', orderDeadline: '', trailer: false, status: 'open', waypoints: [], note: '', priceProfileId: '' };
         },
 
         async load() {
@@ -91,10 +97,12 @@ Shopware.Component.register('nova-vk-tour-date-detail', {
             try {
                 const data = await apiGet('overview');
                 this.routes = data.routes || [];
+                this.profiles = data.profiles || [];
+                this.defaultProfile = data.defaultProfile || null;
                 this.settings = data.settings || this.settings;
                 const found = this.dateId ? (data.dates || []).find((d) => d.id === this.dateId) : null;
                 if (found) {
-                    this.date = { ...this.emptyDate(), ...JSON.parse(JSON.stringify(found)), routeId: found.routeId || '', variantId: found.variantId || '' };
+                    this.date = { ...this.emptyDate(), ...JSON.parse(JSON.stringify(found)), routeId: found.routeId || '', variantId: found.variantId || '', priceProfileId: found.priceProfileId || '' };
                     this.deadlineTouched = true;
                     this.loadDeliveries();
                     this.loadInterested();
@@ -143,6 +151,7 @@ Shopware.Component.register('nova-vk-tour-date-detail', {
                 ...this.date,
                 routeId: this.date.routeId || null,
                 variantId: this.date.variantId || null,
+                priceProfileId: this.date.priceProfileId || null,
                 waypoints: this.ownWaypoints ? this.date.waypoints : [],
             };
         },
@@ -207,6 +216,18 @@ Shopware.Component.register('nova-vk-tour-date-detail', {
                 this.sending = false;
                 this.loadInterested();
             }
+        },
+
+        profileSummary(profile) {
+            if (!profile) {
+                return '';
+            }
+            const tiers = String(profile.freightTiers || '').split('\n').filter(Boolean).map((line) => {
+                const [km, price] = line.split('=');
+                return this.$tc('nova-vk-tour.profiles.tierText', 0, { km, price });
+            }).join(', ');
+            const small = this.$tc('nova-vk-tour.profiles.smallText', 0, { price: profile.smallPrice, km: profile.smallMaxKm });
+            return `${small} · ${this.$tc('nova-vk-tour.profiles.freight')}: ${tiers || this.$tc('nova-vk-tour.profiles.noFreight')}`;
         },
 
         statusText(delivery) {
