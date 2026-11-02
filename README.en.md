@@ -33,7 +33,10 @@ estimated delivery date and notes.
 - **Order**: carrier, product, parcels (count, dimensions, weight), purchase, sale and “dimensions
   missing” as custom fields – the basis for ERP and labels. “Shipping costs” card on the order
   (difference red on negative margin), optional e-mail on negative margin.
-- **Tariff import** as JSON or CSV (Excel) in the administration, stored in the database.
+- **Administration** (new in 1.3.0): one module *Orders → Shipping costs* with tabs for overview,
+  settings, tours, tariffs and price check (see “Administration”).
+- **Tariff import** as JSON or CSV (Excel) via file upload, drag & drop or paste, stored in the
+  database; templates and export for editing in Excel.
 - **Price check**: all fixed prices per channel against the current purchase price.
 - **Google/product export**: Twig function `nova_versand_label(product, context)` → `paket`,
   `sperrgut`, `spedition`, `abholung` or `anfrage`.
@@ -79,12 +82,47 @@ settings; shipping methods are only deactivated. Name, description, image, posit
 technical name must stay. An existing shipping method can be taken over by giving it one of these
 technical names.
 
+## Administration
+
+Everything in one place: **Orders → Shipping costs** (also as a tile under *Settings → Shipping
+costs*). Tab and sub-tab are part of the address, so bookmarks work
+(`#/nova/versandkosten/index/<tab>`).
+
+| Tab | Content |
+|---|---|
+| Overview | Status at a glance: tariffs imported?, energy surcharges up to date?, price check warnings, active `nova_versandkosten_…` shipping methods per sales channel, scheduled tasks (status, last/next run), upcoming tour dates – with links to the right tab |
+| Prices | fixed prices (each with optional “applies up to X kg”), surcharge abroad, pass on bulky, goods value limits, maximum weight, VAT, home country |
+| Surcharges & energy | current energy surcharges (*Fetch now*), peak/peak-in-peak, energy surcharge automatic/manual |
+| Countries & delivery time | allowed countries, free shipping, DPD outside the EU, delivery date |
+| Product data | property and value names of the category, default dimensions/weight, small shipment without dimensions |
+| Freight | Cargoboard |
+| Request & add-on | shipping costs on request, add to an open order, “request delivery by tour” button |
+| Tours | sub-tabs tour dates, routes, price profiles, tour deliveries, notification, settings |
+| Tariffs | upload a file (drag & drop or choose) or paste, check/import, export current tariffs as CSV/JSON, templates and column reference |
+| Price check | fixed prices per channel against purchase, “control” settings (margin, missing dimensions) |
+
+**Settings tabs:** choose the sales channel at the top – “All sales channels” holds the defaults; per
+channel a field inherits the default while the chain icon is closed. These are **the same values** as
+in the plugin configuration (*Extensions → My extensions → Nova Versandkosten → Configure*, which now
+shows a link to the module at the top), stored in `system_config` under `NovaVersandkosten.config.*`.
+*Save* stores the changes of all tabs and sales channels.
+
+**Permissions** unchanged: settings, tariffs, energy surcharges and price check need the “Settings”
+permission, tours the role *Orders → Tours*. The menu entry appears with either read permission; tabs
+without permission are hidden.
+
+**Old paths** (up to 1.2.1): *Extensions → Nova Versandkosten* and *Orders → Tours* are no longer menu
+entries; old bookmarks redirect into the module.
+
 ## Setup step by step
 
-1. **Import tariffs:** *Extensions → Nova Versandkosten → Tariffs* → choose a JSON or CSV file (or
-   paste it) → *Check* → *Import*. Template: [`examples/tarife-beispiel.json`](examples/tarife-beispiel.json)
+1. **Import tariffs:** *Orders → Shipping costs → Tariffs* → drop a CSV or JSON file or *Choose file*
+   (checked right away; or paste the content) → *Import*. Template: [`examples/tarife-beispiel.json`](examples/tarife-beispiel.json)
    / [`examples/tarife-beispiel.csv`](examples/tarife-beispiel.csv).
-2. **Settings per sales channel:** *Extensions → My extensions → Nova Versandkosten → Configure*.
+2. **Settings per sales channel:** *Orders → Shipping costs*, tabs *Prices*, *Surcharges & energy*,
+   *Countries & delivery time*, *Product data*, *Freight*, *Request & add-on* (choose the sales channel
+   at the top, then *Save*). The same fields remain in the plugin configuration (*Extensions → My
+   extensions → Nova Versandkosten → Configure*).
 3. **Activate shipping methods:** *Settings → Shipping*. The price “0.00” in the price matrix is only a
    placeholder; the plugin sets the real price. Keep tax type “Auto”.
 4. **Assign them to the sales channel** and choose a default shipping method.
@@ -94,13 +132,18 @@ technical names.
    dimensions cost nothing extra: the category applies (parcel = within normal limits). The order is
    still flagged “dimensions missing” (custom field); setting “Show ‘dimensions missing’ note”
    (default on) controls the internal note in the administration and internal e-mails – customers
-   never see it.
-6. **Price check:** *Extensions → Nova Versandkosten → Price check*.
+   never see it. **Small shipment without dimensions** (new in 1.3.0, tab *Product data*): the default
+   parcel dimensions (30 × 20 × 15 cm) never fit Warenpost (≤ 5 cm) or small parcel (≤ 8 cm). With
+   “Small shipment without dimensions” = *fits Warenpost* (default) or *fits small parcel* up to a
+   total weight (default 1 kg), a cart whose items are **all** category “parcel” **without**
+   dimensions only checks weight, goods value limit and “one parcel” for these options. As soon as an
+   item has dimensions (or is bulky), everything is checked exactly as before.
+6. **Price check:** *Orders → Shipping costs → Price check*.
 7. **Test orders** in every channel; check the “Shipping costs” card on the order.
-8. **Energy surcharges:** *Extensions → Nova Versandkosten → Energy surcharges → Fetch now*; then it
+8. **Energy surcharges:** *Orders → Shipping costs → Surcharges & energy → Fetch now*; then it
    runs daily. Before November enter the peak-in-peak period.
 9. **Optional:** activate “shipping costs on request” and “add to my open order” (see below).
-10. **Optional: own tours** – routes and dates under *Orders → Tours*, activate the shipping method
+10. **Optional: own tours** – routes and dates under *Orders → Shipping costs → Tours*, activate the shipping method
     “Lieferung mit unserer Tour” (see below).
 
 ## Add to an open order
@@ -180,8 +223,8 @@ beyond: no tour. The **highest category** in the cart sets the price; items “c
 request only” exclude the tour. Domestic addresses only (countries configurable, default DE). No
 tariff file needed.
 
-**Price profiles (who drives):** the tour price can depend on who drives. *Orders → Tours → Price
-profiles*: name (internal only, e.g. “Profile A” / “Profile B” – **never shown to customers**), price
+**Price profiles (who drives):** the tour price can depend on who drives. *Orders → Shipping costs → Tours →
+Price profiles*: name (internal only, e.g. “Profile A” / “Profile B” – **never shown to customers**), price
 for small parts/parcels/bulky goods up to a maximum deviation, freight tiers (“up to km = price” per
 line, e.g. `30=190` and `60=290`; empty = no freight goods with this profile) and order. Example
 (placeholders): profile A freight `60=190`, profile B `30=190` and `60=290` – freight 45 km beside the
@@ -194,8 +237,8 @@ profiles). Detour factor and delivery countries stay as in the settings; profile
 channels. Deleting a profile makes its dates fall back to the default profile; existing orders keep
 their price.
 
-**Setup:** activate and assign the shipping method · settings “Own tours” · *Orders → Tours → Routes →
-New route* (waypoints via “postcode or place” search, ↑/↓ to reorder) · *Tour dates → New tour date*
+**Setup:** activate and assign the shipping method · settings *Orders → Shipping costs → Tours →
+Settings* · *Tours → Routes → New route* (waypoints via “postcode or place” search, ↑/↓ to reorder) · *Tours → Tour dates → New tour date*
 (route or own waypoints, date, deadline, trailer, optional price profile; one-off trips can be saved as
 route template) · role permissions under *Orders → Tours* (price profiles: view/edit/delete with the
 same roles; existing roles are extended on the update to 1.2.1).
@@ -229,7 +272,7 @@ and “near you (postcode area 12…)”**, never the route. Switch on in the se
 - **Duration:** active until unsubscribed (signed link in every e-mail). Unconfirmed sign-ups are
   deleted after 7 days, active subscribers after **24 months without activity** (configurable, 0 =
   never). Scheduled task `nova_versandkosten.tour_cleanup` (daily).
-- **Administration:** *Orders → Tours → Notification*: all subscribers, filter by route and radius,
+- **Administration:** *Orders → Shipping costs → Tours → Notification*: all subscribers, filter by route and radius,
   search, **CSV export**, delete. On a tour date: **“X subscribers along the route”** (all variants
   while open) and the button **“Send notification”** – never automatic, at most one e-mail per date and
   subscriber. Mail templates de/en are created on installation.
@@ -271,7 +314,10 @@ notification (optionally an e-mail) is created. Per carrier “automatic” or �
 4. **Sale per parcel:** home country with fixed price: fixed price + (bulky/oversize + surcharges
    marked “passOn”) × VAT + peak × VAT (if passed on). Home country without fixed price: purchase ×
    VAT. EU abroad: purchase × VAT + surcharge abroad; outside the EU: purchase (no VAT) + surcharge.
-   Free-shipping rule: 0.00.
+   Free-shipping rule: 0.00. **Fixed price with weight limit** (new in 1.3.0, per fixed price
+   “applies up to X kg”, empty = always): a heavier parcel costs purchase × VAT instead of the fixed
+   price – or purchase × VAT + surcharge per parcel, depending on the setting “Above the weight limit
+   of a fixed price”. The price check uses the same rule.
 5. **Rounding:** commercial rounding to cents after VAT (integer arithmetic internally).
 6. **Freight:** Cargoboard price net × VAT (EU) + surcharge.
 7. **Recommendation:** DHL outside the EU (customs), otherwise the cheapest option.
@@ -282,7 +328,11 @@ Examples with placeholder tariffs: see the German README and
 ## Tariff format
 
 A tariff file contains **purchase prices net in euro** per shipping product, as JSON or CSV. The
-import detects the format and reports all errors. Field reference and CSV columns: see the German
+import detects the format and reports all errors. In the *Tariffs* tab you can drop/choose a file
+(Excel CSV with semicolons, UTF-8 with or without BOM or Windows-1252), download the example files or
+a blank template (header + one commented example row per row type; rows starting with `#` are
+comments), open a column reference and export the current tariffs as CSV to edit them in Excel and
+import them again. Field reference and CSV columns: see the German
 README (section “Tarifformat”); the field names are English. Convert without Shopware:
 `php scripts/tarif-konvertieren.php in.json out.csv`.
 
@@ -327,7 +377,8 @@ NOVA_VK_TARIFE=/path/tariffs.json NOVA_VK_FAELLE=/path/cases.json php scripts/te
 ```
 
 The administration is checked in pre-built under `src/Resources/public/administration`; rebuild it
-after changes as described in the German README.
+after changes as described in the German README (the build needs `examples/` next to `src/`, the
+tariff templates are bundled from there).
 
 ## License
 

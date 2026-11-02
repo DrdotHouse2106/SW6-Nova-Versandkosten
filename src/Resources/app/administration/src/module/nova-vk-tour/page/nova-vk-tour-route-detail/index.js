@@ -99,7 +99,7 @@ Shopware.Component.register('nova-vk-tour-route-detail', {
             }
             try {
                 await apiDelete(`route/${this.routeId}`);
-                this.$router.push({ name: 'nova.vk.tour.index', params: { tab: 'routes' } });
+                this.$router.push({ name: 'nova.versandkosten.index', params: { tab: 'tours', sub: 'routes' } });
             } catch (error) {
                 this.createNotificationError({ message: errorText(error, this.$tc('nova-vk-tour.general.saveError')) });
             }

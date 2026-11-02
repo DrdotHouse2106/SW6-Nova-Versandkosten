@@ -34,7 +34,10 @@ gehen – mit Preis, voraussichtlichem Zustelldatum und Hinweisen.
 - **Bestellung**: Dienstleister, Produkt, Pakete (Anzahl, Maße, Gewicht), Einkauf, Verkauf und
   „Maße fehlen“ als Zusatzfelder – Grundlage für Warenwirtschaft und Etikett. Karte „Versandkosten“
   in der Bestellung (Differenz rot bei negativer Marge), optional E-Mail bei negativer Marge.
-- **Tarifimport** als JSON oder CSV (Excel) in der Administration, gespeichert in der Datenbank.
+- **Administration** (neu in 1.3.0): ein Modul *Bestellungen → Versandkosten* mit Reitern für
+  Übersicht, Einstellungen, Touren, Tarife und Preisprüfung (siehe „Administration“).
+- **Tarifimport** als JSON oder CSV (Excel) per Datei-Upload, Ziehen & Ablegen oder Einfügen, gespeichert in der
+  Datenbank; Vorlagen und Export zum Bearbeiten in Excel.
 - **Preisprüfung**: alle Festpreise je Kanal gegen den aktuellen Einkauf, Warnung bei Unterdeckung.
 - **Google/Produktexport**: Twig-Funktion `nova_versand_label(product, context)` → `paket`,
   `sperrgut`, `spedition`, `abholung` oder `anfrage`.
@@ -95,15 +98,52 @@ und die Versandarten bewusst aktiviert sind. Namen, Beschreibungen, Bilder, Reih
 Verfügbarkeitsregeln kann man danach frei ändern; nur der technische Name muss bleiben. Eine eigene,
 schon vorhandene Versandart lässt sich übernehmen, indem man ihr einen dieser technischen Namen gibt.
 
+## Administration
+
+Alles an einem Ort: **Bestellungen → Versandkosten** (zusätzlich als Kachel unter *Einstellungen →
+Versandkosten*). Reiter und Unterreiter stehen in der Adresse, Lesezeichen funktionieren
+(`#/nova/versandkosten/index/<reiter>`).
+
+| Reiter | Inhalt |
+|---|---|
+| Übersicht | Status auf einen Blick: Tarife importiert?, Energiezuschläge aktuell?, Warnungen der Preisprüfung, aktive `nova_versandkosten_…`-Versandarten je Verkaufskanal, geplante Aufgaben (Status, letzter/nächster Lauf), kommende Tourtermine – mit Links zum passenden Reiter |
+| Preise | Festpreise, Aufschlag Ausland, Sperrgut weitergeben, Warenwertgrenzen, Höchstgewicht, MwSt., Heimatland |
+| Zuschläge & Energie | aktuelle Energiezuschläge (Knopf *Jetzt abrufen*), Peak/Peak-in-Peak, Energiezuschlag automatisch/manuell |
+| Länder & Lieferzeit | freigeschaltete Länder, versandkostenfrei, DPD außerhalb der EU, Zustelldatum |
+| Artikeldaten | Eigenschaft und Wertnamen der Einordnung, Standardmaße/-gewicht |
+| Spedition | Cargoboard |
+| Anfrage & Beipacken | Versandkosten auf Anfrage, Beipacken, Knopf „Lieferung per Tour anfragen“ |
+| Touren | Unterreiter Tourtermine, Strecken, Preisprofile, Tour-Lieferungen, Benachrichtigung, Einstellungen |
+| Tarife | Datei hochladen (ziehen oder wählen) oder einfügen, Prüfen/Importieren, aktuelle Tarife als CSV/JSON exportieren, Vorlagen und Spaltenerklärung |
+| Preisprüfung | Festpreise je Kanal gegen den Einkauf, Einstellungen „Kontrolle“ (Marge, fehlende Maße) |
+
+**Einstellungs-Reiter:** Oben den Verkaufskanal wählen – „Alle Verkaufskanäle“ sind die
+Standardwerte; je Kanal erbt ein Feld den Standardwert, solange das Kettensymbol geschlossen ist. Es
+sind **dieselben Werte** wie in der Plugin-Konfiguration (*Erweiterungen → Meine Erweiterungen → Nova
+Versandkosten → Konfigurieren*, dort oben ein Link ins Modul), gespeichert in `system_config` unter
+`NovaVersandkosten.config.*`. *Speichern* sichert die Änderungen aller Reiter und Verkaufskanäle.
+
+**Rechte** wie bisher: Einstellungen, Tarife, Energiezuschläge und Preisprüfung brauchen das Recht
+„Einstellungen“ (*Benutzer & Rechte → Rollen → Weitere Rechte → Einstellungen*), die Touren die Rolle
+*Bestellungen → Touren*. Der Menüeintrag erscheint mit einem der beiden Leserechte; Reiter ohne Recht
+werden ausgeblendet.
+
+**Alte Wege** (bis 1.2.1): *Erweiterungen → Nova Versandkosten* und *Bestellungen → Touren* gibt es
+als Menüeinträge nicht mehr; alte Lesezeichen leiten ins Modul weiter.
+
 ## Einrichtung Schritt für Schritt
 
-1. **Tarife importieren:** *Erweiterungen → Nova Versandkosten → Tarife* → JSON- oder CSV-Datei wählen
-   (oder Inhalt einfügen) → *Prüfen* → *Importieren*. Die Tarife gelten für alle Verkaufskanäle.
+1. **Tarife importieren:** *Bestellungen → Versandkosten → Tarife* → CSV- oder JSON-Datei in das Feld
+   ziehen oder *Datei wählen* (sie wird sofort geprüft; alternativ Inhalt einfügen) → *Importieren*.
+   Die Tarife gelten für alle Verkaufskanäle.
    Vorlage: [`examples/tarife-beispiel.json`](examples/tarife-beispiel.json) bzw.
    [`examples/tarife-beispiel.csv`](examples/tarife-beispiel.csv).
-2. **Einstellungen je Verkaufskanal:** *Erweiterungen → Meine Erweiterungen → Nova Versandkosten →
-   Konfigurieren* (oben den Verkaufskanal wählen): Festpreise, Aufschlag Ausland, Warenwertgrenzen,
-   Energiezuschläge, Peak, Länder, Sonderregel versandkostenfrei, Lieferzeit, Cargoboard.
+2. **Einstellungen je Verkaufskanal:** *Bestellungen → Versandkosten*, Reiter *Preise*, *Zuschläge &
+   Energie*, *Länder & Lieferzeit*, *Artikeldaten*, *Spedition*, *Anfrage & Beipacken* (oben den
+   Verkaufskanal wählen, dann *Speichern*): Festpreise, Aufschlag Ausland, Warenwertgrenzen,
+   Energiezuschläge, Peak, Länder, Sonderregel versandkostenfrei, Lieferzeit, Cargoboard. Dieselben
+   Felder stehen weiterhin in der Plugin-Konfiguration (*Erweiterungen → Meine Erweiterungen → Nova
+   Versandkosten → Konfigurieren*).
 3. **Versandarten aktivieren:** *Einstellungen → Versand* → die gewünschten `nova_versandkosten_…`-
    Versandarten öffnen, aktivieren, ggf. umbenennen. Der Preis „0,00 €“ in der Preismatrix ist nur
    ein Platzhalter (Shopware sperrt Versandarten ohne Preis) – den echten Preis setzt das Plugin.
@@ -114,16 +154,16 @@ schon vorhandene Versandart lässt sich übernehmen, indem man ihr einen dieser 
    Produktfeldern. Einordnung über das Zusatzfeld „Versandeinordnung“ oder über die Eigenschaft
    (Standard „Versandart“, siehe unten). Fehlen Maße, gelten Standardmaße je Einordnung und die
    Bestellung wird mit „Maße fehlen“ gekennzeichnet.
-6. **Preisprüfung ansehen:** *Erweiterungen → Nova Versandkosten → Preisprüfung* – rot markierte
+6. **Preisprüfung ansehen:** *Bestellungen → Versandkosten → Preisprüfung* – rot markierte
    Festpreise liegen unter dem aktuellen Einkauf.
 7. **Testbestellung** in jedem Kanal: Warenkorb mit kleinem Artikel, Sperrgut und (falls genutzt)
    Speditionsware; in der Bestellung die Karte „Versandkosten“ prüfen.
-8. **Energiezuschläge:** *Erweiterungen → Nova Versandkosten → Energiezuschläge → Jetzt abrufen* –
+8. **Energiezuschläge:** *Bestellungen → Versandkosten → Zuschläge & Energie → Jetzt abrufen* –
    danach läuft der Abruf täglich. Vor November den Peak-in-Peak-Zeitraum eintragen.
 9. **Optional:** Versandarten *Versandkosten auf Anfrage* und *Zu meiner Bestellung beipacken*
    aktivieren und zuordnen (siehe eigene Abschnitte unten), Link „Noch etwas vergessen?“ in die
    Bestellbestätigung einbauen.
-10. **Optional: Eigene Touren** – Strecken und Termine unter *Bestellungen → Touren*, Versandart
+10. **Optional: Eigene Touren** – Strecken und Termine unter *Bestellungen → Versandkosten → Touren*, Versandart
     *Lieferung mit unserer Tour* aktivieren (siehe Abschnitt „Eigene Touren“).
 
 Abholung auf Treffen/Messe aus *Nova Termine* ist eine eigene Versandart und wird von diesem Plugin
@@ -153,6 +193,16 @@ extra. Die Bestellung bekommt trotzdem das Zusatzfeld „Maße fehlen“ (z. B. 
 ob der Hinweis an der Bestellkarte in der Administration und in den internen E-Mails erscheint,
 steuert die Einstellung „Hinweis ‚Maße fehlen‘ ausgeben“ (Standard an). Kunden sehen ihn nie.
 
+**Kleinsendung ohne Maße** (neu in 1.3.0, je Verkaufskanal, Reiter *Artikeldaten*): Die
+Standardmaße „Paket“ (30 × 20 × 15 cm) passen nie in Warenpost (≤ 5 cm hoch) oder Kleinpaket
+(≤ 8 cm) – ein kleines Teil ohne Maße bekäme also nie Warenpost. Die Einstellung „Kleinsendung ohne
+Maße“ (*aus* / *Kleinpaket-fähig* / *Warenpost-fähig*, Standard: Warenpost-fähig) mit „bis
+Gesamtgewicht“ (Standard 1 kg) behebt das: Haben **alle** Artikel im Warenkorb die Einordnung „Paket“
+und **keine** Maße und liegt das Gesamtgewicht bis zur Grenze, prüfen Warenpost (bei
+„Warenpost-fähig“) und Kleinpaket nur Gewicht, Warenwertgrenze und „genau ein Paket“, nicht die
+Standardmaße. Sobald ein Artikel Maße hat (oder Sperrgut ist), wird wie bisher exakt geprüft. DPD/DHL
+rechnen unverändert mit den Standardmaßen; „Maße fehlen“ wird weiter gesetzt.
+
 ## Rechenregel
 
 1. **Pakete bilden:** Spedition im Warenkorb → nur Spedition/Abholung. „Nur Abholung“ → nur Abholung.
@@ -171,6 +221,10 @@ steuert die Einstellung „Hinweis ‚Maße fehlen‘ ausgeben“ (Standard an).
 4. **Verkauf je Paket**
    - Heimatland mit Festpreis: Festpreis + (Sperrgut/Übermaß + als „weitergeben“ markierte Zuschläge)
      × MwSt. + Peak × MwSt. (wenn „Peak weitergeben“). Energie, Maut usw. ändern nur die Marge.
+   - Festpreis mit Gewichtsgrenze (neu in 1.3.0, je Festpreis „gilt bis X kg“, leer = immer): Ein
+     Paket über der Grenze kostet statt des Festpreises Einkauf × MwSt. – oder, je nach Einstellung
+     „Über der Gewichtsgrenze eines Festpreises“, Einkauf × MwSt. + Aufschlag € je Paket. Die
+     Preisprüfung rechnet genauso.
    - Heimatland ohne Festpreis: Einkauf × MwSt.
    - Ausland EU: Einkauf × MwSt. + Aufschlag Ausland. Außerhalb der EU: Einkauf (ohne MwSt.) + Aufschlag.
    - Sonderregel versandkostenfrei (alle Artikel passen, Land freigeschaltet): 0,00 €.
@@ -257,8 +311,12 @@ JSON oder CSV herunterladen. Umwandeln ohne Shopware: `php scripts/tarif-konvert
 Eine Datei, eine Zeile je Eintrag, Spalte `type` sagt, was die Zeile ist. Trennzeichen `;` (Excel
 deutsch) oder `,`; Dezimalkomma oder -punkt; Listen mit Leerzeichen; `limits`/`condition` als
 `schlüssel=wert`-Paare, Maße als `35,3x25x5`. In `product` einer `surcharge`-/`oversize`-Zeile dürfen
-mehrere Produkt-IDs stehen. Auszug (vollständige Datei:
-[`examples/tarife-beispiel.csv`](examples/tarife-beispiel.csv)):
+mehrere Produkt-IDs stehen. Zeilen, deren erste Spalte mit `#` beginnt, sind Kommentare. Im Reiter
+*Tarife* gibt es die Beispieldateien und eine leere Vorlage (Kopfzeile + je Zeilentyp eine kommentierte
+Beispielzeile) zum Herunterladen, eine aufklappbare Spaltenerklärung und den Export der aktuellen
+Tarife als CSV – so lässt sich der Bestand in Excel bearbeiten und wieder importieren. Excel-CSV mit
+Semikolon geht direkt, in UTF-8 (mit oder ohne BOM) oder Windows-1252 („CSV (Trennzeichen-getrennt)“).
+Auszug (vollständige Datei: [`examples/tarife-beispiel.csv`](examples/tarife-beispiel.csv)):
 
 ```
 type;product;carrier;option;name;zone;countries;max_kg;price_net;per_kg_net;per_100g_net;round_kg;amount_net;percent;kind;condition;limits;postcodes;months;pass_on
@@ -289,20 +347,24 @@ surcharge;dpd_europa;;;Währungszuschlag;;CH;;;;;;;10;percent;;;;;
 
 ## Einstellungen (je Verkaufskanal)
 
-| Bereich | Einstellungen |
+Im Modul *Bestellungen → Versandkosten* nach Reitern sortiert (Spalte „Reiter“), in der
+Plugin-Konfiguration als Karten untereinander.
+
+| Bereich (Reiter) | Einstellungen |
 |---|---|
-| Verkaufspreise | Festpreise Warenpost/Kleinpaket/DPD/DHL (leer = Einkauf brutto), Aufschlag Ausland, Sperrgut/Übermaß weitergeben, Warenwertgrenzen, Höchstgewicht je Paket, MwSt.-Satz, Heimatland |
-| Zuschläge | Peak weitergeben, Peak-in-Peak von/bis, Energiezuschlag je Dienstleister (`dhl=12,5`), DPD außerhalb der EU |
-| Länder | freigeschaltete Länder, versandkostenfrei für Hersteller/Tags in bestimmten Ländern |
-| Artikeldaten | Eigenschaftsname, Wertnamen je Einordnung, Standardmaße und -gewicht |
-| Lieferzeit | Anzeige an/aus, Annahmeschluss, Bearbeitungstage, Feiertage (Bundesland), Schließtage, Laufzeiten (`option;länder;min-max`, z. B. `dpd;DE;1-2`, `*;EU;3-5`, `warenpost;*;4-10`) |
-| Spedition | Cargoboard-API-Schlüssel, Sandbox, Aufschlag, Ersatzpreis, Ladungsträger, Abhol-PLZ/-Land, Privatempfänger, Zeitlimit, Zwischenspeicher |
-| Versandkosten auf Anfrage | wann anbieten (Spedition ohne Preis, zusätzlich zu Spedition, Länder ohne Tarif, Artikel „nur auf Anfrage“, immer), Zahlarten in der Kasse, Empfänger „Versandkosten eintragen“, Stornieren nach X Tagen |
-| Beipacken | Höchstalter der Bestellung (Tage), Formular für Gäste |
-| Zuschläge (Energie) | automatisch/manuell je Dienstleister, DPD Emergency Fuel Surcharge, Schlüssel in der Tarifdatei, E-Mail bei Abruf-Fehlern |
-| Anfrage/Kontrolle | Knopf „Lieferung per Tour anfragen“, Empfänger, Hinweis „Maße fehlen“ ausgeben, E-Mail bei negativer Marge |
-| Eigene Touren | Preis Kleinteile/Paket/Sperrgut und Höchstabweichung, Speditionsstufen (`30=190`, `60=290`), Umwegfaktor, Lieferländer, Standard-Bestellschluss, Hinweis in der Kasse |
-| Tour-Benachrichtigung | einschalten, Löschen nach X Monaten ohne Aktivität |
+| Verkaufspreise (Preise) | Festpreise Warenpost/Kleinpaket/DPD/DHL (leer = Einkauf brutto), je Festpreis „gilt bis X kg“ und was darüber gilt (Einkauf brutto bzw. Einkauf brutto + Aufschlag), Aufschlag Ausland, Sperrgut/Übermaß weitergeben, Warenwertgrenzen, Höchstgewicht je Paket, MwSt.-Satz, Heimatland |
+| Peak-Zuschläge (Zuschläge & Energie) | Peak weitergeben, Peak-in-Peak von/bis |
+| Energiezuschläge (Zuschläge & Energie) | Energiezuschlag je Dienstleister (`dhl=12,5`), automatisch/manuell je Dienstleister, DPD Emergency Fuel Surcharge, Schlüssel in der Tarifdatei, E-Mail bei Abruf-Fehlern |
+| Länder (Länder & Lieferzeit) | freigeschaltete Länder, versandkostenfrei für Hersteller/Tags in bestimmten Ländern, DPD außerhalb der EU |
+| Artikeldaten (Artikeldaten) | Eigenschaftsname, Wertnamen je Einordnung, Standardmaße und -gewicht, Kleinsendung ohne Maße (aus/Kleinpaket-fähig/Warenpost-fähig, bis Gesamtgewicht) |
+| Lieferzeit (Länder & Lieferzeit) | Anzeige an/aus, Annahmeschluss, Bearbeitungstage, Feiertage (Bundesland), Schließtage, Laufzeiten (`option;länder;min-max`, z. B. `dpd;DE;1-2`, `*;EU;3-5`, `warenpost;*;4-10`) |
+| Spedition (Spedition) | Cargoboard-API-Schlüssel, Sandbox, Aufschlag, Ersatzpreis, Ladungsträger, Abhol-PLZ/-Land, Privatempfänger, Zeitlimit, Zwischenspeicher |
+| Versandkosten auf Anfrage (Anfrage & Beipacken) | wann anbieten (Spedition ohne Preis, zusätzlich zu Spedition, Länder ohne Tarif, Artikel „nur auf Anfrage“, immer), Zahlarten in der Kasse, Empfänger „Versandkosten eintragen“, Stornieren nach X Tagen |
+| Beipacken (Anfrage & Beipacken) | Höchstalter der Bestellung (Tage), Formular für Gäste |
+| Tour-Anfrage in der Kasse (Anfrage & Beipacken) | Knopf „Lieferung per Tour anfragen“, Empfänger |
+| Kontrolle (Preisprüfung) | Hinweis „Maße fehlen“ ausgeben, E-Mail bei negativer Marge |
+| Eigene Touren (Touren → Einstellungen) | Preis Kleinteile/Paket/Sperrgut und Höchstabweichung, Speditionsstufen (`30=190`, `60=290`), Umwegfaktor, Lieferländer, Standard-Bestellschluss, Hinweis in der Kasse |
+| Tour-Benachrichtigung (Touren → Einstellungen) | einschalten, Löschen nach X Monaten ohne Aktivität |
 
 ## Zur offenen Bestellung beipacken
 
@@ -467,7 +529,7 @@ sich die Variante jederzeit festlegen oder ändern (z. B. vor der ersten Buchung
 
 Der Tourpreis kann davon abhängen, **wer fährt** – z. B. darf eine weite Speditionsfahrt günstiger
 sein, wenn der Inhaber selbst fährt, als wenn ein Mitarbeiter fährt. Dafür gibt es **Preisprofile**
-unter *Bestellungen → Touren → Preisprofile*:
+unter *Bestellungen → Versandkosten → Touren → Preisprofile*:
 
 | Feld | Bedeutung |
 |---|---|
@@ -497,12 +559,12 @@ Profil B 290 €.
 
 1. *Einstellungen → Versand* → „Lieferung mit unserer Tour“ aktivieren und dem Verkaufskanal zuordnen
    (Platzhalterpreis 0,00 € bleibt; den Preis setzt das Plugin).
-2. *Erweiterungen → Meine Erweiterungen → Nova Versandkosten → Konfigurieren* → „Eigene Touren“:
-   Preise, Grenzen, Umwegfaktor, Lieferländer, Standard-Bestellschluss, Hinweis in der Kasse.
-3. *Bestellungen → Touren → Strecken → Neue Strecke*: Name, Start, Ziel; je Variante die Wegpunkte in
+2. *Bestellungen → Versandkosten → Touren → Einstellungen* (oder Plugin-Konfiguration → „Eigene
+   Touren“): Preise, Grenzen, Umwegfaktor, Lieferländer, Standard-Bestellschluss, Hinweis in der Kasse.
+3. *Bestellungen → Versandkosten → Touren → Strecken → Neue Strecke*: Name, Start, Ziel; je Variante die Wegpunkte in
    Fahrtreihenfolge über „PLZ oder Ort“ suchen und übernehmen (bei Orten mit mehreren PLZ gibt es den
    Mittelpunkt aller PLZ). Reihenfolge mit ↑/↓, Bezeichnung frei änderbar.
-4. *Tourtermine → Neuer Tourtermin*: Strecke wählen (oder „eigene Wegpunkte“ für eine einmalige
+4. *Touren → Tourtermine → Neuer Tourtermin*: Strecke wählen (oder „eigene Wegpunkte“ für eine einmalige
    Fahrt), Datum, ggf. Bestellschluss, „mit Hänger“. Status „offen“ lassen. Einmalige Fahrten lassen
    sich mit „Als Strecken-Vorlage speichern“ für später sichern. Optional: **Preisprofil** wählen
    (wer fährt, siehe oben).
@@ -538,7 +600,8 @@ Profil B 290 €.
 
 ### Tour-Lieferungen (Beladen)
 
-Im Tourtermin listet **„Tour-Lieferungen“** alle Bestellungen des Termins: Bestellnummer (Link),
+Im Tourtermin und im Unterreiter *Touren → Tour-Lieferungen* (Termin auswählen) listet
+**„Tour-Lieferungen“** alle Bestellungen des Termins: Bestellnummer (Link),
 Kunde, Straße, PLZ/Ort, Position entlang der Strecke (km ab Start), Abweichung (bei Bestellung und
 mit der aktuellen Variante), Einordnung, Status von Bestellung/Lieferung/Zahlung. Sortiert **entlang
 der Strecke** – die zuletzt angefahrenen zuerst laden. Liegt eine Bestellung nach einer
@@ -571,7 +634,7 @@ nur **Datum und „in Ihrer Nähe (PLZ-Gebiet 12…)“**, nie die Strecke. Eins
   unbestätigte Anmeldungen nach 7 Tagen und aktive Abonnenten nach **24 Monaten ohne Aktivität**
   (einstellbar, 0 = nie). Aktivität = Bestätigung, Umschalten im Konto oder „Weiter benachrichtigen“
   in einer Mail. Geplante Aufgabe `nova_versandkosten.tour_cleanup` (täglich).
-- **Administration:** *Bestellungen → Touren → Benachrichtigung*: alle Abonnenten (Kunde/Gast,
+- **Administration:** *Bestellungen → Versandkosten → Touren → Benachrichtigung*: alle Abonnenten (Kunde/Gast,
   E-Mail, PLZ/Ort, seit, Quelle, bestätigt, Anzahl Mails), Filter nach Strecke und Umkreis, Suche,
   **CSV-Export**, Löschen. Im Tourtermin: **„X Interessenten im Korridor“** (bei offenem Termin alle
   Varianten; Reichweite mit Hänger bis zur größten Speditionsstufe, sonst bis zur Grenze für
@@ -602,8 +665,8 @@ src/Resources/geo/postcodes-de.tsv.gz` – beim nächsten Update lädt das Plugi
 
 ## Energiezuschläge automatisch
 
-Die geplante Aufgabe `nova_versandkosten.energy_fetch` (täglich) und der Knopf *Erweiterungen → Nova
-Versandkosten → Energiezuschläge → Jetzt abrufen* lesen die öffentlichen Tabellen:
+Die geplante Aufgabe `nova_versandkosten.energy_fetch` (täglich) und der Knopf *Bestellungen →
+Versandkosten → Zuschläge & Energie → Jetzt abrufen* lesen die öffentlichen Tabellen:
 
 | Dienstleister | Quelle | Wert |
 |---|---|---|
@@ -616,11 +679,11 @@ Versandkosten → Energiezuschläge → Jetzt abrufen* lesen die öffentlichen T
 - **Plausibilitätsprüfung** (0–60 %). Bei Fehlern (Seite nicht erreichbar, geändert, unplausibel)
   bleibt der letzte Wert, es gibt eine Benachrichtigung in der Administration und optional eine
   E-Mail.
-- Je Dienstleister „automatisch“ oder „manuell“ (Einstellungen → Zuschläge); manuell gilt der Wert
+- Je Dienstleister „automatisch“ oder „manuell“ (Reiter *Zuschläge & Energie*); manuell gilt der Wert
   aus dem Feld „Energiezuschlag (%) je Dienstleister“. Bis zum ersten erfolgreichen Abruf gilt
   ebenfalls der manuelle Wert. Die Schlüssel `dhl`/`dpd` sind einstellbar (falls die Tarifdatei andere
   Dienstleister-Schlüssel nutzt).
-- Die Seite *Energiezuschläge* zeigt je Quelle den heute gültigen Wert, die Bestandteile, Abrufzeit,
+- Der Reiter *Zuschläge & Energie* zeigt je Quelle den heute gültigen Wert, die Bestandteile, Abrufzeit,
   Quelle und den letzten Fehler.
 
 ## Zusatzfelder an der Bestellung
@@ -725,7 +788,8 @@ Administration-Quellcode von Shopware 6.7:
 
 ```bash
 # PROJECT_ROOT enthält var/plugins.json (Eintrag „NovaVersandkosten“ mit basePath custom/plugins/NovaVersandkosten/src/)
-# und custom/plugins/NovaVersandkosten (Kopie dieses Repositorys)
+# und custom/plugins/NovaVersandkosten (Kopie dieses Repositorys, mit examples/ – die Tarif-Vorlagen
+# im Reiter „Tarife“ werden beim Bauen aus examples/ eingebunden)
 cd <shopware>/src/Administration/Resources/app/administration
 PROJECT_ROOT=<projekt> SHOPWARE_ADMIN_BUILD_ONLY_EXTENSIONS=1 VITE_MODE=production npx ts-node -T build.ts
 # danach custom/plugins/NovaVersandkosten/src/Resources/public zurückkopieren
@@ -741,6 +805,15 @@ Kein eigenes Storefront-JavaScript.
 für Land/Warenkorb gibt es keinen passenden Tarif.
 
 **Lösung:** Schritte 1–4 der Einrichtung prüfen; *Preisprüfung* zeigt, ob die Tarife geladen sind.
+
+### Warenpost/Kleinpaket erscheint bei kleinen Teilen nicht
+
+**Ursache:** Artikel ohne Maße werden mit den Standardmaßen „Paket“ (30 × 20 × 15 cm) gerechnet –
+die passen nicht in Warenpost/Kleinpaket. Oder Warenwert-/Gewichtsgrenze überschritten.
+
+**Lösung:** *Bestellungen → Versandkosten → Artikeldaten* → „Kleinsendung ohne Maße“ auf
+„Warenpost-fähig“ (bzw. „Kleinpaket-fähig“) und die Gewichtsgrenze passend setzen – oder beim Artikel
+die verpackten Maße pflegen.
 
 ### Spedition zeigt „auf Anfrage“
 
@@ -772,7 +845,7 @@ Speditionsware bei Termin ohne Hänger, Artikel „Nur Abholung“/„Nur auf An
 Lieferland nicht freigegeben oder PLZ unbekannt.
 
 **Lösung:** Im Tourtermin Status, Bestellschluss, Hänger und Variante prüfen; Abweichung schätzen
-(Luftlinie zur Strecke × Umwegfaktor). Fehlen die PLZ-Koordinaten, zeigt *Bestellungen → Touren* einen
+(Luftlinie zur Strecke × Umwegfaktor). Fehlen die PLZ-Koordinaten, zeigt *Bestellungen → Versandkosten → Touren* einen
 Hinweis – Plugin aktualisieren oder neu aktivieren.
 
 ### Tour-Benachrichtigung: Formular erscheint nicht
@@ -793,7 +866,8 @@ ist nichts eingetragen.
 **Ursache:** Geplante Aufgaben laufen nicht, der Server darf nicht ins Internet, oder die Seite von
 DHL/DPD hat sich geändert (Benachrichtigung „Energiezuschlag konnte nicht abgerufen werden“).
 
-**Lösung:** Scheduled-Task-Runner prüfen, *Jetzt abrufen* testen; bis zur Klärung „manuell“ wählen und
+**Lösung:** In *Bestellungen → Versandkosten → Übersicht* den Status der geplanten Aufgaben ansehen,
+Scheduled-Task-Runner prüfen, *Jetzt abrufen* testen; bis zur Klärung „manuell“ wählen und
 den Wert eintragen. Bei geänderter Seite bitte ein Issue anlegen.
 
 ## Lizenz

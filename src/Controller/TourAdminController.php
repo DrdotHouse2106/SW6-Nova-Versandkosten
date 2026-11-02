@@ -19,7 +19,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Admin-API „Touren“ (Bestellungen → Touren): Strecken mit Varianten, Tourtermine, Preisprofile (wer
+ * Admin-API „Touren“ (Bestellungen → Versandkosten → Touren): Strecken mit Varianten, Tourtermine, Preisprofile (wer
  * fährt), Tour-Lieferungen, Wegpunkt-Suche (PLZ/Ort), Interessenten im Korridor, Benachrichtigung senden,
  * Abonnenten und CSV.
  *

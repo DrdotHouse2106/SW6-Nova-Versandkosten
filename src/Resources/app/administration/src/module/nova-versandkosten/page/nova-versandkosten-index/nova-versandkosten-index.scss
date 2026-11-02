@@ -5,23 +5,68 @@
 }
 
 .nova-versandkosten-index__tabs {
-    display: flex;
-    gap: 8px;
     margin-bottom: 16px;
+}
 
-    button {
-        border: 1px solid #d1d9e0;
-        background: #fff;
-        border-radius: 4px;
-        padding: 6px 14px;
-        cursor: pointer;
+.nova-versandkosten-index__channel-switch {
+    max-width: 480px;
+    margin-bottom: 16px;
+}
 
-        &.is--active {
-            background: #189eff;
-            border-color: #189eff;
-            color: #fff;
-        }
+.nova-versandkosten-index__warnings {
+    margin: 4px 0 0 18px;
+}
+
+.nova-versandkosten-index__file-input {
+    display: none;
+}
+
+.nova-versandkosten-index__dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 24px 16px;
+    margin: 12px 0;
+    border: 2px dashed #d1d9e0;
+    border-radius: 6px;
+    background: #f9fafb;
+    text-align: center;
+    cursor: pointer;
+
+    &:hover,
+    &:focus,
+    &.is--dragging {
+        border-color: #189eff;
+        background: #f0f8ff;
+        outline: none;
     }
+}
+
+.nova-versandkosten-index__file-info,
+.nova-versandkosten-index__ok {
+    color: #1c8a4c;
+    font-weight: 600;
+}
+
+.nova-versandkosten-index__details {
+    margin: 12px 0;
+
+    summary {
+        cursor: pointer;
+        color: #189eff;
+        margin-bottom: 8px;
+    }
+
+    code {
+        font-size: 12px;
+        white-space: pre-wrap;
+    }
+}
+
+.nova-versandkosten-index__hints {
+    margin-left: 18px;
+    font-size: 13px;
 }
 
 .nova-versandkosten-index__table {
@@ -34,6 +79,10 @@
         text-align: left;
         padding: 6px 8px;
         border-bottom: 1px solid #e9edf0;
+    }
+
+    th {
+        vertical-align: top;
     }
 
     tr.is--warning td {

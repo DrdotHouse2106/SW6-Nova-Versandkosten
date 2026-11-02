@@ -1,26 +1,29 @@
 import './acl';
 import './component/nova-vk-tour-waypoints';
-import './page/nova-vk-tour-index';
+import './component/nova-vk-tour-delivery-table';
+import './component/nova-vk-tour-panel';
+import './page/nova-vk-tour-redirect';
 import './page/nova-vk-tour-route-detail';
 import './page/nova-vk-tour-date-detail';
 
 /**
- * Bestellungen → Touren: Tourtermine, Strecken (Vorlagen mit Varianten), Tour-Lieferungen,
- * Tour-Benachrichtigung (Abonnenten, Versand je Termin).
+ * Eigene Touren. Die Listen (Tourtermine, Strecken, Preisprofile, Tour-Lieferungen, Benachrichtigung)
+ * stehen seit 1.3.0 im Versandkosten-Modul (Bestellungen → Versandkosten → Touren); hier bleiben die
+ * Detailseiten für Strecke und Tourtermin sowie die Weiterleitung der alten Adresse
+ * Bestellungen → Touren. Kein eigener Menüeintrag mehr.
  */
 Shopware.Module.register('nova-vk-tour', {
     type: 'plugin',
     name: 'nova-vk-tour',
     title: 'nova-vk-tour.general.title',
     description: 'nova-vk-tour.general.description',
-    color: '#a092f0',
+    color: '#189eff',
     icon: 'regular-truck',
 
     routes: {
         index: {
-            component: 'nova-vk-tour-index',
+            component: 'nova-vk-tour-redirect',
             path: 'index/:tab?',
-            meta: { privilege: 'nova_vk_tour.viewer' },
         },
         route: {
             component: 'nova-vk-tour-route-detail',
@@ -33,15 +36,4 @@ Shopware.Module.register('nova-vk-tour', {
             meta: { parentPath: 'nova.vk.tour.index', privilege: 'nova_vk_tour.viewer' },
         },
     },
-
-    navigation: [{
-        id: 'nova-vk-tour',
-        label: 'nova-vk-tour.general.title',
-        color: '#a092f0',
-        path: 'nova.vk.tour.index',
-        icon: 'regular-truck',
-        parent: 'sw-order',
-        position: 60,
-        privilege: 'nova_vk_tour.viewer',
-    }],
 });

@@ -181,8 +181,17 @@ final class ShippingCalculator
         $energy = $rules->energyPercent($product->carrier);
         $fixed = $domestic ? $rules->fixedPrice($key) : null;
 
+        // Kleinsendung ohne Maße: Maße der Standardeinordnung nicht gegen Warenpost/Kleinpaket prüfen
+        $ignoreDims = $packaging->smallNoDims && $rules->smallNoDimsFits($key);
+        $fixedMaxKg = $fixed !== null ? $rules->fixedPriceMaxKg($key) : null;
+        $overLimit = false;
+
         foreach ($packaging->packages as $index => $package) {
-            $reject = $product->rejectReason($package);
+            $check = $package;
+            if ($ignoreDims) {
+                $check = new Package($package->weightKg, 0.1, 0.1, 0.1, $package->bulky);
+            }
+            $reject = $product->rejectReason($check);
             if ($reject !== null) {
                 return OptionResult::unavailable($key, \sprintf('Paket %d %s', $index + 1, $reject));
             }
@@ -191,7 +200,7 @@ final class ShippingCalculator
                 return OptionResult::unavailable($key, \sprintf('Paket %d: Gewicht außerhalb der Preisstaffel', $index + 1));
             }
 
-            $tier = $product->oversizeTierFor($package);
+            $tier = $product->oversizeTierFor($check);
             $oversize = $tier === null ? 0 : $tier->amount;
             $passOn = 0;
             $peak = 0;
@@ -232,6 +241,13 @@ final class ShippingCalculator
             // Verkaufspreis (Abschnitt 4/5)
             if ($free) {
                 $sale = 0;
+            } elseif ($domestic && $fixed !== null && $fixedMaxKg !== null && $package->weightKg > $fixedMaxKg + 1e-9) {
+                // Festpreis gilt nur bis zur Gewichtsgrenze; darüber Einkauf brutto (+ Aufschlag)
+                $overLimit = true;
+                $sale = Money::grossCents($purchase, $rules->vatPercent);
+                if ($rules->fixedOverMode === ChannelRules::FIXED_OVER_SURCHARGE) {
+                    $sale += Money::eurosToCents($rules->fixedOverSurcharge);
+                }
             } elseif ($domestic && $fixed !== null) {
                 $sale = Money::eurosToCents($fixed);
                 if ($rules->passOversize) {
@@ -264,7 +280,13 @@ final class ShippingCalculator
         if ($product->basicTracking) {
             $result->hints[] = ['code' => 'basicTracking'];
         }
-        if ($result->peakApplied && (!$domestic || $fixed === null || $rules->passPeak) && !$free) {
+        if ($overLimit) {
+            $result->meta['fixedOverLimit'] = true;
+        }
+        if ($ignoreDims) {
+            $result->meta['smallNoDims'] = true;
+        }
+        if ($result->peakApplied && (!$domestic || $fixed === null || $rules->passPeak || $overLimit) && !$free) {
             $result->hints[] = ['code' => 'peak', 'carrier' => $result->carrierName];
         }
 

@@ -1,21 +1,36 @@
-import template from './nova-vk-tour-index.html.twig';
+import template from './nova-vk-tour-panel.html.twig';
 import '../../nova-vk-tour.scss';
 import { apiGet, apiPost, apiDelete, apiDownload, errorText, formatDate, formatDateTime } from '../../api';
 
+export const TOUR_SUBTABS = ['dates', 'routes', 'profiles', 'deliveries', 'subscribers', 'settings'];
+
 /**
- * Übersicht: Tourtermine, Strecken, Preisprofile (wer fährt), Tour-Benachrichtigung (Abonnenten mit
- * Filter und CSV-Export).
+ * Reiter „Touren“ im Versandkosten-Modul (bis 1.2.1 eigene Seite Bestellungen → Touren):
+ * Unterreiter Tourtermine, Strecken, Preisprofile (wer fährt), Tour-Lieferungen (Lade-Reihenfolge je
+ * Termin), Benachrichtigung (Abonnenten mit Filter und CSV-Export). Den Unterreiter „Einstellungen“
+ * füllt die Seite selbst (Karten „Eigene Touren“ und „Tour-Benachrichtigung“ aus der Konfiguration).
  */
-Shopware.Component.register('nova-vk-tour-index', {
+Shopware.Component.register('nova-vk-tour-panel', {
     template,
 
     inject: ['acl'],
+
+    props: {
+        sub: {
+            type: String,
+            required: true,
+        },
+        canSettings: {
+            type: Boolean,
+            required: false,
+            default: false,
+        },
+    },
 
     mixins: [Shopware.Mixin.getByName('notification')],
 
     data() {
         return {
-            tab: 'dates',
             loading: false,
             overview: { routes: [], dates: [], profiles: [], defaultProfile: null, settings: {} },
             profile: null,
@@ -24,11 +39,10 @@ Shopware.Component.register('nova-vk-tour-index', {
             subscribers: [],
             subscribersLoading: false,
             filter: { routeId: '', radius: '', q: '', pending: true },
+            deliveryDateId: '',
+            deliveryList: [],
+            deliveryListLoading: false,
         };
-    },
-
-    metaInfo() {
-        return { title: this.$createTitle() };
     },
 
     computed: {
@@ -38,17 +52,35 @@ Shopware.Component.register('nova-vk-tour-index', {
                 .filter((d) => this.showPast || d.tourDate >= today)
                 .sort((a, b) => (this.showPast ? b.tourDate.localeCompare(a.tourDate) : a.tourDate.localeCompare(b.tourDate)));
         },
+
+        /** Termine ab heute (aufsteigend) für den Unterreiter „Tour-Lieferungen“. */
+        deliveryDates() {
+            const today = new Date().toISOString().substring(0, 10);
+            return this.overview.dates
+                .filter((d) => d.tourDate >= today)
+                .sort((a, b) => a.tourDate.localeCompare(b.tourDate));
+        },
+
+        subTabs() {
+            return TOUR_SUBTABS.filter((key) => key !== 'settings' || this.canSettings);
+        },
     },
 
     watch: {
-        '$route.params.tab': {
+        sub: {
             immediate: true,
-            handler(tab) {
-                this.tab = ['dates', 'routes', 'profiles', 'subscribers'].includes(tab) ? tab : 'dates';
-                if (this.tab === 'subscribers') {
+            handler(sub) {
+                if (sub === 'subscribers') {
                     this.loadSubscribers();
                 }
+                if (sub === 'deliveries') {
+                    this.pickDeliveryDate();
+                }
             },
+        },
+
+        deliveryDateId() {
+            this.loadDeliveryList();
         },
     },
 
@@ -60,14 +92,17 @@ Shopware.Component.register('nova-vk-tour-index', {
         formatDate,
         formatDateTime,
 
-        setTab(tab) {
-            this.$router.push({ name: 'nova.vk.tour.index', params: { tab } });
+        subRoute(sub) {
+            return { name: 'nova.versandkosten.index', params: { tab: 'tours', sub } };
         },
 
         async load() {
             this.loading = true;
             try {
                 this.overview = await apiGet('overview');
+                if (this.sub === 'deliveries') {
+                    this.pickDeliveryDate();
+                }
             } catch (error) {
                 this.createNotificationError({ message: errorText(error, this.$tc('nova-vk-tour.general.loadError')) });
             } finally {
@@ -167,6 +202,36 @@ Shopware.Component.register('nova-vk-tour-index', {
             } catch (error) {
                 this.createNotificationError({ message: errorText(error, this.$tc('nova-vk-tour.general.saveError')) });
             }
+        },
+
+        /** Erster Termin ab heute mit Lieferungen, sonst der nächste Termin. */
+        pickDeliveryDate() {
+            if (this.deliveryDateId && this.deliveryDates.some((d) => d.id === this.deliveryDateId)) {
+                return;
+            }
+            const withDeliveries = this.deliveryDates.find((d) => d.deliveries > 0);
+            this.deliveryDateId = (withDeliveries || this.deliveryDates[0] || {}).id || '';
+        },
+
+        async loadDeliveryList() {
+            if (!this.deliveryDateId) {
+                this.deliveryList = [];
+                return;
+            }
+            this.deliveryListLoading = true;
+            try {
+                const data = await apiGet(`date/${this.deliveryDateId}/deliveries`);
+                this.deliveryList = data.deliveries || [];
+            } catch (error) {
+                this.deliveryList = [];
+                this.createNotificationError({ message: errorText(error, this.$tc('nova-vk-tour.general.loadError')) });
+            } finally {
+                this.deliveryListLoading = false;
+            }
+        },
+
+        dateOption(d) {
+            return `${this.formatDate(d.tourDate)} · ${d.label || this.$tc('nova-vk-tour.dates.oneOff')} (${d.deliveries})`;
         },
     },
 });

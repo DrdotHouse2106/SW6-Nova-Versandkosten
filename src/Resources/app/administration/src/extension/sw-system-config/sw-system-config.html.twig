@@ -1,0 +1,16 @@
+{% block sw_system_config %}
+<div class="nova-vk-system-config-hint-wrapper">
+    <mt-banner
+        v-if="novaVkShowModuleHint"
+        class="nova-vk-system-config-hint"
+        variant="info"
+        :title="$tc('nova-versandkosten.configHint.title')"
+    >
+        {{ $tc('nova-versandkosten.configHint.text') }}
+        <router-link :to="{ name: 'nova.versandkosten.index', params: { tab: 'overview' } }">
+            {{ $tc('nova-versandkosten.configHint.link') }}
+        </router-link>
+    </mt-banner>
+    {% parent %}
+</div>
+{% endblock %}

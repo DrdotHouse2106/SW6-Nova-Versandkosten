@@ -1,0 +1,16 @@
+﻿type;product;carrier;option;name;zone;countries;max_kg;price_net;per_kg_net;per_100g_net;round_kg;amount_net;percent;kind;condition;limits;postcodes;months;pass_on
+# Leere Vorlage für Nova Versandkosten. Zeilen mit # am Anfang werden beim Import ignoriert. Zum Verwenden je Beispielzeile das # in der ersten Spalte entfernen und die Werte ersetzen. Alle Preise netto in Euro (Einkauf).
+# meta: Name der Tarifdatei (Spalte name)
+#meta;;;;Meine Tarife 2027;;;;;;;;;;;;;;;
+# carrier: Dienstleister – Spalte carrier = Schlüssel (frei, z. B. dhl, dpd, post; auch für den Energiezuschlag), name = Anzeigename
+#carrier;;dhl;;DHL;;;;;;;;;;;;;;;
+# product: Versandprodukt – product = eindeutige ID (a-z 0-9 _ -), carrier = Schlüssel, option = warenpost, kleinpaket, dpd oder dhl, limits = Grenzen als schlüssel=wert mit Leerzeichen
+#product;dhl_paket_de;dhl;dhl;DHL Paket national;;;;;;;;;;;;maxKg=31,5 maxDimsCm=120x60x60;;;
+# rate: Gewichtsstufe – zone = Name, countries = ISO-Codes mit Leerzeichen, max_kg = bis kg, price_net = Preis (alternativ price_net + per_kg_net + round_kg oder price_net + per_100g_net)
+#rate;dhl_paket_de;;;;Deutschland;DE;5;1,23;;;;;;;;;;;
+# oversize: Sperrgut-/Übermaß-Stufe – name, amount_net, condition (eine Bedingung genügt: lengthOver sideOver volumeOverL girthOver exceedsDimsCm weightOverKg bulky), limits = Höchstmaße der Stufe
+#oversize;dhl_paket_de;;;Sperrgut;;;;;;;;9,99;;;exceedsDimsCm=120x60x60 bulky=1;lengthCm=200 girthCm=360;;;
+# surcharge: Zuschlag – kind = fixed, percent, energy, peak oder peakInPeak; amount_net oder percent; optional countries, postcodes, months (z. B. 11 12), pass_on = 1 (an Kunden weitergeben)
+#surcharge;dhl_paket_de;;;Maut;;;;;;;;0,12;;fixed;;;;;
+#surcharge;dhl_paket_de;;;Energiezuschlag;;;;;;;;;;energy;;;;;
+#surcharge;dhl_paket_de;;;Peakzuschlag;;;;;;;;0,19;;peak;;;;11 12;

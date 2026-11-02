@@ -5,7 +5,7 @@
     </template>
 
     <template #smart-bar-actions>
-        <mt-button variant="secondary" @click="$router.push({ name: 'nova.vk.tour.index', params: { tab: 'dates' } })">{{ $tc('nova-vk-tour.general.back') }}</mt-button>
+        <mt-button variant="secondary" @click="$router.push({ name: 'nova.versandkosten.index', params: { tab: 'tours', sub: 'dates' } })">{{ $tc('nova-vk-tour.general.back') }}</mt-button>
         <mt-button v-if="dateId && acl.can('nova_vk_tour.deleter')" variant="critical" @click="remove">{{ $tc('nova-vk-tour.general.delete') }}</mt-button>
         <mt-button v-if="canEdit" variant="primary" :disabled="saving" @click="save">{{ $tc('nova-vk-tour.general.save') }}</mt-button>
     </template>
@@ -77,37 +77,7 @@
 
             <mt-card v-if="dateId" position-identifier="nova-vk-tour-deliveries" :title="$tc('nova-vk-tour.deliveries.title')" :is-loading="deliveriesLoading">
                 <p class="nova-vk-tour__muted">{{ $tc('nova-vk-tour.deliveries.help') }}</p>
-                <table v-if="deliveries.length" class="nova-vk-tour__table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>{{ $tc('nova-vk-tour.deliveries.order') }}</th>
-                            <th>{{ $tc('nova-vk-tour.deliveries.customer') }}</th>
-                            <th>{{ $tc('nova-vk-tour.deliveries.place') }}</th>
-                            <th>{{ $tc('nova-vk-tour.deliveries.along') }}</th>
-                            <th>{{ $tc('nova-vk-tour.deliveries.deviation') }}</th>
-                            <th>{{ $tc('nova-vk-tour.deliveries.tier') }}</th>
-                            <th>{{ $tc('nova-vk-tour.deliveries.status') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="(d, i) in deliveries" :key="d.orderId" :class="{ 'nova-vk-tour__warn': d.outOfRange }">
-                            <td>{{ i + 1 }}</td>
-                            <td><router-link :to="{ name: 'sw.order.detail', params: { id: d.orderId } }">{{ d.orderNumber }}</router-link></td>
-                            <td>{{ d.customer }}<div class="nova-vk-tour__muted">{{ d.street }}</div></td>
-                            <td>{{ d.zipcode }} {{ d.city }}</td>
-                            <td>{{ d.alongKm !== null ? d.alongKm + ' km' : '–' }}</td>
-                            <td>
-                                {{ d.deviationKm !== null ? d.deviationKm + ' km' : '–' }}
-                                <div v-if="d.currentDeviationKm !== null && d.currentDeviationKm !== d.deviationKm" class="nova-vk-tour__muted">{{ $tc('nova-vk-tour.deliveries.current') }} {{ d.currentDeviationKm }} km</div>
-                                <div v-if="d.outOfRange" class="nova-vk-tour__error">{{ $tc('nova-vk-tour.deliveries.outOfRange') }}</div>
-                            </td>
-                            <td>{{ d.tier === 'spedition' ? $tc('nova-vk-tour.deliveries.freight') : $tc('nova-vk-tour.deliveries.small') }}</td>
-                            <td>{{ statusText(d) }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <p v-else>{{ $tc('nova-vk-tour.deliveries.none') }}</p>
+                <nova-vk-tour-delivery-table :deliveries="deliveries" />
             </mt-card>
 
             <mt-card v-if="dateId && interested" position-identifier="nova-vk-tour-interested" :title="$tc('nova-vk-tour.notify.title')">

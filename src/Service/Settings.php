@@ -169,6 +169,20 @@ class Settings implements ResetInterface
                 $this->bool('requestWithFreight', $salesChannelId, true) ? ChannelRules::REQUEST_WITH_FREIGHT : null,
                 $this->bool('requestAlways', $salesChannelId, false) ? ChannelRules::REQUEST_ALWAYS : null,
             ])),
+            smallNoDims: \in_array($small = $this->string('smallNoDims', $salesChannelId, ChannelRules::SMALL_WARENPOST), ChannelRules::SMALL_MODES, true)
+                ? $small
+                : ChannelRules::SMALL_WARENPOST,
+            smallNoDimsMaxKg: max(0.0, $this->float('smallNoDimsMaxKg', $salesChannelId, 1.0) ?? 1.0),
+            fixedPriceMaxKg: [
+                'warenpost' => $this->float('priceWarenpostMaxKg', $salesChannelId),
+                'kleinpaket' => $this->float('priceKleinpaketMaxKg', $salesChannelId),
+                'dpd' => $this->float('priceDpdMaxKg', $salesChannelId),
+                'dhl' => $this->float('priceDhlMaxKg', $salesChannelId),
+            ],
+            fixedOverMode: $this->string('fixedOverMode', $salesChannelId) === ChannelRules::FIXED_OVER_SURCHARGE
+                ? ChannelRules::FIXED_OVER_SURCHARGE
+                : ChannelRules::FIXED_OVER_PURCHASE,
+            fixedOverSurcharge: max(0.0, $this->float('fixedOverSurcharge', $salesChannelId, 0.0) ?? 0.0),
         );
     }
 

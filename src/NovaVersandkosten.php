@@ -20,7 +20,7 @@ use Shopware\Core\Framework\Plugin\Context\UpdateContext;
 
 /**
  * Nova Versandkosten – Versandkosten aus Einkaufstarifen, Paketbildung und Kanalregeln berechnen;
- * ab 1.2.0 zusätzlich eigene Touren (Strecken, Tourtermine, Tour-Benachrichtigung), ab 1.2.1 Preisprofile je Fahrer.
+ * ab 1.2.0 zusätzlich eigene Touren (Strecken, Tourtermine, Tour-Benachrichtigung), ab 1.2.1 Preisprofile je Fahrer, ab 1.3.0 ein Admin-Modul „Bestellungen → Versandkosten“ mit Reitern.
  *
  * Die Tabellen der Touren legt die Migration an (Migration1793450000NovaVkTour). Beim Installieren,
  * Aktualisieren und Aktivieren lädt das Plugin die mitgelieferten PLZ-Koordinaten (GeoNames, CC BY 4.0),

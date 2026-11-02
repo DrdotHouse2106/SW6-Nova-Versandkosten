@@ -179,7 +179,7 @@ Shopware.Component.register('nova-vk-tour-date-detail', {
             }
             try {
                 await apiDelete(`date/${this.dateId}`);
-                this.$router.push({ name: 'nova.vk.tour.index', params: { tab: 'dates' } });
+                this.$router.push({ name: 'nova.versandkosten.index', params: { tab: 'tours', sub: 'dates' } });
             } catch (error) {
                 this.createNotificationError({ message: errorText(error, this.$tc('nova-vk-tour.general.saveError')) });
             }
@@ -228,10 +228,6 @@ Shopware.Component.register('nova-vk-tour-date-detail', {
             }).join(', ');
             const small = this.$tc('nova-vk-tour.profiles.smallText', 0, { price: profile.smallPrice, km: profile.smallMaxKm });
             return `${small} · ${this.$tc('nova-vk-tour.profiles.freight')}: ${tiers || this.$tc('nova-vk-tour.profiles.noFreight')}`;
-        },
-
-        statusText(delivery) {
-            return [delivery.orderState, delivery.deliveryState, delivery.paymentState].filter(Boolean).join(' / ');
         },
     },
 });

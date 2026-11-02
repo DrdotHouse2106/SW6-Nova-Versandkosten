@@ -16,6 +16,8 @@ final class Packaging
         public readonly array $packages,
         public readonly array $units,
         public readonly bool $dimsMissing,
+        /** Kleinsendung ohne Maße (alle Artikel Paket, ohne Maße, leicht genug) – siehe ChannelRules::$smallNoDims */
+        public readonly bool $smallNoDims = false,
     ) {
     }
 

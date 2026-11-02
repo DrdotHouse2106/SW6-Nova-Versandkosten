@@ -1,13 +1,67 @@
 {
     "nova-versandkosten": {
         "general": {
-            "title": "Nova Versandkosten",
-            "description": "Import tariffs, check shipping prices, fetch energy surcharges"
+            "title": "Shipping costs",
+            "description": "Nova Shipping Costs: settings, tariffs, energy surcharges, tours, price check",
+            "menu": "Shipping costs",
+            "noRights": "This module needs the “Settings” or “Orders → Tours” permission."
         },
         "tabs": {
+            "overview": "Overview",
+            "prices": "Prices",
+            "surcharges": "Surcharges & energy",
+            "countries": "Countries & delivery time",
+            "products": "Product data",
+            "freight": "Freight",
+            "request": "Request & add-on",
+            "tours": "Tours",
             "tariffs": "Tariffs",
-            "check": "Price check",
-            "energy": "Energy surcharges"
+            "check": "Price check"
+        },
+        "overview": {
+            "warnings": "Please check",
+            "open": "open",
+            "allGood": "All good: tariffs imported, energy surcharges up to date, no warnings.",
+            "status": "Status",
+            "warnNoTariffs": "No tariff file imported yet.",
+            "warnEnergy": "Energy surcharge {carrier} is not up to date (last fetch older than 36 hours or failed).",
+            "warnPrices": "Price check: one warning (fixed price below purchase). | Price check: {count} warnings (fixed price below purchase).",
+            "warnNoMethods": "No Nova shipping method active (Settings → Shipping).",
+            "warnNoChannel": "Shipping method “{name}” is active but not assigned to any sales channel.",
+            "warnTask": "Scheduled task “{name}” failed, is inactive or overdue – is the scheduled task runner running?",
+            "products": "one product | {count} products",
+            "energy": "Energy surcharge {carrier}",
+            "tourDates": "no upcoming tour date | one upcoming tour date | {count} upcoming tour dates",
+            "methods": "Nova shipping methods",
+            "methodsHelp": "Shipping methods with technical name nova_versandkosten_… – activate and assign under Settings → Shipping and Sales channels.",
+            "method": "Shipping method",
+            "active": "Active",
+            "channels": "Sales channels",
+            "noChannel": "not assigned to a sales channel",
+            "noMethods": "No Nova shipping methods found – reactivate the plugin.",
+            "noAccess": "No read permission.",
+            "tasks": "Scheduled tasks",
+            "tasksHelp": "Run daily if a scheduled task runner (cron or bin/console scheduled-task:run) is active.",
+            "task": "Task",
+            "taskStatus": "Status",
+            "lastRun": "Last run",
+            "nextRun": "Next run",
+            "noTasks": "No scheduled tasks found – update the plugin.",
+            "task_energy_fetch": "Fetch energy surcharges",
+            "task_request_cancel": "Cancel unpaid requests",
+            "task_tour_cleanup": "Clean up tour notification"
+        },
+        "settings": {
+            "save": "Save",
+            "saved": "Settings saved.",
+            "saveError": "Saving failed.",
+            "salesChannel": "Sales channel",
+            "salesChannelHelp": "“All sales channels” = default values. Per channel a field inherits the default while the chain icon is closed. Same values as in the plugin configuration; Save stores the changes of all tabs."
+        },
+        "configHint": {
+            "title": "Clearer: shipping costs module",
+            "text": "The same settings, sorted by topic in tabs – together with tariffs, energy surcharges, tours and price check under Orders → Shipping costs.",
+            "link": "Open shipping costs module"
         },
         "tariffs": {
             "current": "Current tariff file",
@@ -19,10 +73,10 @@
             "carrier": "Carrier",
             "option": "Shipping method",
             "countries": "Countries",
-            "downloadJson": "Download as JSON",
-            "downloadCsv": "Download as CSV (Excel)",
+            "downloadJson": "Export current tariffs (JSON)",
+            "downloadCsv": "Export current tariffs (CSV, Excel)",
             "import": "Import tariff file",
-            "importHelp": "Choose a JSON or CSV file or paste its content. “Check” shows errors without saving; “Import” replaces the current tariff file for all sales channels. Format: see README.",
+            "importHelp": "Drop a CSV or JSON file here or choose one – it is checked right away. “Import” then replaces the current tariff file for all sales channels. CSV from Excel (semicolon, UTF-8 with or without BOM, also Windows-1252) works directly.",
             "paste": "Content of the tariff file (JSON or CSV)",
             "check": "Check",
             "save": "Import",
@@ -30,11 +84,54 @@
             "checked": "File is valid: {name} ({products} products). Not saved yet.",
             "saved": "Tariffs imported: {name} ({products} products).",
             "saveError": "Import failed.",
-            "loadError": "Loading failed."
+            "loadError": "Loading failed.",
+            "dropHere": "Drop file here",
+            "dropHelp": ".csv or .json, at most 5 MB",
+            "chooseFile": "Choose file",
+            "fileLoaded": "Loaded: {name} ({size} KB, {encoding})",
+            "wrongType": "“{name}” is not a CSV or JSON file. In Excel use “Save as → CSV UTF-8 (comma delimited)”.",
+            "tooLarge": "The file is larger than 5 MB.",
+            "readError": "The file could not be read.",
+            "pasteToggle": "Paste content instead",
+            "clear": "Discard",
+            "exportHelp": "To edit: export as CSV, change in Excel, save as CSV and import again.",
+            "templates": "Templates",
+            "templatesHelp": "Example files with made-up placeholder prices, or a blank template with header row and one commented example row per row type (# at the start of a line = comment).",
+            "templateCsv": "Download template (CSV)",
+            "templateJson": "Download template (JSON)",
+            "templateBlank": "Blank template (CSV)"
+        },
+        "columns": {
+            "toggle": "CSV columns explained",
+            "intro": "One row per entry; the column “type” says what the row is. All prices net in euros (purchase). Header: type;product;carrier;option;name;zone;countries;max_kg;price_net;per_kg_net;per_100g_net;round_kg;amount_net;percent;kind;condition;limits;postcodes;months;pass_on",
+            "required": "Columns",
+            "meaning": "Meaning",
+            "metaColumns": "name",
+            "meta": "Name of the tariff file",
+            "carrierColumns": "carrier, name",
+            "carrier": "Carrier: key (free, e.g. dhl, dpd, post – also used for the energy surcharge) and display name",
+            "productColumns": "product, carrier, option, name, (limits)",
+            "product": "Shipping product; option = warenpost, kleinpaket, dpd or dhl; limits e.g. maxKg=31.5 maxDimsCm=120x60x60 maxLengthCm maxGirthCm maxGoodsValue singlePackage=1 allowBulky=0 basicTracking=1",
+            "rateColumns": "product, zone, countries, max_kg, price_net",
+            "rate": "Weight step: up to max_kg it costs price_net (one row per step and zone, ascending)",
+            "rateKgColumns": "product, zone, countries, price_net, per_kg_net, round_kg",
+            "rateKg": "Piece price + price per kg (weight rounded up to round_kg, default 0.1)",
+            "rate100gColumns": "product, zone, countries, price_net, per_100g_net",
+            "rate100g": "Piece price + price per started 100 g",
+            "oversizeColumns": "product, name, amount_net, condition, (limits)",
+            "oversize": "Bulky/oversize tier; condition (one is enough): lengthOver, lengthAtLeast, sideOver, volumeOverL, girthOver, exceedsDimsCm, weightOverKg, bulky=1; limits: lengthCm, girthCm, dimsCm, kg. The last matching tier applies",
+            "surchargeColumns": "product, name, kind, amount_net or percent",
+            "surcharge": "Surcharge; kind = fixed, percent, energy, peak or peakInPeak; optional countries, postcodes (also ranges 25846-25847), months (11 12), pass_on=1",
+            "hintLists": "Separate lists (countries, postcodes, months) with spaces; also several product IDs in “product” of a surcharge/oversize row.",
+            "hintPairs": "limits and condition as key=value pairs separated by spaces; dimensions as 35.3x25x5.",
+            "hintDecimal": "Decimal separator comma or dot; delimiter semicolon (German Excel) or comma.",
+            "hintComment": "Rows whose first column starts with # and empty rows are ignored.",
+            "hintOption": "Several products per shipping method are common (domestic/international); per country the cheapest matching one applies.",
+            "hintSurcharge": "The energy surcharge (kind = energy) has no amount – the percentage comes from the “Surcharges & energy” tab."
         },
         "check": {
             "title": "Price check",
-            "help": "Fixed prices in the home country against the current purchase price (incl. energy surcharge, peak during the period) for typical parcels. Red = net sale below purchase.",
+            "help": "Fixed prices in the home country against the current purchase price (incl. energy surcharge, peak during the period) for typical parcels. Red = net sale below purchase. Weight limits of fixed prices (“applies up to X kg”, Prices tab) are applied as in the checkout.",
             "warnings": "{count} shortfall | {count} shortfalls",
             "ok": "all covered",
             "scenario": "Parcel",
@@ -44,7 +141,9 @@
             "margin": "Margin",
             "purchaseGross": "Purchase gross",
             "reload": "Recalculate",
-            "loadError": "Price check failed."
+            "loadError": "Price check failed.",
+            "overLimit": "Purchase gross (above {kg} kg)",
+            "upTo": "up to {kg} kg"
         },
         "order": {
             "title": "Shipping costs",
@@ -119,8 +218,10 @@
         "tabs": {
             "dates": "Tour dates",
             "routes": "Routes",
+            "profiles": "Price profiles",
+            "deliveries": "Tour deliveries",
             "subscribers": "Notification",
-            "profiles": "Price profiles"
+            "settings": "Settings"
         },
         "status": {
             "open": "open (all variants)",
@@ -225,7 +326,9 @@
             "small": "Small parts/parcel/bulky",
             "freight": "Freight goods",
             "status": "Status (order/delivery/payment)",
-            "none": "No orders for this date yet."
+            "none": "No orders for this date yet.",
+            "date": "Tour date",
+            "openDate": "Open tour date"
         },
         "notify": {
             "title": "Subscribers along the route",

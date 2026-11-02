@@ -1,3 +1,15 @@
+# 1.3.0
+
+- New: **one module for everything** – *Orders → Shipping costs* (also a tile under *Settings → Shipping costs*) with tabs Overview · Prices · Surcharges & energy · Countries & delivery time · Product data · Freight · Request & add-on · Tours (tour dates, routes, price profiles, tour deliveries, notification, settings) · Tariffs · Price check. Replaces the menu entries *Extensions → Nova Versandkosten* and *Orders → Tours*; old bookmarks redirect
+- New: **settings in the module** – per tab the matching cards of the plugin configuration with sales channel switch and inheritance (“All sales channels”, chain icon). Same values as the plugin configuration (`NovaVersandkosten.config`), no migration; the plugin configuration shows a link to the module at the top. Cards in `config.xml` now have names; “Surcharges” is split into “Peak surcharges” and “Energy surcharges”, “Request and control” into “Request delivery by tour” and “Control”, “DPD outside the EU” moved to countries – field names unchanged
+- New: **overview** – tariffs imported?, energy surcharges up to date?, price check warnings, active Nova shipping methods per sales channel, scheduled tasks (status, last/next run), upcoming tour dates
+- New: sub-tab **tour deliveries** (choose a date, loading order) directly in the tours
+- New: **tariff upload** via choose file or drag & drop (.csv/.json), checked right away; CSV with semicolons in UTF-8 (with/without BOM) or Windows-1252 (Excel “CSV (comma delimited)”). Previously the file was always read as UTF-8 (umlauts from Excel CSV broken), there was no feedback after choosing and the same file could not be chosen again
+- New: **templates** in the tariffs tab – example files CSV/JSON (placeholder prices), blank CSV template with one commented example row per row type (`#` = comment), collapsible column reference, prominent “Export current tariffs (CSV)” for editing in Excel
+- New: **small shipment without dimensions** (per sales channel, default “fits Warenpost up to 1 kg”): if all items are category parcel without dimensions, Warenpost/small parcel only check weight, goods value and “one parcel” instead of the default dimensions 30 × 20 × 15 cm (which never fitted). Items with dimensions are still checked exactly
+- New: **fixed price with weight limit** – per fixed price “applies up to X kg” (empty = always); heavier parcels cost purchase gross or purchase gross + surcharge (setting). The price check uses the same rule and shows “Purchase gross (above X kg)”
+- Permissions unchanged (settings or role “Tours”); the menu entry appears with either read permission
+
 # 1.2.1
 
 - New: **Price profiles for tours** – the tour price can depend on who drives. Under *Orders → Tours → Price profiles* each profile has a name (internal only), a price for small parts/parcels/bulky goods with maximum deviation and freight tiers (e.g. `30=190`, `60=290`; empty = no freight goods). The profile is chosen on the tour date; checkout, the check when ordering, reach of the tour notification, tour deliveries and the hint on “shipping costs on request” use the date's profile. The profile name is never shown to customers

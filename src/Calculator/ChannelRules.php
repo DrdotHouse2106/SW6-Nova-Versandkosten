@@ -18,6 +18,11 @@ final class ChannelRules
      * @param array<string, array{0: float, 1: float, 2: float}> $defaultDims Standardmaße je Einordnung (cm)
      * @param list<array{option: string, countries: string, min: int, max: int}> $transitTable Laufzeiten
      * @param list<string> $requestTriggers wann „Versandkosten auf Anfrage“ angeboten wird (REQUEST_*)
+     * @param string $smallNoDims Kleinsendung ohne Maße: SMALL_OFF, SMALL_KLEINPAKET oder SMALL_WARENPOST
+     * @param float $smallNoDimsMaxKg bis zu welchem Gesamtgewicht die Kleinsendung ohne Maße gilt
+     * @param array<string, float|null> $fixedPriceMaxKg Festpreis gilt je Paket bis X kg (null = immer)
+     * @param string $fixedOverMode über der Gewichtsgrenze: FIXED_OVER_PURCHASE oder FIXED_OVER_SURCHARGE
+     * @param float $fixedOverSurcharge Aufschlag brutto je Paket bei FIXED_OVER_SURCHARGE
      */
     public function __construct(
         public readonly string $homeCountry = 'DE',
@@ -47,7 +52,47 @@ final class ChannelRules
         public readonly float $defaultWeightKg = 1.0,
         public readonly array $transitTable = [],
         public readonly array $requestTriggers = [],
+        public readonly string $smallNoDims = self::SMALL_OFF,
+        public readonly float $smallNoDimsMaxKg = 1.0,
+        public readonly array $fixedPriceMaxKg = [],
+        public readonly string $fixedOverMode = self::FIXED_OVER_PURCHASE,
+        public readonly float $fixedOverSurcharge = 0.0,
     ) {
+    }
+
+    /** Kleinsendung ohne Maße: Standardmaße wie bisher (passt nie in Warenpost/Kleinpaket) */
+    public const SMALL_OFF = 'off';
+    /** Kleinsendung ohne Maße gilt als Kleinpaket-fähig (nicht Warenpost) */
+    public const SMALL_KLEINPAKET = 'kleinpaket';
+    /** Kleinsendung ohne Maße gilt als Warenpost-fähig (und damit auch Kleinpaket-fähig) */
+    public const SMALL_WARENPOST = 'warenpost';
+
+    public const SMALL_MODES = [self::SMALL_OFF, self::SMALL_KLEINPAKET, self::SMALL_WARENPOST];
+
+    /** Über der Gewichtsgrenze des Festpreises: Einkauf brutto */
+    public const FIXED_OVER_PURCHASE = 'purchase';
+    /** Über der Gewichtsgrenze des Festpreises: Einkauf brutto + Aufschlag */
+    public const FIXED_OVER_SURCHARGE = 'purchaseSurcharge';
+
+    /**
+     * Gilt eine Kleinsendung ohne Maße als passend für diese Option? Warenpost-fähig schließt
+     * Kleinpaket ein; DPD/DHL rechnen weiter mit den Standardmaßen.
+     */
+    public function smallNoDimsFits(string $option): bool
+    {
+        return match ($this->smallNoDims) {
+            self::SMALL_WARENPOST => \in_array($option, ['warenpost', 'kleinpaket'], true),
+            self::SMALL_KLEINPAKET => $option === 'kleinpaket',
+            default => false,
+        };
+    }
+
+    /** Gewichtsgrenze des Festpreises je Paket, null = Festpreis gilt immer. */
+    public function fixedPriceMaxKg(string $option): ?float
+    {
+        $max = $this->fixedPriceMaxKg[$option] ?? null;
+
+        return $max === null || $max <= 0 ? null : (float) $max;
     }
 
     /** Spedition nötig, aber ohne Preis (kein Cargoboard-Schlüssel, Fehler ohne Ersatzpreis) */

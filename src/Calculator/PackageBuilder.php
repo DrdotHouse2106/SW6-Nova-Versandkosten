@@ -16,6 +16,12 @@ namespace Nova\Versandkosten\Calculator;
  *      je Kante auf den größten enthaltenen Artikel („der größte Artikel bestimmt das Paketmaß“).
  *    - Ein Stück, das allein schwerer als das Höchstgewicht ist, bildet ein eigenes Paket.
  *
+ * Kleinsendung ohne Maße (Einstellung je Kanal): Haben ALLE Artikel die Einordnung „Paket“ und KEINE
+ * Maße und liegt das Gesamtgewicht bis zur eingestellten Grenze, wird die Sendung als
+ * `smallNoDims` markiert. Der Rechner prüft dann für Warenpost/Kleinpaket (je nach Einstellung) nur
+ * Gewicht, Warenwert und „ein Paket“, nicht die Standardmaße. Sobald ein Artikel Maße hat, wird wie
+ * bisher exakt geprüft.
+ *
  * Stücke sind unteilbar. „Je angefangene 25 kg ein Paket“ ergibt sich damit, solange die einzelnen
  * Stücke deutlich leichter als 25 kg sind (Normalfall). Bei mehreren schweren Stücken
  * (z. B. 3 × 13 kg) entstehen ehrlicherweise 3 Pakete statt rechnerisch 2.
@@ -115,7 +121,29 @@ final class PackageBuilder
             self::add($target, $unit);
         }
 
-        return new Packaging(self::MODE_PARCEL, $packages, $units, $dimsMissing);
+        return new Packaging(self::MODE_PARCEL, $packages, $units, $dimsMissing, self::isSmallNoDims($items, $units, $rules));
+    }
+
+    /**
+     * @param list<Item> $items
+     * @param list<Unit> $units
+     */
+    private static function isSmallNoDims(array $items, array $units, ChannelRules $rules): bool
+    {
+        if ($rules->smallNoDims === ChannelRules::SMALL_OFF || $items === [] || $units === []) {
+            return false;
+        }
+        $weight = 0.0;
+        foreach ($items as $item) {
+            if ($item->category !== Item::PARCEL || $item->hasDimensions()) {
+                return false;
+            }
+        }
+        foreach ($units as $unit) {
+            $weight += $unit->weightKg;
+        }
+
+        return $weight <= $rules->smallNoDimsMaxKg + 1e-9;
     }
 
     private static function newPackage(Unit $unit, bool $bulky): Package

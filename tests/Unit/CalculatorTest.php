@@ -8,6 +8,7 @@ use Nova\Versandkosten\Calculator\Destination;
 use Nova\Versandkosten\Calculator\Item;
 use Nova\Versandkosten\Calculator\Money;
 use Nova\Versandkosten\Calculator\PackageBuilder;
+use Nova\Versandkosten\Calculator\PriceCheck;
 use Nova\Versandkosten\Calculator\ShippingCalculator;
 use Nova\Versandkosten\Calculator\ShippingResult;
 use Nova\Versandkosten\Calculator\Tariff\TariffLoader;
@@ -140,5 +141,82 @@ final class CalculatorTest extends TestCase
         self::assertSame([4, 10], (new ChannelRules())->transitDays('warenpost', 'FR'));
         self::assertTrue(Countries::matches('NACHBARN', 'PL'));
         self::assertFalse(Countries::isEu('CH'));
+    }
+
+    public function testSmallShipmentWithoutDimensions(): void
+    {
+        $small = [new Item('a', 'Dichtung', 0.3, null, null, null, unitPriceGross: 6.95)];
+
+        // Aus (Standard des Rechenkerns): Standardmaße 30 × 20 × 15 passen nie in Warenpost/Kleinpaket
+        $off = $this->calc($small);
+        self::assertFalse($off->option('warenpost')?->available);
+        self::assertFalse($off->option('kleinpaket')?->available);
+        self::assertTrue($off->option('dpd')?->available);
+
+        $warenpost = $this->calc($small, 'DE', new ChannelRules(smallNoDims: ChannelRules::SMALL_WARENPOST));
+        self::assertTrue($warenpost->packaging->smallNoDims);
+        self::assertSame(500, $warenpost->option('warenpost')?->saleCents);
+        self::assertTrue($warenpost->option('kleinpaket')?->available);
+        self::assertSame(true, $warenpost->option('warenpost')?->meta['smallNoDims'] ?? null);
+        self::assertTrue($warenpost->dimsMissing(), '„Maße fehlen“ bleibt gesetzt');
+        // Paketmaß der Bestellung bleibt das Standardmaß
+        self::assertSame(30.0, $warenpost->option('warenpost')?->packages[0]['lengthCm']);
+
+        $kleinpaket = $this->calc($small, 'DE', new ChannelRules(smallNoDims: ChannelRules::SMALL_KLEINPAKET));
+        self::assertFalse($kleinpaket->option('warenpost')?->available);
+        self::assertTrue($kleinpaket->option('kleinpaket')?->available);
+
+        // Gesamtgewicht über der Grenze
+        $heavy = $this->calc([new Item('a', 'Teil', 0.6, null, null, null, quantity: 2, unitPriceGross: 5)], 'DE', new ChannelRules(smallNoDims: ChannelRules::SMALL_WARENPOST));
+        self::assertFalse($heavy->packaging->smallNoDims);
+        self::assertFalse($heavy->option('warenpost')?->available);
+
+        // Ein Artikel mit Maßen: exakt prüfen wie bisher
+        $mixed = $this->calc([...$small, new Item('b', 'Karton', 0.2, 30, 20, 15, unitPriceGross: 5)], 'DE', new ChannelRules(smallNoDims: ChannelRules::SMALL_WARENPOST));
+        self::assertFalse($mixed->packaging->smallNoDims);
+        self::assertFalse($mixed->option('warenpost')?->available);
+
+        // Nur Einordnung „Paket“; Sperrgut zählt nie als Kleinsendung
+        $bulky = $this->calc([new Item('c', 'Rohr', 0.3, null, null, null, Item::BULKY, unitPriceGross: 5)], 'DE', new ChannelRules(smallNoDims: ChannelRules::SMALL_WARENPOST));
+        self::assertFalse($bulky->packaging->smallNoDims);
+
+        // Warenwertgrenze gilt weiter
+        $expensive = $this->calc([new Item('a', 'Teil', 0.3, null, null, null, unitPriceGross: 80)], 'DE', new ChannelRules(smallNoDims: ChannelRules::SMALL_WARENPOST));
+        self::assertFalse($expensive->option('warenpost')?->available);
+        self::assertFalse($expensive->option('kleinpaket')?->available);
+    }
+
+    public function testFixedPriceWeightLimit(): void
+    {
+        $heavy = [new Item('a', 'Block', 20, 60, 40, 40, unitPriceGross: 50)];
+        $light = [new Item('b', 'Teil', 5, 40, 30, 20, unitPriceGross: 50)];
+
+        // ohne Grenze: Festpreis
+        self::assertSame(750, $this->calc($heavy)->option('dpd')?->saleCents);
+
+        // DPD 20 kg (Platzhaltertarif): 4,50 + Maut 0,30 + Sicherheit 0,10 = 4,90 netto → 5,83 brutto
+        $limited = new ChannelRules(fixedPriceMaxKg: ['dpd' => 10.0]);
+        $r = $this->calc($heavy, 'DE', $limited);
+        self::assertSame(583, $r->option('dpd')?->saleCents);
+        self::assertSame(true, $r->option('dpd')?->meta['fixedOverLimit'] ?? null);
+        self::assertSame(750, $this->calc($light, 'DE', $limited)->option('dpd')?->saleCents);
+        self::assertSame(1050, $r->option('dhl')?->saleCents, 'Grenze gilt nur für DPD');
+
+        $surcharge = new ChannelRules(fixedPriceMaxKg: ['dpd' => 10.0], fixedOverMode: ChannelRules::FIXED_OVER_SURCHARGE, fixedOverSurcharge: 3.0);
+        self::assertSame(883, $this->calc($heavy, 'DE', $surcharge)->option('dpd')?->saleCents);
+
+        // Ausland unverändert (kein Festpreis)
+        self::assertSame(
+            $this->calc($heavy, 'AT')->option('dpd')?->saleCents,
+            $this->calc($heavy, 'AT', $limited)->option('dpd')?->saleCents,
+        );
+
+        // Preisprüfung rechnet genauso
+        $rows = PriceCheck::run(self::tariffs(), $limited, new \DateTimeImmutable('2027-03-10 10:00'));
+        $byLabel = array_column($rows, null, 'label');
+        self::assertFalse($byLabel['DPD 5 kg']['overLimit']);
+        self::assertTrue($byLabel['DPD 20 kg']['overLimit']);
+        self::assertSame(10.0, $byLabel['DPD 20 kg']['fixedMaxKg']);
+        self::assertSame($byLabel['DPD 20 kg']['purchaseNet'], round($byLabel['DPD 20 kg']['saleNet'], 2));
     }
 }

@@ -7,7 +7,8 @@ use Nova\Versandkosten\Calculator\Tariff\TariffSet;
 /**
  * Preisprüfung: Festpreise eines Kanals gegen den aktuellen Einkauf (inkl. Energiezuschlag und – im
  * Zeitraum – Peak) für typische Pakete im Heimatland. Warnung, wenn der Festpreis netto unter dem
- * Einkauf liegt (Unterdeckung).
+ * Einkauf liegt (Unterdeckung). Hat ein Festpreis eine Gewichtsgrenze („gilt bis X kg“), rechnen
+ * schwerere Pakete wie in der Kasse mit Einkauf brutto (+ Aufschlag) – `overLimit` markiert das.
  */
 final class PriceCheck
 {
@@ -28,7 +29,7 @@ final class PriceCheck
     ];
 
     /**
-     * @return list<array{option: string, label: string, fixed: float|null, saleNet: float|null, purchaseNet: float|null, margin: float|null, warning: bool, reason: string}>
+     * @return list<array{option: string, label: string, fixed: float|null, fixedMaxKg: float|null, overLimit: bool, saleNet: float|null, purchaseNet: float|null, margin: float|null, warning: bool, reason: string}>
      */
     public static function run(TariffSet $tariffs, ChannelRules $rules, \DateTimeImmutable $now): array
     {
@@ -39,8 +40,9 @@ final class PriceCheck
             $result = $calculator->calculate([$item], new Destination($rules->homeCountry), $rules, $tariffs, $now);
             $o = $result->option($option);
             $fixed = $rules->fixedPrice($option);
+            $fixedMaxKg = $fixed !== null ? $rules->fixedPriceMaxKg($option) : null;
             if ($o === null || !$o->available) {
-                $rows[] = ['option' => $option, 'label' => $label, 'fixed' => $fixed, 'saleNet' => null, 'purchaseNet' => null, 'margin' => null, 'warning' => false, 'reason' => $o === null ? '' : $o->reason];
+                $rows[] = ['option' => $option, 'label' => $label, 'fixed' => $fixed, 'fixedMaxKg' => $fixedMaxKg, 'overLimit' => false, 'saleNet' => null, 'purchaseNet' => null, 'margin' => null, 'warning' => false, 'reason' => $o === null ? '' : $o->reason];
                 continue;
             }
             $saleNet = round($o->saleCents / 100 / (1 + $rules->vatPercent / 100), 2);
@@ -49,6 +51,8 @@ final class PriceCheck
                 'option' => $option,
                 'label' => $label,
                 'fixed' => $fixed,
+                'fixedMaxKg' => $fixedMaxKg,
+                'overLimit' => !empty($o->meta['fixedOverLimit']),
                 'saleNet' => $saleNet,
                 'purchaseNet' => $purchase,
                 'margin' => round($saleNet - $purchase, 2),

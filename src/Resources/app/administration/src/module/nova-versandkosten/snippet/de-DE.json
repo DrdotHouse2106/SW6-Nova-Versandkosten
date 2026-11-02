@@ -1,13 +1,67 @@
 {
     "nova-versandkosten": {
         "general": {
-            "title": "Nova Versandkosten",
-            "description": "Tarife importieren, Versandpreise prüfen, Energiezuschläge abrufen"
+            "title": "Versandkosten",
+            "description": "Nova Versandkosten: Einstellungen, Tarife, Energiezuschläge, Touren, Preisprüfung",
+            "menu": "Versandkosten",
+            "noRights": "Für dieses Modul fehlt das Recht „Einstellungen“ bzw. „Bestellungen → Touren“."
         },
         "tabs": {
+            "overview": "Übersicht",
+            "prices": "Preise",
+            "surcharges": "Zuschläge & Energie",
+            "countries": "Länder & Lieferzeit",
+            "products": "Artikeldaten",
+            "freight": "Spedition",
+            "request": "Anfrage & Beipacken",
+            "tours": "Touren",
             "tariffs": "Tarife",
-            "check": "Preisprüfung",
-            "energy": "Energiezuschläge"
+            "check": "Preisprüfung"
+        },
+        "overview": {
+            "warnings": "Bitte prüfen",
+            "open": "öffnen",
+            "allGood": "Alles in Ordnung: Tarife importiert, Energiezuschläge aktuell, keine Warnungen.",
+            "status": "Status",
+            "warnNoTariffs": "Noch keine Tarifdatei importiert.",
+            "warnEnergy": "Energiezuschlag {carrier} ist nicht aktuell (letzter Abruf älter als 36 Stunden oder fehlgeschlagen).",
+            "warnPrices": "Preisprüfung: eine Warnung (Festpreis unter Einkauf). | Preisprüfung: {count} Warnungen (Festpreis unter Einkauf).",
+            "warnNoMethods": "Keine Nova-Versandart aktiv (Einstellungen → Versand).",
+            "warnNoChannel": "Versandart „{name}“ ist aktiv, aber keinem Verkaufskanal zugeordnet.",
+            "warnTask": "Geplante Aufgabe „{name}“ ist fehlgeschlagen, abgeschaltet oder überfällig – läuft der Scheduled-Task-Runner?",
+            "products": "ein Produkt | {count} Produkte",
+            "energy": "Energiezuschlag {carrier}",
+            "tourDates": "kein kommender Tourtermin | ein kommender Tourtermin | {count} kommende Tourtermine",
+            "methods": "Nova-Versandarten",
+            "methodsHelp": "Versandarten mit technischem Namen nova_versandkosten_… – aktivieren und zuordnen unter Einstellungen → Versand bzw. Verkaufskanäle.",
+            "method": "Versandart",
+            "active": "Aktiv",
+            "channels": "Verkaufskanäle",
+            "noChannel": "keinem Verkaufskanal zugeordnet",
+            "noMethods": "Keine Nova-Versandarten gefunden – Plugin neu aktivieren.",
+            "noAccess": "Keine Leseberechtigung.",
+            "tasks": "Geplante Aufgaben",
+            "tasksHelp": "Laufen täglich, wenn ein Scheduled-Task-Runner (Cron oder bin/console scheduled-task:run) aktiv ist.",
+            "task": "Aufgabe",
+            "taskStatus": "Status",
+            "lastRun": "Zuletzt",
+            "nextRun": "Nächster Lauf",
+            "noTasks": "Keine geplanten Aufgaben gefunden – Plugin aktualisieren.",
+            "task_energy_fetch": "Energiezuschläge abrufen",
+            "task_request_cancel": "Unbezahlte Anfragen stornieren",
+            "task_tour_cleanup": "Tour-Benachrichtigung aufräumen"
+        },
+        "settings": {
+            "save": "Speichern",
+            "saved": "Einstellungen gespeichert.",
+            "saveError": "Speichern fehlgeschlagen.",
+            "salesChannel": "Verkaufskanal",
+            "salesChannelHelp": "„Alle Verkaufskanäle“ = Standardwerte. Je Kanal erbt ein Feld den Standardwert, solange das Kettensymbol geschlossen ist. Gleiche Werte wie in der Plugin-Konfiguration; Speichern sichert die Änderungen aller Reiter."
+        },
+        "configHint": {
+            "title": "Übersichtlicher: Versandkosten-Modul",
+            "text": "Dieselben Einstellungen gibt es nach Themen sortiert in Reitern – zusammen mit Tarifen, Energiezuschlägen, Touren und Preisprüfung unter Bestellungen → Versandkosten.",
+            "link": "Versandkosten-Modul öffnen"
         },
         "tariffs": {
             "current": "Aktuelle Tarifdatei",
@@ -19,10 +73,10 @@
             "carrier": "Dienstleister",
             "option": "Versandart",
             "countries": "Länder",
-            "downloadJson": "Als JSON herunterladen",
-            "downloadCsv": "Als CSV herunterladen (Excel)",
+            "downloadJson": "Aktuelle Tarife exportieren (JSON)",
+            "downloadCsv": "Aktuelle Tarife exportieren (CSV, Excel)",
             "import": "Tarifdatei importieren",
-            "importHelp": "JSON- oder CSV-Datei wählen oder den Inhalt einfügen. „Prüfen“ zeigt Fehler, ohne zu speichern; „Importieren“ ersetzt die aktuelle Tarifdatei für alle Verkaufskanäle. Format: siehe README.",
+            "importHelp": "CSV- oder JSON-Datei hierher ziehen oder auswählen – sie wird sofort geprüft. „Importieren“ ersetzt danach die aktuelle Tarifdatei für alle Verkaufskanäle. CSV aus Excel (Semikolon, UTF-8 mit oder ohne BOM, auch Windows-1252) geht direkt.",
             "paste": "Inhalt der Tarifdatei (JSON oder CSV)",
             "check": "Prüfen",
             "save": "Importieren",
@@ -30,11 +84,54 @@
             "checked": "Datei ist gültig: {name} ({products} Produkte). Noch nicht gespeichert.",
             "saved": "Tarife importiert: {name} ({products} Produkte).",
             "saveError": "Import fehlgeschlagen.",
-            "loadError": "Laden fehlgeschlagen."
+            "loadError": "Laden fehlgeschlagen.",
+            "dropHere": "Datei hierher ziehen",
+            "dropHelp": ".csv oder .json, höchstens 5 MB",
+            "chooseFile": "Datei wählen",
+            "fileLoaded": "Geladen: {name} ({size} KB, {encoding})",
+            "wrongType": "„{name}“ ist keine CSV- oder JSON-Datei. In Excel „Speichern unter → CSV UTF-8 (durch Trennzeichen getrennt)“ wählen.",
+            "tooLarge": "Die Datei ist größer als 5 MB.",
+            "readError": "Die Datei konnte nicht gelesen werden.",
+            "pasteToggle": "Stattdessen Inhalt einfügen",
+            "clear": "Verwerfen",
+            "exportHelp": "Zum Bearbeiten: als CSV exportieren, in Excel ändern, als CSV speichern und wieder importieren.",
+            "templates": "Vorlagen",
+            "templatesHelp": "Beispieldateien mit erfundenen Platzhalterpreisen oder eine leere Vorlage mit Kopfzeile und je einer kommentierten Beispielzeile pro Zeilentyp (# am Zeilenanfang = Kommentar).",
+            "templateCsv": "Vorlage herunterladen (CSV)",
+            "templateJson": "Vorlage herunterladen (JSON)",
+            "templateBlank": "Leere Vorlage (CSV)"
+        },
+        "columns": {
+            "toggle": "Spalten der CSV-Datei erklärt",
+            "intro": "Eine Zeile je Eintrag; die Spalte „type“ sagt, was die Zeile ist. Alle Preise netto in Euro (Einkauf). Kopfzeile: type;product;carrier;option;name;zone;countries;max_kg;price_net;per_kg_net;per_100g_net;round_kg;amount_net;percent;kind;condition;limits;postcodes;months;pass_on",
+            "required": "Spalten",
+            "meaning": "Bedeutung",
+            "metaColumns": "name",
+            "meta": "Name der Tarifdatei",
+            "carrierColumns": "carrier, name",
+            "carrier": "Dienstleister: Schlüssel (frei, z. B. dhl, dpd, post – auch für den Energiezuschlag) und Anzeigename",
+            "productColumns": "product, carrier, option, name, (limits)",
+            "product": "Versandprodukt; option = warenpost, kleinpaket, dpd oder dhl; limits z. B. maxKg=31,5 maxDimsCm=120x60x60 maxLengthCm maxGirthCm maxGoodsValue singlePackage=1 allowBulky=0 basicTracking=1",
+            "rateColumns": "product, zone, countries, max_kg, price_net",
+            "rate": "Gewichtsstufe: bis max_kg kostet es price_net (je Zone eine Zeile je Stufe, aufsteigend)",
+            "rateKgColumns": "product, zone, countries, price_net, per_kg_net, round_kg",
+            "rateKg": "Stückpreis + Preis je kg (Gewicht auf round_kg aufgerundet, Standard 0,1)",
+            "rate100gColumns": "product, zone, countries, price_net, per_100g_net",
+            "rate100g": "Stückpreis + Preis je angefangene 100 g",
+            "oversizeColumns": "product, name, amount_net, condition, (limits)",
+            "oversize": "Sperrgut-/Übermaß-Stufe; condition (eine genügt): lengthOver, lengthAtLeast, sideOver, volumeOverL, girthOver, exceedsDimsCm, weightOverKg, bulky=1; limits: lengthCm, girthCm, dimsCm, kg. Die letzte greifende Stufe gilt",
+            "surchargeColumns": "product, name, kind, amount_net oder percent",
+            "surcharge": "Zuschlag; kind = fixed, percent, energy, peak oder peakInPeak; optional countries, postcodes (auch Bereiche 25846-25847), months (11 12), pass_on=1",
+            "hintLists": "Listen (countries, postcodes, months) mit Leerzeichen trennen; mehrere Produkt-IDs in „product“ einer surcharge-/oversize-Zeile ebenso.",
+            "hintPairs": "limits und condition als schlüssel=wert-Paare mit Leerzeichen; Maße als 35,3x25x5.",
+            "hintDecimal": "Dezimaltrenner Komma oder Punkt; Trennzeichen Semikolon (Excel deutsch) oder Komma.",
+            "hintComment": "Zeilen, deren erste Spalte mit # beginnt, und leere Zeilen werden ignoriert.",
+            "hintOption": "Mehrere Produkte je Versandart sind üblich (national/international); je Land gilt das günstigste passende.",
+            "hintSurcharge": "Der Energiezuschlag (kind = energy) hat keinen Betrag – der Prozentsatz kommt aus dem Reiter „Zuschläge & Energie“."
         },
         "check": {
             "title": "Preisprüfung",
-            "help": "Festpreise im Heimatland gegen den aktuellen Einkauf (inkl. Energiezuschlag, im Zeitraum auch Peak) für typische Pakete. Rot = Verkauf netto unter Einkauf.",
+            "help": "Festpreise im Heimatland gegen den aktuellen Einkauf (inkl. Energiezuschlag, im Zeitraum auch Peak) für typische Pakete. Rot = Verkauf netto unter Einkauf. Gewichtsgrenzen der Festpreise („gilt bis X kg“, Reiter Preise) werden wie in der Kasse berücksichtigt.",
             "warnings": "{count} Unterdeckung | {count} Unterdeckungen",
             "ok": "alles gedeckt",
             "scenario": "Paket",
@@ -44,7 +141,9 @@
             "margin": "Marge",
             "purchaseGross": "Einkauf brutto",
             "reload": "Neu berechnen",
-            "loadError": "Preisprüfung fehlgeschlagen."
+            "loadError": "Preisprüfung fehlgeschlagen.",
+            "overLimit": "Einkauf brutto (über {kg} kg)",
+            "upTo": "bis {kg} kg"
         },
         "order": {
             "title": "Versandkosten",
@@ -119,8 +218,10 @@
         "tabs": {
             "dates": "Tourtermine",
             "routes": "Strecken",
+            "profiles": "Preisprofile",
+            "deliveries": "Tour-Lieferungen",
             "subscribers": "Benachrichtigung",
-            "profiles": "Preisprofile"
+            "settings": "Einstellungen"
         },
         "status": {
             "open": "offen (alle Varianten)",
@@ -225,7 +326,9 @@
             "small": "Kleinteile/Paket/Sperrgut",
             "freight": "Speditionsware",
             "status": "Status (Bestellung/Lieferung/Zahlung)",
-            "none": "Noch keine Bestellungen für diesen Termin."
+            "none": "Noch keine Bestellungen für diesen Termin.",
+            "date": "Tourtermin",
+            "openDate": "Tourtermin öffnen"
         },
         "notify": {
             "title": "Interessenten im Korridor",

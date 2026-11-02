@@ -139,6 +139,11 @@ final class CaseRunner
             freightFallbackPrice: isset($c['freightFallbackPrice']) ? (float) $c['freightFallbackPrice'] : null,
             pickupEnabled: (bool) ($c['pickupEnabled'] ?? true),
             requestTriggers: \is_array($c['requestTriggers'] ?? null) ? array_values(array_map('strval', $c['requestTriggers'])) : [],
+            smallNoDims: \is_string($c['smallNoDims'] ?? null) ? $c['smallNoDims'] : ChannelRules::SMALL_OFF,
+            smallNoDimsMaxKg: (float) ($c['smallNoDimsMaxKg'] ?? 1),
+            fixedPriceMaxKg: \is_array($c['fixedPriceMaxKg'] ?? null) ? $c['fixedPriceMaxKg'] : [],
+            fixedOverMode: \is_string($c['fixedOverMode'] ?? null) ? $c['fixedOverMode'] : ChannelRules::FIXED_OVER_PURCHASE,
+            fixedOverSurcharge: (float) ($c['fixedOverSurcharge'] ?? 0),
         );
     }
 }

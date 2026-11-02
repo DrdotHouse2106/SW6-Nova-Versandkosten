@@ -1,7 +1,14 @@
+import { modulePrivilege } from './privilege';
+import './component/nova-vk-system-config';
 import './page/nova-versandkosten-index';
 
 /**
- * Erweiterungen → Nova Versandkosten: Tarifimport (JSON/CSV) und Preisprüfung.
+ * Ein Modul für alles rund um die Versandkosten: Bestellungen → Versandkosten (und als Kachel unter
+ * Einstellungen → Versandkosten). Reiter: Übersicht, Einstellungen je Bereich (gleiche Werte wie die
+ * Plugin-Konfiguration, Domain NovaVersandkosten.config), Touren, Tarife, Preisprüfung.
+ *
+ * Route: /nova/versandkosten/index/:tab?/:sub? – die alte Adresse /nova/versandkosten/index (1.0–1.2)
+ * bleibt gültig und öffnet die Übersicht.
  */
 Shopware.Module.register('nova-versandkosten', {
     type: 'plugin',
@@ -14,17 +21,30 @@ Shopware.Module.register('nova-versandkosten', {
     routes: {
         index: {
             component: 'nova-versandkosten-index',
-            path: 'index',
-            meta: { privilege: 'system.system_config' },
+            path: 'index/:tab?/:sub?',
         },
     },
 
     navigation: [{
         id: 'nova-versandkosten',
-        label: 'nova-versandkosten.general.title',
+        label: 'nova-versandkosten.general.menu',
+        color: '#189eff',
+        icon: 'regular-truck',
         path: 'nova.versandkosten.index',
-        parent: 'sw-extension',
-        position: 110,
-        privilege: 'system.system_config',
+        parent: 'sw-order',
+        position: 60,
+        get privilege() {
+            return modulePrivilege();
+        },
+    }],
+
+    settingsItem: [{
+        group: 'commerce',
+        to: 'nova.versandkosten.index',
+        icon: 'regular-truck',
+        label: 'nova-versandkosten.general.menu',
+        get privilege() {
+            return modulePrivilege();
+        },
     }],
 });

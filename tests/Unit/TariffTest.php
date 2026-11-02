@@ -85,4 +85,29 @@ final class TariffTest extends TestCase
         self::assertSame($set->carrierNames, $again->carrierNames);
         self::assertSame(['warenpost', 'kleinpaket', 'dpd', 'dhl'], $set->options());
     }
+
+    /**
+     * Die leere CSV-Vorlage aus dem Reiter „Tarife“: nur Kommentare → kein Produkt; mit entfernten #
+     * vor den Beispielzeilen ergibt sie eine gültige Tarifdatei mit allen Zeilentypen.
+     */
+    public function testBlankCsvTemplateIsValidWhenUncommented(): void
+    {
+        $csv = (string) file_get_contents(__DIR__ . '/../../src/Resources/app/administration/src/module/nova-versandkosten/vorlage/tarife-vorlage.csv');
+        self::assertStringStartsWith("\xEF\xBB\xBF", $csv);
+        self::assertSame(TariffCsv::COLUMNS, explode(';', trim((string) strtok(substr($csv, 3), "\n"))));
+
+        try {
+            TariffLoader::parse($csv);
+            self::fail('Ohne Produkte darf die Vorlage nicht als Tarif gelten.');
+        } catch (TariffException) {
+            self::addToAssertionCount(1);
+        }
+
+        $set = TariffLoader::parse((string) preg_replace('/^#(?=[a-z]+;)/m', '', $csv));
+        self::assertCount(1, $set->products);
+        self::assertSame(['dhl'], $set->options());
+        $product = $set->products[0];
+        self::assertNotEmpty($product->oversize);
+        self::assertCount(3, $product->surcharges);
+    }
 }

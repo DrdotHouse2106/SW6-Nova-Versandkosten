@@ -5,7 +5,7 @@
     </template>
 
     <template #smart-bar-actions>
-        <mt-button variant="secondary" @click="$router.push({ name: 'nova.vk.tour.index', params: { tab: 'routes' } })">{{ $tc('nova-vk-tour.general.back') }}</mt-button>
+        <mt-button variant="secondary" @click="$router.push({ name: 'nova.versandkosten.index', params: { tab: 'tours', sub: 'routes' } })">{{ $tc('nova-vk-tour.general.back') }}</mt-button>
         <mt-button v-if="routeId && acl.can('nova_vk_tour.deleter')" variant="critical" @click="remove">{{ $tc('nova-vk-tour.general.delete') }}</mt-button>
         <mt-button v-if="canEdit" variant="primary" :disabled="saving" @click="save">{{ $tc('nova-vk-tour.general.save') }}</mt-button>
     </template>

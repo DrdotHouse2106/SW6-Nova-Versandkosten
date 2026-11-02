@@ -206,8 +206,8 @@ class EnergySurchargeService
                 'salesChannelId' => $salesChannelId,
                 'senderName' => 'Nova Versandkosten',
                 'subject' => 'Energiezuschlag nicht abrufbar',
-                'contentHtml' => nl2br(htmlspecialchars($text . "\n\nBitte unter Erweiterungen → Nova Versandkosten → Energiezuschläge prüfen.")),
-                'contentPlain' => $text . "\n\nBitte unter Erweiterungen → Nova Versandkosten → Energiezuschläge prüfen.",
+                'contentHtml' => nl2br(htmlspecialchars($text . "\n\nBitte unter Bestellungen → Versandkosten → Zuschläge & Energie prüfen.")),
+                'contentPlain' => $text . "\n\nBitte unter Bestellungen → Versandkosten → Zuschläge & Energie prüfen.",
             ], $context);
         } catch (\Throwable $e) {
             $this->logger->warning('Nova Versandkosten: Energiezuschlag-E-Mail fehlgeschlagen', ['error' => $e->getMessage()]);

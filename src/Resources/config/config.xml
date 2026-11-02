@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/shopware/trunk/src/Core/System/SystemConfig/Schema/config.xsd">
-    <!-- Tarife importiert man global unter Einstellungen → Erweiterungen → Nova Versandkosten (eigene Seite). -->
+    <!--
+        Übersichtlicher: Bestellungen → Versandkosten (eigenes Modul mit Reitern). Dort erscheinen dieselben
+        Felder, nach Reitern sortiert: Der Reiter wählt die Karten über ihren <name> (siehe
+        nova-versandkosten-index/index.js, TABS). Feldnamen nie ändern – die Werte liegen in system_config
+        unter NovaVersandkosten.config.<feld>. Tarife importiert man im Modul (Reiter „Tarife“).
+    -->
 
     <card>
+        <name>prices</name>
         <title>Sales prices (gross)</title>
         <title lang="de-DE">Verkaufspreise (brutto)</title>
 
@@ -37,6 +43,60 @@
             <label>DHL parcel (domestic, per parcel)</label>
             <label lang="de-DE">DHL Paket (Inland, je Paket)</label>
             <defaultValue>10.50</defaultValue>
+        </input-field>
+
+        <input-field type="float">
+            <name>priceWarenpostMaxKg</name>
+            <label>Warenpost: fixed price applies up to (kg per parcel)</label>
+            <label lang="de-DE">Warenpost: Festpreis gilt bis (kg je Paket)</label>
+            <helpText>Empty = always. Heavier parcels: see “Above the weight limit”.</helpText>
+            <helpText lang="de-DE">Leer = immer. Schwerere Pakete: siehe „Über der Gewichtsgrenze“.</helpText>
+        </input-field>
+
+        <input-field type="float">
+            <name>priceKleinpaketMaxKg</name>
+            <label>Small parcel: fixed price applies up to (kg per parcel)</label>
+            <label lang="de-DE">Kleinpaket: Festpreis gilt bis (kg je Paket)</label>
+            <helpText>Empty = always. Heavier parcels: see “Above the weight limit”.</helpText>
+            <helpText lang="de-DE">Leer = immer. Schwerere Pakete: siehe „Über der Gewichtsgrenze“.</helpText>
+        </input-field>
+
+        <input-field type="float">
+            <name>priceDpdMaxKg</name>
+            <label>DPD: fixed price applies up to (kg per parcel)</label>
+            <label lang="de-DE">DPD: Festpreis gilt bis (kg je Paket)</label>
+            <helpText>Empty = always. Heavier parcels: see “Above the weight limit”.</helpText>
+            <helpText lang="de-DE">Leer = immer. Schwerere Pakete: siehe „Über der Gewichtsgrenze“.</helpText>
+        </input-field>
+
+        <input-field type="float">
+            <name>priceDhlMaxKg</name>
+            <label>DHL: fixed price applies up to (kg per parcel)</label>
+            <label lang="de-DE">DHL: Festpreis gilt bis (kg je Paket)</label>
+            <helpText>Empty = always. Heavier parcels: see “Above the weight limit”.</helpText>
+            <helpText lang="de-DE">Leer = immer. Schwerere Pakete: siehe „Über der Gewichtsgrenze“.</helpText>
+        </input-field>
+
+        <input-field type="single-select">
+            <name>fixedOverMode</name>
+            <options>
+                <option><id>purchase</id><name>Purchase price gross</name><name lang="de-DE">Einkauf brutto</name></option>
+                <option><id>purchaseSurcharge</id><name>Purchase price gross + surcharge</name><name lang="de-DE">Einkauf brutto + Aufschlag</name></option>
+            </options>
+            <label>Above the weight limit of a fixed price</label>
+            <label lang="de-DE">Über der Gewichtsgrenze eines Festpreises</label>
+            <helpText>Per parcel heavier than the limit, instead of the fixed price. The price check uses the same rule.</helpText>
+            <helpText lang="de-DE">Je Paket über der Grenze statt des Festpreises. Die Preisprüfung rechnet genauso.</helpText>
+            <defaultValue>purchase</defaultValue>
+        </input-field>
+
+        <input-field type="float">
+            <name>fixedOverSurcharge</name>
+            <label>Surcharge above the weight limit (€ gross per parcel)</label>
+            <label lang="de-DE">Aufschlag über der Gewichtsgrenze (€ brutto je Paket)</label>
+            <helpText>Only with “Purchase price gross + surcharge”.</helpText>
+            <helpText lang="de-DE">Nur bei „Einkauf brutto + Aufschlag“.</helpText>
+            <defaultValue>0</defaultValue>
         </input-field>
 
         <input-field type="float">
@@ -100,8 +160,9 @@
     </card>
 
     <card>
-        <title>Surcharges</title>
-        <title lang="de-DE">Zuschläge</title>
+        <name>peak</name>
+        <title>Peak surcharges</title>
+        <title lang="de-DE">Peak-Zuschläge</title>
 
         <input-field type="bool">
             <name>passPeak</name>
@@ -125,6 +186,12 @@
             <label>Peak-in-peak until</label>
             <label lang="de-DE">Peak-in-Peak bis</label>
         </input-field>
+    </card>
+
+    <card>
+        <name>energy</name>
+        <title>Energy surcharges</title>
+        <title lang="de-DE">Energiezuschläge</title>
 
         <input-field type="textarea">
             <name>energyPercent</name>
@@ -202,17 +269,10 @@ dpd=0</defaultValue>
             <helpText lang="de-DE">Leer = E-Mail-Adresse des Shops.</helpText>
         </input-field>
 
-        <input-field type="bool">
-            <name>offerDpdOutsideEu</name>
-            <label>Offer DPD outside the EU</label>
-            <label lang="de-DE">DPD auch außerhalb der EU anbieten</label>
-            <helpText>Including all customs and currency surcharges from the tariff file. DHL stays the recommendation.</helpText>
-            <helpText lang="de-DE">Mit allen Zoll- und Währungszuschlägen aus der Tarifdatei. Empfohlen bleibt DHL.</helpText>
-            <defaultValue>true</defaultValue>
-        </input-field>
     </card>
 
     <card>
+        <name>countries</name>
         <title>Countries and special rules</title>
         <title lang="de-DE">Länder und Sonderregeln</title>
 
@@ -246,9 +306,19 @@ dpd=0</defaultValue>
             <label lang="de-DE">Länder für Versandkostenfrei</label>
             <defaultValue>DE</defaultValue>
         </input-field>
+
+        <input-field type="bool">
+            <name>offerDpdOutsideEu</name>
+            <label>Offer DPD outside the EU</label>
+            <label lang="de-DE">DPD auch außerhalb der EU anbieten</label>
+            <helpText>Including all customs and currency surcharges from the tariff file. DHL stays the recommendation.</helpText>
+            <helpText lang="de-DE">Mit allen Zoll- und Währungszuschlägen aus der Tarifdatei. Empfohlen bleibt DHL.</helpText>
+            <defaultValue>true</defaultValue>
+        </input-field>
     </card>
 
     <card>
+        <name>productData</name>
         <title>Product data</title>
         <title lang="de-DE">Artikeldaten</title>
 
@@ -337,9 +407,31 @@ nur auf Anfrage</defaultValue>
             <label lang="de-DE">Standardgewicht (kg)</label>
             <defaultValue>1</defaultValue>
         </input-field>
+
+        <input-field type="single-select">
+            <name>smallNoDims</name>
+            <options>
+                <option><id>off</id><name>Off (default dimensions apply)</name><name lang="de-DE">Aus (Standardmaße gelten)</name></option>
+                <option><id>kleinpaket</id><name>Fits small parcel</name><name lang="de-DE">Kleinpaket-fähig</name></option>
+                <option><id>warenpost</id><name>Fits Warenpost (and small parcel)</name><name lang="de-DE">Warenpost-fähig (und Kleinpaket)</name></option>
+            </options>
+            <label>Small shipment without dimensions</label>
+            <label lang="de-DE">Kleinsendung ohne Maße</label>
+            <helpText>Applies only if ALL items have the category “parcel” and NO dimensions and the total weight is within the limit below. Then Warenpost/small parcel only check weight, goods value and “one parcel” – not the default dimensions (which never fit). Items with dimensions are always checked exactly.</helpText>
+            <helpText lang="de-DE">Greift nur, wenn ALLE Artikel die Einordnung „Paket“ und KEINE Maße haben und das Gesamtgewicht bis zur Grenze unten liegt. Dann prüfen Warenpost/Kleinpaket nur Gewicht, Warenwert und „ein Paket“ – nicht die Standardmaße (die nie passen). Artikel mit Maßen werden immer exakt geprüft.</helpText>
+            <defaultValue>warenpost</defaultValue>
+        </input-field>
+
+        <input-field type="float">
+            <name>smallNoDimsMaxKg</name>
+            <label>Small shipment without dimensions up to total weight (kg)</label>
+            <label lang="de-DE">Kleinsendung ohne Maße bis Gesamtgewicht (kg)</label>
+            <defaultValue>1</defaultValue>
+        </input-field>
     </card>
 
     <card>
+        <name>deliveryTime</name>
         <title>Delivery time</title>
         <title lang="de-DE">Lieferzeit</title>
 
@@ -421,6 +513,7 @@ warenpost;*;4-10
     </card>
 
     <card>
+        <name>freight</name>
         <title>Freight forwarding (Cargoboard)</title>
         <title lang="de-DE">Spedition (Cargoboard)</title>
 
@@ -511,6 +604,7 @@ warenpost;*;4-10
     </card>
 
     <card>
+        <name>request</name>
         <title>Shipping costs on request</title>
         <title lang="de-DE">Versandkosten auf Anfrage</title>
 
@@ -581,6 +675,7 @@ warenpost;*;4-10
     </card>
 
     <card>
+        <name>beipack</name>
         <title>Add to an open order</title>
         <title lang="de-DE">Zur offenen Bestellung beipacken</title>
 
@@ -604,8 +699,9 @@ warenpost;*;4-10
     </card>
 
     <card>
-        <title>Request and control</title>
-        <title lang="de-DE">Anfrage und Kontrolle</title>
+        <name>tourRequest</name>
+        <title>Request delivery by tour</title>
+        <title lang="de-DE">Tour-Anfrage in der Kasse</title>
 
         <input-field type="bool">
             <name>showTourRequest</name>
@@ -623,6 +719,12 @@ warenpost;*;4-10
             <helpText>Empty = shop email address from the basic information.</helpText>
             <helpText lang="de-DE">Leer = E-Mail-Adresse des Shops aus den Stammdaten.</helpText>
         </input-field>
+    </card>
+
+    <card>
+        <name>control</name>
+        <title>Control (margin, missing dimensions)</title>
+        <title lang="de-DE">Kontrolle (Marge, fehlende Maße)</title>
 
         <input-field type="bool">
             <name>showDimsMissing</name>
@@ -650,6 +752,7 @@ warenpost;*;4-10
     </card>
 
     <card>
+        <name>tours</name>
         <title>Own tours</title>
         <title lang="de-DE">Eigene Touren</title>
 
@@ -657,8 +760,8 @@ warenpost;*;4-10
             <name>tourSmallPrice</name>
             <label>Price small parts, parcels, bulky goods (gross)</label>
             <label lang="de-DE">Preis Kleinteile, Paketware, Sperrgut (brutto)</label>
-            <helpText>Shipping method “nova_versandkosten_tour”. Routes and tour dates: Orders → Tours. Price, limit and freight tiers here are the default profile; further price profiles (e.g. depending on who drives) under Orders → Tours → Price profiles, chosen per tour date.</helpText>
-            <helpText lang="de-DE">Versandart „nova_versandkosten_tour“. Strecken und Tourtermine: Bestellungen → Touren. Preis, Grenze und Speditionsstufen hier sind das Standardprofil; weitere Preisprofile (z. B. je nachdem, wer fährt) unter Bestellungen → Touren → Preisprofile, Auswahl am Tourtermin.</helpText>
+            <helpText>Shipping method “nova_versandkosten_tour”. Routes and tour dates: Orders → Shipping costs → Tours. Price, limit and freight tiers here are the default profile; further price profiles (e.g. depending on who drives) under Orders → Shipping costs → Tours → Price profiles, chosen per tour date.</helpText>
+            <helpText lang="de-DE">Versandart „nova_versandkosten_tour“. Strecken und Tourtermine: Bestellungen → Versandkosten → Touren. Preis, Grenze und Speditionsstufen hier sind das Standardprofil; weitere Preisprofile (z. B. je nachdem, wer fährt) unter Bestellungen → Versandkosten → Touren → Preisprofile, Auswahl am Tourtermin.</helpText>
             <defaultValue>50</defaultValue>
         </input-field>
 
@@ -716,6 +819,7 @@ warenpost;*;4-10
     </card>
 
     <card>
+        <name>tourNotify</name>
         <title>Tour notification</title>
         <title lang="de-DE">Tour-Benachrichtigung</title>
 

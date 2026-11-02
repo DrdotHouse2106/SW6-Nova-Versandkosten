@@ -19,7 +19,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Admin-API für „Erweiterungen → Nova Versandkosten“: Tarifimport (JSON oder CSV), Export,
+ * Admin-API für „Bestellungen → Versandkosten“: Tarifimport (JSON oder CSV), Export,
  * Preisprüfung, Energiezuschläge (Lesen: system_config:read, Ändern: system_config:update) sowie
  * „Versandkosten auf Anfrage“ an der Bestellung (order:read / order:update).
  */
