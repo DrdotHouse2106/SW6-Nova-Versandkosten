@@ -157,6 +157,15 @@
             <helpText lang="de-DE">Hier gelten die Festpreise.</helpText>
             <defaultValue>DE</defaultValue>
         </input-field>
+
+        <input-field type="bool">
+            <name>autoSelectCheapest</name>
+            <label>Preselect the cheapest possible shipping method</label>
+            <label lang="de-DE">Günstigste mögliche Versandart vorwählen</label>
+            <helpText>Cart and checkout automatically select the cheapest possible parcel option of this plugin instead of the sales channel's default. A method the customer chose stays as long as it is possible. If the selected method is no longer possible, it is switched immediately.</helpText>
+            <helpText lang="de-DE">Warenkorb und Kasse wählen automatisch die günstigste mögliche Paket-Versandart dieses Plugins statt der Standard-Versandart des Kanals. Eine vom Kunden gewählte Versandart bleibt, solange sie möglich ist. Ist die gewählte Versandart nicht mehr möglich, wird sofort gewechselt.</helpText>
+            <defaultValue>true</defaultValue>
+        </input-field>
     </card>
 
     <card>

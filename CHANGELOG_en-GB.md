@@ -1,3 +1,8 @@
+# 1.3.1
+
+- New: **preselect the cheapest possible shipping method** (Prices tab, per sales channel, default on): cart, off-canvas cart and checkout automatically select the cheapest possible parcel option of the plugin (letter parcel, small parcel, DPD, DHL, freight) instead of always the sales channel default. Equal price: the current one stays. A method the customer chose stays (remembered in the session; changing the country does not count as a choice); after the order is placed, preselection starts again
+- Fixed: a method that is no longer possible (e.g. letter parcel after raising the quantity, parcel for freight goods, country not enabled) stayed in the cart as “blocked” with 0.00 when Shopware's own switch failed on an old shipping method. Now it switches at once to the cheapest possible plugin method – if there is none, to “Shipping costs on request” – with Shopware's notice “shipping method changed”. Third-party methods (pickup, events …) stay untouched as long as they are possible; add-on and tour are only switched when blocked
+
 # 1.3.0
 
 - New: **one module for everything** – *Orders → Shipping costs* (also a tile under *Settings → Shipping costs*) with tabs Overview · Prices · Surcharges & energy · Countries & delivery time · Product data · Freight · Request & add-on · Tours (tour dates, routes, price profiles, tour deliveries, notification, settings) · Tariffs · Price check. Replaces the menu entries *Extensions → Nova Versandkosten* and *Orders → Tours*; old bookmarks redirect

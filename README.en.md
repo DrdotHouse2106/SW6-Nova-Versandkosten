@@ -29,7 +29,8 @@ estimated delivery date and notes.
   errors); without an API key “on request”.
 - **Checkout**: price, “Estimated delivery Tue, 04.11. – Wed, 05.11.” (processing time, cut-off,
   transit time, public holidays per German state, own closing days), notes, recommendation, button
-  “Request delivery by tour”. Unsuitable shipping methods are hidden.
+  “Request delivery by tour”. Unsuitable shipping methods are hidden; the **cheapest possible method is
+  preselected** and one that is no longer possible is switched at once (from 1.3.1).
 - **Order**: carrier, product, parcels (count, dimensions, weight), purchase, sale and “dimensions
   missing” as custom fields – the basis for ERP and labels. “Shipping costs” card on the order
   (difference red on negative margin), optional e-mail on negative margin.
@@ -91,7 +92,7 @@ costs*). Tab and sub-tab are part of the address, so bookmarks work
 | Tab | Content |
 |---|---|
 | Overview | Status at a glance: tariffs imported?, energy surcharges up to date?, price check warnings, active `nova_versandkosten_…` shipping methods per sales channel, scheduled tasks (status, last/next run), upcoming tour dates – with links to the right tab |
-| Prices | fixed prices (each with optional “applies up to X kg”), surcharge abroad, pass on bulky, goods value limits, maximum weight, VAT, home country |
+| Prices | fixed prices (each with optional “applies up to X kg”), surcharge abroad, pass on bulky, goods value limits, maximum weight, VAT, home country, preselect the cheapest possible shipping method |
 | Surcharges & energy | current energy surcharges (*Fetch now*), peak/peak-in-peak, energy surcharge automatic/manual |
 | Countries & delivery time | allowed countries, free shipping, DPD outside the EU, delivery date |
 | Product data | property and value names of the category, default dimensions/weight, small shipment without dimensions |

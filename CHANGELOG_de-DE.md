@@ -1,3 +1,8 @@
+# 1.3.1
+
+- Neu: **Günstigste mögliche Versandart vorwählen** (Reiter Preise, je Verkaufskanal, Standard an): Warenkorb, Offcanvas-Warenkorb und Kasse wählen automatisch die günstigste mögliche Paket-Versandart des Plugins (Warenpost, Kleinpaket, DPD, DHL, Spedition) statt fest der Standard-Versandart des Kanals. Gleicher Preis: die bisherige bleibt. Wählt der Kunde selbst eine Versandart, bleibt sie (Merkzeichen in der Sitzung, Länderwechsel zählt nicht als eigene Wahl); nach dem Bestellabschluss wird wieder vorgewählt
+- Behoben: Eine nicht mehr mögliche Versandart (z. B. Warenpost nach Mengenerhöhung, Paket bei Speditionsware, Land außerhalb der Freigabe) blieb im Warenkorb mit „gesperrt“ und 0,00 € stehen, wenn Shopwares eigener Wechsel an einer alten Versandart scheiterte. Jetzt wird sofort auf die günstigste mögliche Plugin-Versandart gewechselt – gibt es keine, auf „Versandkosten auf Anfrage“ – mit Shopwares Hinweis „Versandart wurde geändert“. Fremde Versandarten (Abholung, Termine …) bleiben unberührt, solange sie möglich sind; Beipacken und Tour werden nur bei Sperre gewechselt
+
 # 1.3.0
 
 - Neu: **ein Modul für alles** – *Bestellungen → Versandkosten* (zusätzlich Kachel unter *Einstellungen → Versandkosten*) mit Reitern Übersicht · Preise · Zuschläge & Energie · Länder & Lieferzeit · Artikeldaten · Spedition · Anfrage & Beipacken · Touren (Tourtermine, Strecken, Preisprofile, Tour-Lieferungen, Benachrichtigung, Einstellungen) · Tarife · Preisprüfung. Ersetzt die Menüeinträge *Erweiterungen → Nova Versandkosten* und *Bestellungen → Touren*; alte Lesezeichen leiten weiter

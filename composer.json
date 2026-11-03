@@ -2,7 +2,7 @@
     "name": "nova/nova-versandkosten",
     "description": "Versandkosten aus Einkaufstarifen, Paketbildung und Kanalregeln berechnen – mit Sperrgut, Peak, Ausland, Spedition (Cargoboard), Zustelldatum, Margenkontrolle, Beipacken zur offenen Bestellung, Versandkosten auf Anfrage, automatischen Energiezuschlägen und eigenen Touren",
     "type": "shopware-platform-plugin",
-    "version": "1.3.0",
+    "version": "1.3.1",
     "license": "MIT",
     "authors": [
         {

@@ -30,7 +30,8 @@ gehen – mit Preis, voraussichtlichem Zustelldatum und Hinweisen.
 - **Kasse**: Preis, „Zustellung voraussichtlich Di, 04.11. – Mi, 05.11.“ (Bearbeitungszeit,
   Annahmeschluss, Laufzeit, Feiertage je Bundesland, eigene Schließtage), Hinweise („mit
   Basis-Sendungsverfolgung“, „inkl. Saisonzuschlag von DHL“), Empfehlung, Knopf „Lieferung per Tour
-  anfragen“. Unpassende Versandarten werden ausgeblendet.
+  anfragen“. Unpassende Versandarten werden ausgeblendet; die **günstigste mögliche Versandart ist
+  vorgewählt** und eine nicht mehr mögliche wird sofort gewechselt (ab 1.3.1).
 - **Bestellung**: Dienstleister, Produkt, Pakete (Anzahl, Maße, Gewicht), Einkauf, Verkauf und
   „Maße fehlen“ als Zusatzfelder – Grundlage für Warenwirtschaft und Etikett. Karte „Versandkosten“
   in der Bestellung (Differenz rot bei negativer Marge), optional E-Mail bei negativer Marge.
@@ -352,7 +353,7 @@ Plugin-Konfiguration als Karten untereinander.
 
 | Bereich (Reiter) | Einstellungen |
 |---|---|
-| Verkaufspreise (Preise) | Festpreise Warenpost/Kleinpaket/DPD/DHL (leer = Einkauf brutto), je Festpreis „gilt bis X kg“ und was darüber gilt (Einkauf brutto bzw. Einkauf brutto + Aufschlag), Aufschlag Ausland, Sperrgut/Übermaß weitergeben, Warenwertgrenzen, Höchstgewicht je Paket, MwSt.-Satz, Heimatland |
+| Verkaufspreise (Preise) | Festpreise Warenpost/Kleinpaket/DPD/DHL (leer = Einkauf brutto), je Festpreis „gilt bis X kg“ und was darüber gilt (Einkauf brutto bzw. Einkauf brutto + Aufschlag), Aufschlag Ausland, Sperrgut/Übermaß weitergeben, Warenwertgrenzen, Höchstgewicht je Paket, MwSt.-Satz, Heimatland, günstigste mögliche Versandart vorwählen |
 | Peak-Zuschläge (Zuschläge & Energie) | Peak weitergeben, Peak-in-Peak von/bis |
 | Energiezuschläge (Zuschläge & Energie) | Energiezuschlag je Dienstleister (`dhl=12,5`), automatisch/manuell je Dienstleister, DPD Emergency Fuel Surcharge, Schlüssel in der Tarifdatei, E-Mail bei Abruf-Fehlern |
 | Länder (Länder & Lieferzeit) | freigeschaltete Länder, versandkostenfrei für Hersteller/Tags in bestimmten Ländern, DPD außerhalb der EU |

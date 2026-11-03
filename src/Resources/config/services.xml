@@ -195,6 +195,16 @@
             <tag name="kernel.event_subscriber"/>
         </service>
 
+        <!-- Günstigste mögliche Versandart vorwählen, gesperrte sofort wechseln (1.3.1) -->
+        <service id="Nova\Versandkosten\Storefront\AutoSelectSubscriber">
+            <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
+            <argument type="service" id="Shopware\Core\Checkout\Shipping\SalesChannel\ShippingMethodRoute"/>
+            <argument type="service" id="Shopware\Core\System\SalesChannel\SalesChannel\ContextSwitchRoute"/>
+            <argument type="service" id="logger"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
         <service id="Nova\Versandkosten\Storefront\CheckoutPageSubscriber">
             <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
             <argument type="service" id="Nova\Versandkosten\Service\BeipackService"/>
