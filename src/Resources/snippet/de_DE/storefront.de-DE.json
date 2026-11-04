@@ -37,13 +37,16 @@
             "zipcode": "PLZ",
             "check": "Bestellung prüfen",
             "notFound": "Diese Bestellung konnten wir nicht finden. Bitte prüfen Sie Ihre Angaben.",
-            "notPossible": "Zu Bestellung %number% kann nicht mehr beigepackt werden (bereits versendet, storniert oder zu alt).",
+            "notPossible": "Zu Bestellung %number% kann nicht beigepackt werden (bereits versendet, storniert, zu alt, noch nicht bezahlt oder Tour/Abholung).",
             "tooManyAttempts": "Zu viele Versuche. Bitte versuchen Sie es in einer Stunde erneut.",
             "linked": "Prima! Ihre nächste Bestellung packen wir zu Bestellung %number% dazu. Legen Sie die Artikel in den Warenkorb und wählen Sie in der Kasse „Zu meiner Bestellung beipacken“.",
             "selected": "Bestellung %number% gewählt – Ihre Artikel werden beigepackt.",
             "finish": "Diese Bestellung wird zu Bestellung %number% beigepackt.",
             "forgot": "Noch etwas vergessen?",
-            "forgotLink": "Jetzt zu dieser Bestellung beipacken"
+            "forgotLink": "Jetzt zu dieser Bestellung beipacken",
+            "linkTitle": "Zu Ihrer Bestellung beipacken",
+            "linkText": "Möchten Sie Ihre nächste Bestellung zu Bestellung %number% beipacken? Dann kommt alles in einer Sendung.",
+            "linkButton": "Ja, zu Bestellung beipacken"
         },
         "tour": {
             "title": "Lieferung mit unserer Tour",
@@ -84,7 +87,16 @@
             "accountNoAddress": "Sie haben noch keine Adresse hinterlegt.",
             "accountSaved": "Ihre Einstellung wurde gespeichert.",
             "accountFailed": "Die Einstellung konnte nicht gespeichert werden.",
-            "accountPrivacy": "Wir verwenden dafür Ihre E-Mail-Adresse und die Postleitzahl der Adresse. Die Benachrichtigung können Sie hier oder über den Link in jeder Mail abbestellen."
+            "accountPrivacy": "Wir verwenden dafür Ihre E-Mail-Adresse und die Postleitzahl der Adresse. Die Benachrichtigung können Sie hier oder über den Link in jeder Mail abbestellen.",
+            "confirmTitle": "Tour-Benachrichtigung bestätigen",
+            "confirmText": "Bitte bestätigen Sie, dass wir Sie per E-Mail benachrichtigen dürfen, wenn eine Tour in Ihre Nähe fährt.",
+            "confirmButton": "Anmeldung bestätigen",
+            "unsubscribeTitle": "Tour-Benachrichtigung abbestellen",
+            "unsubscribeText": "Möchten Sie keine Tour-Benachrichtigungen mehr erhalten? Ihre Angaben werden dann gelöscht.",
+            "unsubscribeButton": "Jetzt abmelden",
+            "renewTitle": "Weiter benachrichtigen",
+            "renewText": "Sollen wir Sie weiterhin benachrichtigen, wenn eine Tour in Ihre Nähe fährt?",
+            "renewButton": "Ja, weiter benachrichtigen"
         }
     },
     "checkout": {

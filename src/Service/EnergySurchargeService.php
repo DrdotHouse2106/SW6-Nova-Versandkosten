@@ -141,15 +141,20 @@ class EnergySurchargeService
         }
     }
 
+    /** Größte gelesene Antwort (Bytes) – die Zuschlagsseiten haben einige 100 kB */
+    public const MAX_BODY_BYTES = 3_000_000;
+
     private function download(string $url): string
     {
         $client = $this->client ?? new Client();
         $response = $client->request('GET', $url, [
-            'timeout' => 20,
-            'connect_timeout' => 10,
+            // Knopf „Jetzt abrufen“ läuft synchron im Admin-Request: drei Seiten höchstens je ~15 s
+            'timeout' => 12,
+            'connect_timeout' => 5,
+            'stream' => true,
             'allow_redirects' => ['max' => 5],
             'headers' => [
-                'User-Agent' => 'Mozilla/5.0 (compatible; NovaVersandkosten/1.1; +https://github.com/DrdotHouse2106/SW6-Nova-Versandkosten)',
+                'User-Agent' => 'Mozilla/5.0 (compatible; NovaVersandkosten/1.4; +https://github.com/DrdotHouse2106/SW6-Nova-Versandkosten)',
                 'Accept' => 'text/html',
                 'Accept-Language' => 'de-DE,de;q=0.9',
             ],
@@ -157,7 +162,24 @@ class EnergySurchargeService
         if ($response->getStatusCode() !== 200) {
             throw new EnergyParseException('HTTP ' . $response->getStatusCode());
         }
-        $body = (string) $response->getBody();
+        $length = $response->getHeaderLine('Content-Length');
+        if (is_numeric($length) && (int) $length > self::MAX_BODY_BYTES) {
+            throw new EnergyParseException('Antwort zu groß');
+        }
+        // Höchstens MAX_BODY_BYTES lesen – nie eine beliebig große Antwort in den Speicher/DOMDocument laden
+        $stream = $response->getBody();
+        $body = '';
+        while (!$stream->eof()) {
+            $chunk = $stream->read(65536);
+            if ($chunk === '') {
+                break;
+            }
+            $body .= $chunk;
+            if (\strlen($body) > self::MAX_BODY_BYTES) {
+                $stream->close();
+                throw new EnergyParseException('Antwort zu groß');
+            }
+        }
         if (\strlen($body) < 500) {
             throw new EnergyParseException('Seite leer');
         }

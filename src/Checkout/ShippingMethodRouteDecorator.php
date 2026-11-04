@@ -78,10 +78,15 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
         $data = $cart->getExtension(ShippingCostProcessor::EXTENSION);
         $options = $data instanceof ArrayStruct ? $data->get('options') : null;
         if (!\is_array($options)) {
-            // Keine Tarife importiert oder leerer Warenkorb: Shopware-Verhalten unverändert – außer für die
-            // Sonder-Versandarten, die ohne Berechnung keinen Sinn ergeben
+            // Keine gültigen Tarife (noTariffs): alle Plugin-Versandarten außer der Tour ausblenden (fail closed).
+            // Nichts zu verschicken (z. B. nur Gutscheine): nur die Sonder-Versandarten ausblenden.
+            $noTariffs = $data instanceof ArrayStruct && $data->get('noTariffs') === true;
             foreach ($methods->getElements() as $id => $method) {
-                if (\in_array(MethodMap::optionFor($method->getTechnicalName()), [OptionResult::BEIPACK, OptionResult::REQUEST], true)) {
+                $key = MethodMap::optionFor($method->getTechnicalName());
+                if ($key === null || $key === OptionResult::TOUR) {
+                    continue;
+                }
+                if ($noTariffs || \in_array($key, [OptionResult::BEIPACK, OptionResult::REQUEST], true)) {
                     $methods->remove((string) $id);
                 }
             }

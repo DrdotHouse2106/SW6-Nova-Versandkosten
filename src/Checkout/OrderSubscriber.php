@@ -23,12 +23,15 @@ use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Content\Mail\Service\AbstractMailService;
 use Shopware\Core\Framework\Struct\ArrayStruct;
+use Nova\Versandkosten\Service\OrderCostRepository;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Contracts\Service\ResetInterface;
 
 /**
- * Speichert das Ergebnis der Versandberechnung an der Bestellung (order.customFields) – Grundlage für
- * Warenwirtschaft/ERPNext und Etikettendruck – und schickt auf Wunsch eine E-Mail bei negativer
- * Versandmarge.
+ * Speichert das Ergebnis der Versandberechnung an der Bestellung (order.customFields: Dienstleister,
+ * Pakete mit Maßen/Gewicht, Verkauf, „Maße fehlen“ – Grundlage für Warenwirtschaft und Etikettendruck)
+ * und den Einkauf in der eigenen Tabelle nova_vk_order_cost (nicht über die Store-API sichtbar); schickt
+ * auf Wunsch eine E-Mail bei negativer Versandmarge.
  *
  * Beipacken: Bestellkommentar „BEIPACK zu Bestellung <Nr>“ vorne, Lieferadresse der alten Bestellung,
  * Verweise an beiden Bestellungen, Hinweis im internen Kommentar der alten Bestellung.
@@ -38,8 +41,14 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
  *
  * Bei der Nachberechnung einer bestehenden Bestellung (Administration) bleibt alles unverändert.
  */
-class OrderSubscriber implements EventSubscriberInterface
+class OrderSubscriber implements EventSubscriberInterface, ResetInterface
 {
+    /** Paketangaben in order.customFields (Warenwirtschaft, Lieferschein) – Einkauf liegt in nova_vk_order_cost */
+    public const PUBLIC_PACKAGE_KEYS = ['weightKg', 'lengthCm', 'widthCm', 'heightCm', 'bulky', 'tier', 'sale'];
+
+    /** @var array<string, array{purchaseNet: float, saleNet: float, data: array<string, mixed>}> Bestell-ID → Einkauf */
+    private array $pendingCosts = [];
+
     /**
      * @param EntityRepository<\Shopware\Core\Checkout\Order\OrderCollection> $orders
      */
@@ -51,7 +60,14 @@ class OrderSubscriber implements EventSubscriberInterface
         private readonly RequestOrderService $requests,
         private readonly EntityRepository $orders,
         private readonly TourRepository $tours,
+        private readonly InternalQuoteStore $internal,
+        private readonly OrderCostRepository $costs,
     ) {
+    }
+
+    public function reset(): void
+    {
+        $this->pendingCosts = [];
     }
 
     public static function getSubscribedEvents(): array
@@ -68,21 +84,30 @@ class OrderSubscriber implements EventSubscriberInterface
         if ($cart->hasExtension(OrderConverter::ORIGINAL_ID)) {
             return;
         }
-        $data = $cart->getExtension(ShippingCostProcessor::EXTENSION);
+        $public = $cart->getExtension(ShippingCostProcessor::EXTENSION);
         $delivery = $cart->getDeliveries()->first();
-        if (!$data instanceof ArrayStruct || $delivery === null) {
+        if ($delivery === null) {
             return;
         }
-
         $key = MethodMap::optionFor($delivery->getShippingMethod()->getTechnicalName());
+        // Vollständiges Ergebnis aus der Anfrage (Shopware rechnet beim Bestellen neu); fehlt es, nur Anzeige-Daten.
+        // Die Tour hängt nicht an den Tarifen und wird auch ohne Rechenergebnis gespeichert.
+        $full = $this->internal->get($cart->getToken()) ?? ($public instanceof ArrayStruct ? $public->all() : null);
+        if ($key !== OptionResult::TOUR && ($full === null || !empty($full['noTariffs']))) {
+            return;
+        }
+        $data = new ArrayStruct($full ?? []);
         $options = $data->get('options');
         $option = $key !== null && \is_array($options) ? ($options[$key] ?? null) : null;
 
         $fields = [
             CF::ORDER_DIMS_MISSING => (bool) $data->get('dimsMissing'),
         ];
+        $cost = null;
         if (\is_array($option)) {
-            $packages = array_map(static fn ($p) => \is_array($p) ? array_intersect_key($p, array_flip(['weightKg', 'lengthCm', 'widthCm', 'heightCm', 'bulky', 'tier', 'purchaseNet', 'sale'])) : [], (array) ($option['packages'] ?? []));
+            $rawPackages = array_values(array_filter((array) ($option['packages'] ?? []), 'is_array'));
+            // Für Warenwirtschaft/Lieferschein: Maße, Gewicht, Einordnung – ohne Einkauf
+            $packages = array_map(static fn (array $p) => array_intersect_key($p, array_flip(self::PUBLIC_PACKAGE_KEYS)), $rawPackages);
             $vat = $this->settings->rules($event->getSalesChannelContext()->getSalesChannelId())->vatPercent;
             $sale = (float) ($option['sale'] ?? 0);
             $saleNet = !empty($option['vatIncluded']) ? round($sale / (1 + $vat / 100), 2) : $sale;
@@ -97,7 +122,6 @@ class OrderSubscriber implements EventSubscriberInterface
                 CF::ORDER_PRODUCT => (string) ($option['productName'] ?? ''),
                 CF::ORDER_PACKAGES => $packages,
                 CF::ORDER_PACKAGE_COUNT => \count($packages),
-                CF::ORDER_PURCHASE => (float) ($option['purchaseNet'] ?? 0),
                 CF::ORDER_SALE => $sale,
                 CF::ORDER_SALE_NET => $saleNet,
                 CF::ORDER_DELIVERY => $deliveryText,
@@ -107,7 +131,18 @@ class OrderSubscriber implements EventSubscriberInterface
                     'free' => $data->get('free'),
                     'vatIncluded' => (bool) ($option['vatIncluded'] ?? true),
                     'hints' => $option['hints'] ?? [],
-                    'freightQuotationId' => $key === 'spedition' ? ($option['productId'] ?? null) : null,
+                ],
+            ];
+            // Einkauf nur in der eigenen Tabelle (nicht Store-API-sichtbar), siehe OrderCostRepository
+            $cost = [
+                'purchaseNet' => (float) ($option['purchaseNet'] ?? 0),
+                'saleNet' => $saleNet,
+                'data' => [
+                    'option' => $key,
+                    'productId' => (string) ($option['productId'] ?? ''),
+                    'productName' => (string) ($option['productName'] ?? ''),
+                    'packages' => array_map(static fn (array $p) => array_intersect_key($p, array_flip(['purchaseNet', 'sale', 'tier', 'lines'])), $rawPackages),
+                    'freightQuotationId' => $key === OptionResult::FREIGHT ? ($option['productId'] ?? null) : null,
                 ],
             ];
         }
@@ -118,7 +153,9 @@ class OrderSubscriber implements EventSubscriberInterface
             $converted = $this->convertBeipack($converted, $fields, $data, \is_array($option) ? $option : []);
         }
         if ($key === OptionResult::TOUR) {
-            $converted = $this->convertTour($converted, $fields, $cart->getExtension(TourService::EXTENSION), $event->getSalesChannelContext()->getSalesChannelId());
+            $tour = $this->internal->getTour($cart->getToken());
+            $converted = $this->convertTour($converted, $fields, $tour !== null ? new ArrayStruct($tour) : $cart->getExtension(TourService::EXTENSION), $event->getSalesChannelContext()->getSalesChannelId());
+            $cost = isset($fields[CF::ORDER_SALE_NET]) ? ['purchaseNet' => 0.0, 'saleNet' => (float) $fields[CF::ORDER_SALE_NET], 'data' => ['option' => OptionResult::TOUR]] : $cost;
         }
         if ($key === OptionResult::REQUEST) {
             $fields[CF::ORDER_REQUEST] = true;
@@ -126,6 +163,9 @@ class OrderSubscriber implements EventSubscriberInterface
         }
 
         $converted['customFields'] = array_merge(\is_array($converted['customFields'] ?? null) ? $converted['customFields'] : [], $fields);
+        if ($cost !== null && \is_string($converted['id'] ?? null)) {
+            $this->pendingCosts[strtolower($converted['id'])] = $cost;
+        }
         $event->setConvertedCart($converted);
     }
 
@@ -194,7 +234,6 @@ class OrderSubscriber implements EventSubscriberInterface
         $fields[CF::ORDER_PRODUCT] = 'Tour ' . TourText::date($date);
         $fields[CF::ORDER_PACKAGES] = [];
         $fields[CF::ORDER_PACKAGE_COUNT] = 0;
-        $fields[CF::ORDER_PURCHASE] = 0.0;
         $fields[CF::ORDER_SALE] = $sale;
         $fields[CF::ORDER_SALE_NET] = round($sale / (1 + $vat / 100), 2);
         $fields[CF::ORDER_DELIVERY] = TourText::date($date);
@@ -236,6 +275,15 @@ class OrderSubscriber implements EventSubscriberInterface
     {
         $order = $event->getOrder();
         $fields = $order->getCustomFields() ?? [];
+        $cost = $this->pendingCosts[strtolower($order->getId())] ?? null;
+        unset($this->pendingCosts[strtolower($order->getId())]);
+        if ($cost !== null) {
+            try {
+                $this->costs->save($order->getId(), $cost['purchaseNet'], $cost['data']);
+            } catch (\Throwable $e) {
+                $this->logger->warning('Nova Versandkosten: Einkauf der Bestellung konnte nicht gespeichert werden', ['order' => $order->getOrderNumber(), 'error' => $e->getMessage()]);
+            }
+        }
         if (\is_string($fields[CF::ORDER_TOUR_DATE_ID] ?? null) && \is_string($fields[CF::ORDER_TOUR_VARIANT] ?? null)) {
             $this->fixTourVariant($order, $fields[CF::ORDER_TOUR_DATE_ID], $fields[CF::ORDER_TOUR_VARIANT], $event->getContext());
         }
@@ -246,7 +294,7 @@ class OrderSubscriber implements EventSubscriberInterface
             $this->requests->notifyShop($order, $event->getContext());
         }
 
-        $this->marginMail($event);
+        $this->marginMail($event, $cost);
     }
 
     /**
@@ -296,19 +344,19 @@ class OrderSubscriber implements EventSubscriberInterface
         }
     }
 
-    private function marginMail(CheckoutOrderPlacedEvent $event): void
+    /**
+     * @param array{purchaseNet: float, saleNet: float, data: array<string, mixed>}|null $cost
+     */
+    private function marginMail(CheckoutOrderPlacedEvent $event, ?array $cost): void
     {
         $salesChannelId = $event->getSalesChannelId();
-        if (!$this->settings->bool('marginMailEnabled', $salesChannelId)) {
+        if ($cost === null || !$this->settings->bool('marginMailEnabled', $salesChannelId)) {
             return;
         }
         $order = $event->getOrder();
         $fields = $order->getCustomFields() ?? [];
-        if (!isset($fields[CF::ORDER_PURCHASE], $fields[CF::ORDER_SALE_NET])) {
-            return;
-        }
-        $purchase = (float) $fields[CF::ORDER_PURCHASE];
-        $saleNet = (float) $fields[CF::ORDER_SALE_NET];
+        $purchase = $cost['purchaseNet'];
+        $saleNet = $cost['saleNet'];
         if ($saleNet >= $purchase || $purchase <= 0) {
             return;
         }

@@ -2,7 +2,8 @@ import template from './sw-order-detail-details.html.twig';
 
 /**
  * Bestellung → Details:
- * - Karte „Versandkosten“ (Dienstleister, Pakete, Einkauf, Verkauf, Differenz; „Maße fehlen“ je nach Einstellung)
+ * - Karte „Versandkosten“ (Dienstleister, Pakete, Einkauf, Verkauf, Differenz; „Maße fehlen“ je nach Einstellung).
+ *   Der Einkauf kommt seit 1.4.0 aus GET _action/nova-versandkosten/order/{id} (cost), nicht aus customFields.
  * - Beipack-Hinweise (neue Bestellung: „BEIPACK zu …“, alte Bestellung: Liste der beigepackten Bestellungen)
  * - Karte „Versandkosten auf Anfrage“: Versandkosten eintragen und Kunde benachrichtigen; Hinweis, wenn die
  *   Lieferadresse an einer Strecke oder einem Tourtermin liegt
@@ -30,7 +31,9 @@ Shopware.Component.override('sw-order-detail-details', {
             if (f.nova_versandkosten_sale === undefined && f.nova_versandkosten_dims_missing === undefined) {
                 return null;
             }
-            const purchase = Number(f.nova_versandkosten_purchase_net || 0);
+            // Einkauf seit 1.4.0 aus der eigenen Tabelle (Admin-Route), nicht mehr aus den Zusatzfeldern
+            const cost = this.novaVkInfo && this.novaVkInfo.cost ? this.novaVkInfo.cost : null;
+            const purchase = Number((cost ? cost.purchaseNet : f.nova_versandkosten_purchase_net) || 0);
             const saleNet = Number(f.nova_versandkosten_sale_net || 0);
             const beipack = f.nova_versandkosten_details?.beipack || null;
             return {

@@ -705,6 +705,15 @@ warenpost;*;4-10
             <helpText lang="de-DE">Höchstens 5 Versuche je Stunde und IP. Der Link aus der Bestellbestätigung funktioniert auch ohne.</helpText>
             <defaultValue>true</defaultValue>
         </input-field>
+
+        <input-field type="bool">
+            <name>beipackAllowUnpaid</name>
+            <label>Also add to unpaid prepayment/online orders</label>
+            <label lang="de-DE">Auch zu unbezahlten Vorkasse-/Online-Bestellungen beipacken</label>
+            <helpText>Off (recommended): only orders that are paid or authorised, or paid after shipping (invoice, direct debit, cash on delivery). If the original order is cancelled later, the add-on order gets an internal note and the administration a notification.</helpText>
+            <helpText lang="de-DE">Aus (empfohlen): nur zu Bestellungen, die bezahlt bzw. autorisiert sind oder erst nach dem Versand bezahlt werden (Rechnung, Lastschrift, Nachnahme). Wird die alte Bestellung später storniert, bekommt die Beipack-Bestellung einen internen Hinweis und die Administration eine Benachrichtigung.</helpText>
+            <defaultValue>false</defaultValue>
+        </input-field>
     </card>
 
     <card>

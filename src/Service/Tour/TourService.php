@@ -92,7 +92,7 @@ class TourService implements ResetInterface
         $location = $context->getShippingLocation();
         $country = (string) $location->getCountry()->getIso();
         $postcode = (string) ($location->getAddress()?->getZipcode() ?? '');
-        $items = $this->classifier->itemsFromCart($lineItems, $salesChannelId);
+        $items = $this->classifier->itemsFromCart($lineItems, $salesChannelId, $context->getLanguageId());
 
         $key = md5(serialize([$items, $country, $postcode, $salesChannelId, $selectedId, $context->getContext()->getCurrencyFactor()]));
         if (isset($this->memo[$key])) {
@@ -160,6 +160,23 @@ class TourService implements ResetInterface
             'selected' => $selected,
             'minPrice' => min(array_column($options, 'price')),
         ];
+    }
+
+    /**
+     * Ergebnis ohne interne Angaben (Variante, Abweichung in km) – für die Warenkorb-Erweiterung, die die
+     * Store-API ausliefert.
+     *
+     * @param array<string, mixed> $tour
+     *
+     * @return array<string, mixed>
+     */
+    public static function publicView(array $tour): array
+    {
+        $strip = static fn (mixed $o): mixed => \is_array($o) ? array_diff_key($o, ['variantId' => true, 'deviationKm' => true]) : $o;
+        $tour['options'] = array_map($strip, \is_array($tour['options'] ?? null) ? $tour['options'] : []);
+        $tour['selected'] = $strip($tour['selected'] ?? null);
+
+        return $tour;
     }
 
     public function hint(?string $salesChannelId): string

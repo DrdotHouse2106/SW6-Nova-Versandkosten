@@ -22,8 +22,9 @@ use Symfony\Contracts\Service\ResetInterface;
  *   Berechnung erneut geprüft),
  * - via „code“: über den Link mit Shopwares geheimem Bestell-Code (deepLinkCode) oder über Bestellnummer
  *   + E-Mail + PLZ bestätigt.
- * Status (offen, nicht versendet, nicht storniert, Alter, Land) wird bei JEDER Berechnung frisch aus der
- * Datenbank geprüft – auch beim Abschluss der Bestellung.
+ * Status (offen, nicht versendet, nicht storniert, Alter, Land, bezahlt bzw. Zahlart „nach Versand“, keine
+ * Tour-/Abholbestellung) wird bei JEDER Berechnung frisch aus der Datenbank geprüft – auch beim Abschluss
+ * der Bestellung.
  */
 class BeipackService implements ResetInterface
 {
@@ -134,6 +135,14 @@ class BeipackService implements ResetInterface
                     o.custom_fields, o.price, o.shipping_costs, o.currency_factor, os.technical_name AS order_state,
                     LOWER(HEX(oc.customer_id)) AS customer_id, oc.email, c.guest,
                     ds.technical_name AS delivery_state,
+                    (SELECT ts.technical_name FROM order_transaction t
+                       INNER JOIN state_machine_state ts ON ts.id = t.state_id
+                      WHERE t.order_id = o.id AND t.order_version_id = o.version_id AND t.version_id = o.version_id
+                      ORDER BY (t.id = o.primary_order_transaction_id) DESC, t.created_at DESC LIMIT 1) AS payment_state,
+                    (SELECT pm.handler_identifier FROM order_transaction t
+                       INNER JOIN payment_method pm ON pm.id = t.payment_method_id
+                      WHERE t.order_id = o.id AND t.order_version_id = o.version_id AND t.version_id = o.version_id
+                      ORDER BY (t.id = o.primary_order_transaction_id) DESC, t.created_at DESC LIMIT 1) AS payment_handler,
                     a.first_name, a.last_name, a.company, a.department, a.title, a.street, a.zipcode, a.city, a.phone_number,
                     a.additional_address_line1, a.additional_address_line2,
                     LOWER(HEX(a.country_id)) AS country_id, LOWER(HEX(a.country_state_id)) AS country_state_id,
@@ -211,31 +220,30 @@ class BeipackService implements ResetInterface
                 'salesChannelId' => (string) $row['sales_channel_id'],
                 'country' => (string) ($row['country'] ?? ''),
                 'isBeipack' => (bool) $row['isBeipack'],
+                'option' => \is_string($row['option'] ?? null) ? $row['option'] : null,
+                'paymentState' => \is_string($row['payment_state'] ?? null) ? $row['payment_state'] : null,
+                'paymentHandler' => \is_string($row['payment_handler'] ?? null) ? $row['payment_handler'] : null,
             ],
             $context->getSalesChannelId(),
             $checkCountry ? (string) $context->getShippingLocation()->getCountry()->getIso() : '',
             new \DateTimeImmutable('now', new \DateTimeZone('UTC')),
-            $this->maxAgeDays($context->getSalesChannelId())
+            $this->maxAgeDays($context->getSalesChannelId()),
+            $this->settings->bool('beipackAllowUnpaid', $context->getSalesChannelId(), false)
         );
     }
 
     /**
-     * Gehört die Bestellung dem angemeldeten Kunden (gleiche Kunden-ID oder gleiche E-Mail)?
+     * Gehört die Bestellung dem angemeldeten Kunden? Nur über die Kunden-ID – eine gleiche E-Mail reicht seit
+     * 1.4.0 nicht mehr (Shopware erlaubt ein Konto mit der E-Mail eines fremden Gastkunden). Gastbestellungen
+     * desselben Kunden lassen sich über den Link oder Bestellnummer + E-Mail + PLZ wählen.
      *
      * @param array<string, mixed> $row
      */
     public static function isOwnedBy(array $row, SalesChannelContext $context): bool
     {
         $customer = $context->getCustomer();
-        if ($customer === null) {
-            return false;
-        }
-        if ((string) ($row['customer_id'] ?? '') === strtolower($customer->getId())) {
-            return true;
-        }
 
-        return !$customer->getGuest() && $customer->getEmail() !== ''
-            && mb_strtolower(trim($customer->getEmail())) === mb_strtolower(trim((string) ($row['email'] ?? '')));
+        return $customer !== null && (string) ($row['customer_id'] ?? '') === strtolower($customer->getId());
     }
 
     /**
@@ -376,7 +384,7 @@ class BeipackService implements ResetInterface
 
         $items = array_merge(
             $this->classifier->itemsFromOrders($orderIds, $salesChannelId),
-            $this->classifier->itemsFromCart($lineItems, $salesChannelId)
+            $this->classifier->itemsFromCart($lineItems, $salesChannelId, $context->getLanguageId())
         );
         $result = $this->quotes->calculateItems(
             $items,

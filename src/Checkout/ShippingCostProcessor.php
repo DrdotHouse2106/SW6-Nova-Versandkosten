@@ -28,7 +28,12 @@ use Shopware\Core\System\SalesChannel\SalesChannelContext;
  *
  * Shopware hat die Lieferung schon mit dem Platzhalterpreis (0 €) und den passenden Steuerregeln
  * berechnet; diese Steuerregeln übernehmen wir und ersetzen nur den Betrag.
- * Das Ergebnis aller Optionen hängt als Erweiterung „novaVersandkosten“ am Warenkorb (Anzeige, Bestellung).
+ * Am Warenkorb hängt als Erweiterung „novaVersandkosten“ nur, was der Kunde sehen darf (Verkaufspreis,
+ * verfügbar, Hinweise, Zustellung – die Store-API liefert Warenkorb-Erweiterungen aus). Einkauf,
+ * Tarifprodukt, Paketpreise und interne Gründe liegen nur im InternalQuoteStore (Speicher der Anfrage).
+ *
+ * Ohne gültige Tarifdatei (nie importiert oder gespeicherte Datei ungültig) gilt „fail closed“: die
+ * Erweiterung trägt noTariffs = true, der Validator sperrt alle Plugin-Versandarten außer der Tour.
  *
  * „Zu meiner Bestellung beipacken“: Ist diese Versandart gewählt, wird die gewählte alte Bestellung bei
  * jeder Berechnung frisch geprüft und der Differenzpreis gesetzt (Ergebnis unter options.beipack und
@@ -48,6 +53,7 @@ class ShippingCostProcessor implements CartProcessorInterface
         private readonly Settings $settings,
         private readonly BeipackService $beipack,
         private readonly TourService $tour,
+        private readonly InternalQuoteStore $internal,
     ) {
     }
 
@@ -55,18 +61,26 @@ class ShippingCostProcessor implements CartProcessorInterface
     {
         $toCalculate->removeExtension(self::EXTENSION);
         $toCalculate->removeExtension(TourService::EXTENSION);
+        $this->internal->remove($toCalculate->getToken());
 
         $this->processTour($original, $toCalculate, $context, $behavior);
 
         $result = $this->quotes->calculate($toCalculate->getLineItems(), $context);
         if ($result === null) {
+            if (!$this->quotes->isReady() && self::hasDeliverableItems($toCalculate)) {
+                // Keine (gültigen) Tarife: Plugin-Versandarten sperren statt zum Platzhalterpreis 0,00 € verkaufen
+                $toCalculate->addExtension(self::EXTENSION, new ArrayStruct(['noTariffs' => true]));
+            }
+
             return;
         }
-        $data = $result->toArray();
+        $data = $result->toPublicArray();
+        $internal = $result->toArray();
 
         // Bestellung in der Administration bearbeiten: manuell gesetzte Versandkosten nicht überschreiben
         if ($behavior->hasPermission(CheckoutPermissions::SKIP_DELIVERY_PRICE_RECALCULATION) || $original->hasExtension(OrderConverter::ORIGINAL_ID)) {
             $toCalculate->addExtension(self::EXTENSION, new ArrayStruct($data));
+            $this->internal->set($toCalculate->getToken(), $internal);
 
             return;
         }
@@ -74,12 +88,15 @@ class ShippingCostProcessor implements CartProcessorInterface
         $beipack = null;
         foreach ($toCalculate->getDeliveries() as $delivery) {
             if (MethodMap::optionFor($delivery->getShippingMethod()->getTechnicalName()) === OptionResult::BEIPACK) {
-                [$beipack, $data['beipack']] = $this->beipackQuote($original, $toCalculate, $context);
-                $data['options'][OptionResult::BEIPACK] = $beipack->toArray();
+                [$beipack, $info] = $this->beipackQuote($original, $toCalculate, $context);
+                $data['beipack'] = $internal['beipack'] = $info;
+                $data['options'][OptionResult::BEIPACK] = $beipack->toPublicArray();
+                $internal['options'][OptionResult::BEIPACK] = $beipack->toArray();
                 break;
             }
         }
         $toCalculate->addExtension(self::EXTENSION, new ArrayStruct($data));
+        $this->internal->set($toCalculate->getToken(), $internal);
 
         foreach ($toCalculate->getDeliveries() as $delivery) {
             $option = MethodMap::optionFor($delivery->getShippingMethod()->getTechnicalName());
@@ -115,7 +132,8 @@ class ShippingCostProcessor implements CartProcessorInterface
         }
 
         $tour = $this->tour->evaluate($toCalculate->getLineItems(), $context, $this->tour->selection($original));
-        $toCalculate->addExtension(TourService::EXTENSION, new ArrayStruct($tour));
+        $toCalculate->addExtension(TourService::EXTENSION, new ArrayStruct(TourService::publicView($tour)));
+        $this->internal->setTour($toCalculate->getToken(), $tour);
 
         if ($behavior->hasPermission(CheckoutPermissions::SKIP_DELIVERY_PRICE_RECALCULATION) || $original->hasExtension(OrderConverter::ORIGINAL_ID) || empty($tour['available'])) {
             return;
@@ -179,6 +197,18 @@ class ShippingCostProcessor implements CartProcessorInterface
         }
 
         return round($price * $context->getContext()->getCurrencyFactor(), 2);
+    }
+
+    /** Enthält der Warenkorb etwas, das verschickt wird (Position mit Lieferinformation)? */
+    public static function hasDeliverableItems(Cart $cart): bool
+    {
+        foreach ($cart->getLineItems()->getFlat() as $lineItem) {
+            if ($lineItem->getDeliveryInformation() !== null && $lineItem->isShippingCostAware()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -1,0 +1,21 @@
+{% sw_extends '@Storefront/storefront/base.html.twig' %}
+
+{#
+    Zwischenseite für Links aus E-Mails (Tour-Benachrichtigung bestätigen/abmelden/weiter, Beipack-Link):
+    Der Link selbst ändert nichts – erst der Knopf (POST). Mail-Scanner und Link-Vorschauen lösen so
+    keine Abmeldung oder Bestätigung aus.
+    Variablen: novaAction = {title, text, button, action}
+#}
+{% block base_content %}
+    {% block nova_versandkosten_confirm_action %}
+        <div class="container nova-versandkosten-confirm-action my-5" style="max-width: 640px;">
+            <h1 class="h3">{{ novaAction.title|trans|sw_sanitize }}</h1>
+            {% if novaAction.text %}
+                <p>{{ novaAction.text|trans(novaAction.textParams ?? {})|sw_sanitize }}</p>
+            {% endif %}
+            <form action="{{ novaAction.action }}" method="post">
+                <button type="submit" class="btn btn-primary">{{ novaAction.button|trans|sw_sanitize }}</button>
+            </form>
+        </div>
+    {% endblock %}
+{% endblock %}

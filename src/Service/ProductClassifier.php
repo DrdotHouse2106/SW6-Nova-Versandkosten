@@ -37,22 +37,35 @@ class ProductClassifier implements ResetInterface
     }
 
     /**
+     * Warenkorbpositionen → Eingabe des Rechenkerns.
+     *
+     * Gewicht und Maße kommen aus der Lieferinformation (setzt Shopware aus den Produktdaten). Einordnung,
+     * Packart, Hersteller und Tags („versandkostenfrei“) werden seit 1.4.0 aus der Datenbank gelesen und
+     * NICHT aus dem Positions-Payload – den kann ein Kunde über die Store-API mitschicken.
+     *
+     * Berücksichtigt werden alle versandkostenrelevanten Positionen mit Lieferinformation (wie Shopwares
+     * DeliveryBuilder: hat eine Position keine, zählen ihre Unterpositionen) – nicht nur Typ „product“.
+     *
      * @return list<Item>
      */
-    public function itemsFromCart(LineItemCollection $lineItems, ?string $salesChannelId): array
+    public function itemsFromCart(LineItemCollection $lineItems, ?string $salesChannelId, ?string $languageId = null): array
     {
-        $products = [];
-        foreach ($lineItems->getFlat() as $lineItem) {
-            if ($lineItem->getType() !== LineItem::PRODUCT_LINE_ITEM_TYPE || $lineItem->getDeliveryInformation() === null) {
-                continue;
+        $positions = [];
+        self::collectDeliverable($lineItems, $positions);
+
+        $productIds = [];
+        foreach ($positions as $lineItem) {
+            $id = strtolower((string) $lineItem->getReferencedId());
+            if (Uuid::isValid($id)) {
+                $productIds[$id] = $id;
             }
-            $products[] = $lineItem;
         }
+        $products = $this->loadProducts(array_values($productIds), $languageId);
 
         $optionIds = [];
-        foreach ($products as $lineItem) {
-            foreach ((array) $lineItem->getPayloadValue('propertyIds') as $id) {
-                $optionIds[] = (string) $id;
+        foreach ($products as $product) {
+            foreach ($product['propertyIds'] as $id) {
+                $optionIds[] = $id;
             }
         }
         $this->loadOptionNames($optionIds);
@@ -61,18 +74,20 @@ class ProductClassifier implements ResetInterface
         $freeTags = $this->settings->ids('freeTagIds', $salesChannelId);
 
         $items = [];
-        foreach ($products as $lineItem) {
+        foreach ($positions as $lineItem) {
             $info = $lineItem->getDeliveryInformation();
             if ($info === null) {
                 continue;
             }
-            $customFields = $lineItem->getPayloadValue('customFields');
-            [$category, $packing] = $this->classify(\is_array($customFields) ? $customFields : [], (array) $lineItem->getPayloadValue('propertyIds'), $salesChannelId);
-
-            $manufacturer = strtolower((string) $lineItem->getPayloadValue('manufacturerId'));
-            $tags = array_map(static fn ($t) => strtolower((string) $t), (array) $lineItem->getPayloadValue('tagIds'));
-            $free = ($manufacturer !== '' && \in_array($manufacturer, $freeManufacturers, true))
-                || array_intersect($tags, $freeTags) !== [];
+            $product = $products[strtolower((string) $lineItem->getReferencedId())] ?? null;
+            if ($product !== null) {
+                [$category, $packing] = $this->classify($product['customFields'], $product['propertyIds'], $salesChannelId);
+                $free = self::isFree($product['manufacturerId'], $product['tagIds'], $freeManufacturers, $freeTags);
+            } else {
+                // Keine Produktdaten (fremder Positionstyp): Standardeinordnung, nie versandkostenfrei
+                [$category, $packing] = [Item::PARCEL, Item::PACK_SINGLE];
+                $free = false;
+            }
 
             $release = $lineItem->getPayloadValue('releaseDate');
             $availableFrom = null;
@@ -106,9 +121,115 @@ class ProductClassifier implements ResetInterface
     }
 
     /**
+     * Positionen mit Lieferinformation (Reihenfolge und Logik wie Shopwares DeliveryBuilder).
+     *
+     * @param list<LineItem> $out
+     */
+    private static function collectDeliverable(LineItemCollection $lineItems, array &$out): void
+    {
+        foreach ($lineItems as $lineItem) {
+            if (!$lineItem->isShippingCostAware()) {
+                continue;
+            }
+            if ($lineItem->getDeliveryInformation() === null) {
+                if ($lineItem->getChildren()->count() > 0) {
+                    self::collectDeliverable($lineItem->getChildren(), $out);
+                }
+                continue;
+            }
+            $out[] = $lineItem;
+        }
+    }
+
+    /**
+     * @param list<string> $tags
+     * @param list<string> $freeManufacturers
+     * @param list<string> $freeTags
+     */
+    public static function isFree(string $manufacturerId, array $tags, array $freeManufacturers, array $freeTags): bool
+    {
+        $manufacturerId = strtolower($manufacturerId);
+        $tags = array_map('strtolower', $tags);
+
+        return ($manufacturerId !== '' && \in_array($manufacturerId, array_map('strtolower', $freeManufacturers), true))
+            || array_intersect($tags, array_map('strtolower', $freeTags)) !== [];
+    }
+
+    /**
+     * Versandrelevante Produktdaten aus der Datenbank (Live-Version; Variante erbt vom Elternartikel).
+     *
+     * @param list<string> $ids
+     *
+     * @return array<string, array{customFields: array<string, mixed>, propertyIds: list<string>, manufacturerId: string, tagIds: list<string>}>
+     */
+    private function loadProducts(array $ids, ?string $languageId): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+        $languageId = $languageId !== null && Uuid::isValid($languageId) ? $languageId : Defaults::LANGUAGE_SYSTEM;
+
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT LOWER(HEX(p.id)) AS id,
+                    COALESCE(p.property_ids, pp.property_ids) AS property_ids,
+                    LOWER(HEX(COALESCE(p.product_manufacturer_id, pp.product_manufacturer_id))) AS manufacturer_id,
+                    COALESCE(p.tag_ids, pp.tag_ids) AS tag_ids,
+                    ppt.custom_fields AS cf_parent_sys, pptl.custom_fields AS cf_parent_lang,
+                    pt.custom_fields AS cf_sys, ptl.custom_fields AS cf_lang
+               FROM product p
+               LEFT JOIN product pp ON pp.id = p.parent_id AND pp.version_id = :live
+               LEFT JOIN product_translation pt ON pt.product_id = p.id AND pt.product_version_id = :live AND pt.language_id = :sys
+               LEFT JOIN product_translation ptl ON ptl.product_id = p.id AND ptl.product_version_id = :live AND ptl.language_id = :lang
+               LEFT JOIN product_translation ppt ON ppt.product_id = pp.id AND ppt.product_version_id = :live AND ppt.language_id = :sys
+               LEFT JOIN product_translation pptl ON pptl.product_id = pp.id AND pptl.product_version_id = :live AND pptl.language_id = :lang
+              WHERE p.id IN (:ids) AND p.version_id = :live',
+            [
+                'ids' => array_map(static fn (string $id) => Uuid::fromHexToBytes($id), $ids),
+                'live' => Uuid::fromHexToBytes(Defaults::LIVE_VERSION),
+                'sys' => Uuid::fromHexToBytes(Defaults::LANGUAGE_SYSTEM),
+                'lang' => Uuid::fromHexToBytes($languageId),
+            ],
+            ['ids' => ArrayParameterType::BINARY]
+        );
+
+        $products = [];
+        foreach ($rows as $row) {
+            $customFields = [];
+            // Vorrang: Variante (Sprache, System) vor Elternartikel (Sprache, System)
+            foreach (['cf_parent_sys', 'cf_parent_lang', 'cf_sys', 'cf_lang'] as $column) {
+                $decoded = json_decode((string) ($row[$column] ?? ''), true);
+                if (\is_array($decoded)) {
+                    $customFields = array_replace($customFields, array_filter($decoded, static fn ($v) => $v !== null && $v !== ''));
+                }
+            }
+            $products[(string) $row['id']] = [
+                'customFields' => $customFields,
+                'propertyIds' => self::idList($row['property_ids'] ?? null),
+                'manufacturerId' => (string) ($row['manufacturer_id'] ?? ''),
+                'tagIds' => self::idList($row['tag_ids'] ?? null),
+            ];
+        }
+
+        return $products;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function idList(mixed $json): array
+    {
+        $decoded = \is_string($json) ? json_decode($json, true) : null;
+        if (!\is_array($decoded)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(static fn ($id) => strtolower((string) $id), $decoded), static fn (string $id) => Uuid::isValid($id)));
+    }
+
+    /**
      * Artikel bereits bestellter (noch nicht versendeter) Bestellungen – für „Zur Bestellung beipacken“.
-     * Maße/Gewicht und Zusatzfelder kommen vom Produkt (Elternartikel als Ersatz), Eigenschaften,
-     * Hersteller und Tags aus der Bestellposition. Gelöschte Produkte zählen mit Standardmaßen.
+     * Maße/Gewicht, Zusatzfelder, Eigenschaften, Hersteller und Tags kommen vom Produkt (Elternartikel als
+     * Ersatz); nur bei gelöschten Produkten aus der Bestellposition (Standardmaße).
      *
      * @param list<string> $orderIds
      *
@@ -125,7 +246,11 @@ class ProductClassifier implements ResetInterface
             'SELECT LOWER(HEX(li.id)) AS id, LOWER(HEX(li.product_id)) AS product_id, li.label, li.quantity, li.unit_price, li.payload,
                     COALESCE(p.weight, pp.weight) AS weight, COALESCE(p.length, pp.length) AS length,
                     COALESCE(p.width, pp.width) AS width, COALESCE(p.height, pp.height) AS height,
-                    COALESCE(pt.custom_fields, ppt.custom_fields) AS custom_fields
+                    COALESCE(pt.custom_fields, ppt.custom_fields) AS custom_fields,
+                    p.id IS NOT NULL AS product_exists,
+                    COALESCE(p.property_ids, pp.property_ids) AS property_ids,
+                    LOWER(HEX(COALESCE(p.product_manufacturer_id, pp.product_manufacturer_id))) AS manufacturer_id,
+                    COALESCE(p.tag_ids, pp.tag_ids) AS tag_ids
                FROM order_line_item li
                LEFT JOIN product p ON p.id = li.product_id AND p.version_id = :live
                LEFT JOIN product pp ON pp.id = p.parent_id AND pp.version_id = :live
@@ -150,14 +275,21 @@ class ProductClassifier implements ResetInterface
             $payload = \is_array($payload) ? $payload : [];
             $customFields = json_decode((string) ($row['custom_fields'] ?? ''), true);
             if (!\is_array($customFields)) {
-                $customFields = \is_array($payload['customFields'] ?? null) ? $payload['customFields'] : [];
+                $customFields = empty($row['product_exists']) && \is_array($payload['customFields'] ?? null) ? $payload['customFields'] : [];
             }
-            [$category, $packing] = $this->classify($customFields, (array) ($payload['propertyIds'] ?? []), $salesChannelId);
+            // Produkt vorhanden: Eigenschaften, Hersteller, Tags aus der Datenbank (nicht aus dem Payload)
+            if (!empty($row['product_exists'])) {
+                $propertyIds = self::idList($row['property_ids'] ?? null);
+                $manufacturerId = (string) ($row['manufacturer_id'] ?? '');
+                $tagIds = self::idList($row['tag_ids'] ?? null);
+            } else {
+                $propertyIds = array_values(array_map('strval', (array) ($payload['propertyIds'] ?? [])));
+                $manufacturerId = (string) ($payload['manufacturerId'] ?? '');
+                $tagIds = array_values(array_map('strval', (array) ($payload['tagIds'] ?? [])));
+            }
+            [$category, $packing] = $this->classify($customFields, $propertyIds, $salesChannelId);
 
-            $manufacturer = strtolower((string) ($payload['manufacturerId'] ?? ''));
-            $tags = array_map(static fn ($t) => strtolower((string) $t), (array) ($payload['tagIds'] ?? []));
-            $free = ($manufacturer !== '' && \in_array($manufacturer, $freeManufacturers, true))
-                || array_intersect($tags, $freeTags) !== [];
+            $free = self::isFree($manufacturerId, $tagIds, $freeManufacturers, $freeTags);
 
             $num = static fn (mixed $v): ?float => is_numeric($v) && (float) $v > 0 ? (float) $v : null;
 

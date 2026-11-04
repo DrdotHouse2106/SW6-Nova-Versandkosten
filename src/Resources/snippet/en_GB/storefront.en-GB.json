@@ -37,13 +37,16 @@
             "zipcode": "Postcode",
             "check": "Check order",
             "notFound": "We could not find this order. Please check your details.",
-            "notPossible": "Items can no longer be added to order %number% (already shipped, cancelled or too old).",
+            "notPossible": "Order %number% cannot be combined (already shipped, cancelled, too old, not yet paid, or tour/collection).",
             "tooManyAttempts": "Too many attempts. Please try again in an hour.",
             "linked": "Great! We will add your next order to order %number%. Put the items in your cart and choose “Add to my open order” at checkout.",
             "selected": "Order %number% chosen – your items will be added.",
             "finish": "This order will be added to order %number%.",
             "forgot": "Forgot something?",
-            "forgotLink": "Add it to this order now"
+            "forgotLink": "Add it to this order now",
+            "linkTitle": "Add to your order",
+            "linkText": "Would you like to add your next order to order %number%? Everything then ships in one parcel.",
+            "linkButton": "Yes, add to this order"
         },
         "tour": {
             "title": "Delivery with our own tour",
@@ -84,7 +87,16 @@
             "accountNoAddress": "You have not saved an address yet.",
             "accountSaved": "Your setting has been saved.",
             "accountFailed": "The setting could not be saved.",
-            "accountPrivacy": "For this we use your e-mail address and the postcode of the address. You can unsubscribe here or via the link in every e-mail."
+            "accountPrivacy": "For this we use your e-mail address and the postcode of the address. You can unsubscribe here or via the link in every e-mail.",
+            "confirmTitle": "Confirm tour notification",
+            "confirmText": "Please confirm that we may notify you by e-mail when a tour comes near you.",
+            "confirmButton": "Confirm subscription",
+            "unsubscribeTitle": "Unsubscribe from tour notifications",
+            "unsubscribeText": "Don't want to receive tour notifications any more? Your details will be deleted.",
+            "unsubscribeButton": "Unsubscribe now",
+            "renewTitle": "Keep notifying me",
+            "renewText": "Should we keep notifying you when a tour comes near you?",
+            "renewButton": "Yes, keep notifying me"
         }
     },
     "checkout": {

@@ -8,6 +8,7 @@ use Nova\Versandkosten\Installer\MailTemplateInstaller;
 use Nova\Versandkosten\Installer\ShippingMethodInstaller;
 use Nova\Versandkosten\Migration\Migration1793450000NovaVkTour;
 use Nova\Versandkosten\Migration\Migration1793460000NovaVkTourPriceProfile;
+use Nova\Versandkosten\Migration\Migration1794000000NovaVkOrderCost;
 use Nova\Versandkosten\Service\MethodMap;
 use Nova\Versandkosten\Service\Tour\PostcodeDirectory;
 use Shopware\Core\Framework\Context;
@@ -20,7 +21,7 @@ use Shopware\Core\Framework\Plugin\Context\UpdateContext;
 
 /**
  * Nova Versandkosten – Versandkosten aus Einkaufstarifen, Paketbildung und Kanalregeln berechnen;
- * ab 1.2.0 zusätzlich eigene Touren (Strecken, Tourtermine, Tour-Benachrichtigung), ab 1.2.1 Preisprofile je Fahrer, ab 1.3.0 ein Admin-Modul „Bestellungen → Versandkosten“ mit Reitern.
+ * ab 1.2.0 zusätzlich eigene Touren (Strecken, Tourtermine, Tour-Benachrichtigung), ab 1.2.1 Preisprofile je Fahrer, ab 1.3.0 ein Admin-Modul „Bestellungen → Versandkosten“ mit Reitern, ab 1.4.0 der Einkauf je Bestellung in der eigenen Tabelle nova_vk_order_cost (nicht mehr in Zusatzfeldern).
  *
  * Die Tabellen der Touren legt die Migration an (Migration1793450000NovaVkTour). Beim Installieren,
  * Aktualisieren und Aktivieren lädt das Plugin die mitgelieferten PLZ-Koordinaten (GeoNames, CC BY 4.0),
@@ -74,7 +75,7 @@ class NovaVersandkosten extends Plugin
         $connection->executeStatement('DELETE FROM `system_config` WHERE `configuration_key` LIKE \'NovaVersandkosten.%\'');
 
         // Eigene Touren: Tabellen entfernen (Reihenfolge wegen Fremdschlüsseln: Termine vor Preisprofilen)
-        foreach ([...Migration1793450000NovaVkTour::TABLES, ...Migration1793460000NovaVkTourPriceProfile::TABLES] as $table) {
+        foreach ([...Migration1794000000NovaVkOrderCost::TABLES, ...Migration1793450000NovaVkTour::TABLES, ...Migration1793460000NovaVkTourPriceProfile::TABLES] as $table) {
             $connection->executeStatement('DROP TABLE IF EXISTS `' . $table . '`');
         }
     }
@@ -96,8 +97,13 @@ class NovaVersandkosten extends Plugin
             if ($connection->createSchemaManager()->tablesExist(['nova_vk_postcode'])) {
                 (new PostcodeDirectory($connection))->import();
             }
-        } catch (\Throwable) {
-            // PLZ fehlen nur für die Tour; beim nächsten Update/Aktivieren erneut versuchen
+        } catch (\Throwable $e) {
+            // PLZ fehlen nur für die Tour; beim nächsten Update/Aktivieren erneut versuchen. Fehler sichtbar machen
+            // (auch Migrationsfehler aus migrateInPlace – z. B. beim Umzug des Einkaufs in 1.4.0)
+            $logger = $this->container?->get('logger');
+            if ($logger instanceof \Psr\Log\LoggerInterface) {
+                $logger->error('Nova Versandkosten: Migration oder PLZ-Import fehlgeschlagen', ['error' => $e->getMessage()]);
+            }
         }
     }
 

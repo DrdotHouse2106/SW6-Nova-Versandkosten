@@ -234,7 +234,8 @@ class RequestOrderService
     }
 
     /**
-     * Offene Anfrage-Bestellungen ohne Zahlung nach X Tagen (je Verkaufskanal, 0 = aus) stornieren.
+     * Bepreiste Anfrage-Bestellungen ohne Zahlung X Tage nach der Preisangabe (je Verkaufskanal, 0 = aus)
+     * stornieren. Noch nicht bepreiste und bereits versendete Bestellungen bleiben unberührt.
      *
      * @return list<string> stornierte Bestellnummern
      */
@@ -246,25 +247,40 @@ class RequestOrderService
                     (SELECT ts.technical_name FROM order_transaction t
                        INNER JOIN state_machine_state ts ON ts.id = t.state_id
                       WHERE t.order_id = o.id AND t.order_version_id = o.version_id AND t.version_id = o.version_id
-                      ORDER BY (t.id = o.primary_order_transaction_id) DESC, t.created_at DESC LIMIT 1) AS transaction_state
+                      ORDER BY (t.id = o.primary_order_transaction_id) DESC, t.created_at DESC LIMIT 1) AS transaction_state,
+                    (SELECT ds.technical_name FROM order_delivery d
+                       INNER JOIN state_machine_state ds ON ds.id = d.state_id
+                      WHERE d.order_id = o.id AND d.order_version_id = o.version_id AND d.version_id = o.version_id
+                      ORDER BY (d.id = o.primary_order_delivery_id) DESC, d.created_at DESC LIMIT 1) AS delivery_state,
+                    JSON_UNQUOTE(JSON_EXTRACT(o.custom_fields, :statusPath)) AS request_status,
+                    JSON_UNQUOTE(JSON_EXTRACT(o.custom_fields, :pricedPath)) AS priced_at
                FROM `order` o
                INNER JOIN state_machine_state os ON os.id = o.state_id
               WHERE o.version_id = :live AND os.technical_name IN (\'open\', \'in_progress\')
                 AND JSON_UNQUOTE(JSON_EXTRACT(o.custom_fields, :path)) IN (\'true\', \'1\')',
-            ['live' => Uuid::fromHexToBytes(Defaults::LIVE_VERSION), 'path' => '$.' . CF::ORDER_REQUEST]
+            [
+                'live' => Uuid::fromHexToBytes(Defaults::LIVE_VERSION),
+                'path' => '$.' . CF::ORDER_REQUEST,
+                'statusPath' => '$.' . CF::ORDER_REQUEST_STATUS,
+                'pricedPath' => '$.' . CF::ORDER_REQUEST_PRICED_AT,
+            ]
         );
 
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $cancelled = [];
         foreach ($rows as $row) {
             $days = $this->settings->int('requestCancelDays', (string) $row['sales_channel_id'], 14);
+            $pricedAt = \is_string($row['priced_at'] ?? null) && $row['priced_at'] !== '' && $row['priced_at'] !== 'null' ? $row['priced_at'] : null;
             try {
-                $date = new \DateTimeImmutable((string) $row['order_date_time'], new \DateTimeZone('UTC'));
+                // Frist ab Preisangabe (Mail an den Kunden); Altbestand ohne Zeitpunkt: ab Bestelldatum
+                $date = new \DateTimeImmutable($pricedAt ?? (string) $row['order_date_time'], new \DateTimeZone('UTC'));
             } catch (\Exception) {
                 continue;
             }
             $transactionState = \is_string($row['transaction_state'] ?? null) ? $row['transaction_state'] : null;
-            if (!RequestOrder::isDueForCancellation($date, $now, $days, (string) $row['order_state'], $transactionState)) {
+            $deliveryState = \is_string($row['delivery_state'] ?? null) ? $row['delivery_state'] : null;
+            $status = \is_string($row['request_status'] ?? null) ? $row['request_status'] : RequestOrder::STATUS_OPEN;
+            if (!RequestOrder::isDueForCancellation($date, $now, $days, (string) $row['order_state'], $transactionState, $status, $deliveryState)) {
                 continue;
             }
             try {

@@ -8,6 +8,7 @@ use Nova\Versandkosten\Calculator\Tariff\TariffCsv;
 use Nova\Versandkosten\Calculator\Tariff\TariffException;
 use Nova\Versandkosten\Calculator\Tariff\TariffLoader;
 use Nova\Versandkosten\Service\EnergySurchargeService;
+use Nova\Versandkosten\Service\OrderCostRepository;
 use Nova\Versandkosten\Service\RequestOrderService;
 use Nova\Versandkosten\Service\Settings;
 use Nova\Versandkosten\Service\TariffStore;
@@ -37,6 +38,7 @@ class AdminController
         private readonly RequestOrderService $requests,
         private readonly TourRepository $tours,
         private readonly PostcodeDirectory $postcodes,
+        private readonly OrderCostRepository $costs,
     ) {
     }
 
@@ -70,6 +72,8 @@ class AdminController
             'taxStatus' => $order->getTaxStatus(),
             'currency' => $order->getCurrency()?->getIsoCode(),
             'tourHint' => $request ? $this->tourHint($order) : [],
+            // Einkauf (eigene Tabelle seit 1.4.0; null = vor 1.4.0 ohne Einkauf oder keine Berechnung)
+            'cost' => $this->costs->summary($order->getId()),
         ]);
     }
 

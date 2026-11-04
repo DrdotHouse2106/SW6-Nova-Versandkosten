@@ -43,12 +43,30 @@ final class RequestOrder
         return $allowed;
     }
 
+    /** Lieferstatus, bei denen die Ware unterwegs oder beim Kunden ist – nie automatisch stornieren */
+    public const SHIPPED_DELIVERY_STATES = ['shipped', 'shipped_partially', 'returned', 'returned_partially'];
+
     /**
-     * Automatisch stornieren? Nur offene Bestellungen ohne (Teil-)Zahlung, älter als $days Tage; 0 = aus.
+     * Automatisch stornieren? Nur Anfrage-Bestellungen, deren Versandkosten der Shop eingetragen hat
+     * (Status „priced“), ohne (Teil-)Zahlung, noch nicht versendet, und deren Preisangabe ($startDate)
+     * älter als $days Tage ist; 0 = aus. Noch nicht bepreiste Anfragen werden nie storniert – der Kunde
+     * konnte noch gar nicht zahlen.
+     *
+     * @param \DateTimeImmutable $startDate Zeitpunkt der Preisangabe (ersatzweise Bestelldatum bei Altbestand)
      */
-    public static function isDueForCancellation(\DateTimeImmutable $orderDate, \DateTimeImmutable $now, int $days, string $orderState, ?string $transactionState): bool
-    {
+    public static function isDueForCancellation(
+        \DateTimeImmutable $startDate,
+        \DateTimeImmutable $now,
+        int $days,
+        string $orderState,
+        ?string $transactionState,
+        string $requestStatus = self::STATUS_PRICED,
+        ?string $deliveryState = null,
+    ): bool {
         if ($days <= 0) {
+            return false;
+        }
+        if ($requestStatus !== self::STATUS_PRICED) {
             return false;
         }
         if (!\in_array($orderState, ['open', 'in_progress'], true)) {
@@ -57,8 +75,11 @@ final class RequestOrder
         if ($transactionState !== null && \in_array($transactionState, self::PAID_STATES, true)) {
             return false;
         }
+        if ($deliveryState !== null && \in_array($deliveryState, self::SHIPPED_DELIVERY_STATES, true)) {
+            return false;
+        }
 
-        return $orderDate < $now->modify('-' . $days . ' days');
+        return $startDate < $now->modify('-' . $days . ' days');
     }
 
     /**

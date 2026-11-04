@@ -11,6 +11,7 @@ use Shopware\Core\System\SalesChannel\Context\SalesChannelContextService;
 use Shopware\Core\System\SalesChannel\SalesChannel\AbstractContextSwitchRoute;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Storefront\Controller\StorefrontController;
+use Shopware\Storefront\Page\GenericPageLoaderInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -33,11 +34,63 @@ class BeipackController extends StorefrontController
         private readonly CartService $cartService,
         private readonly AbstractContextSwitchRoute $contextSwitch,
         private readonly AttemptLimiter $limiter,
+        private readonly GenericPageLoaderInterface $pageLoader,
     ) {
     }
 
+    /**
+     * Link aus der Bestellbestätigung: prüft die Bestellung und zeigt nur eine Zwischenseite mit Knopf –
+     * gemerkt und als Versandart vorgewählt wird erst per POST (seit 1.4.0; Link-Vorschauen und
+     * Mail-Scanner ändern so weder Warenkorb noch Versandart).
+     */
     #[Route(path: '/nova-versandkosten/beipacken/{deepLinkCode}', name: 'frontend.nova_versandkosten.beipack.link', requirements: ['deepLinkCode' => '[A-Za-z0-9_\-]{8,255}'], defaults: [PlatformRequest::ATTRIBUTE_NO_STORE => true], methods: ['GET'])]
-    public function link(string $deepLinkCode, SalesChannelContext $context): Response
+    public function link(string $deepLinkCode, Request $request, SalesChannelContext $context): Response
+    {
+        $row = $this->linkedOrder($deepLinkCode, $context);
+        if (!\is_array($row)) {
+            return $row;
+        }
+
+        return $this->renderStorefront('@NovaVersandkosten/storefront/nova-versandkosten/confirm-action.html.twig', [
+            'page' => $this->pageLoader->load($request, $context),
+            'novaAction' => [
+                'title' => 'novaVersandkosten.beipack.linkTitle',
+                'text' => 'novaVersandkosten.beipack.linkText',
+                'textParams' => ['%number%' => (string) $row['order_number']],
+                'button' => 'novaVersandkosten.beipack.linkButton',
+                'action' => $this->generateUrl('frontend.nova_versandkosten.beipack.link.save', ['deepLinkCode' => $deepLinkCode]),
+            ],
+        ]);
+    }
+
+    #[Route(path: '/nova-versandkosten/beipacken/{deepLinkCode}', name: 'frontend.nova_versandkosten.beipack.link.save', requirements: ['deepLinkCode' => '[A-Za-z0-9_\-]{8,255}'], defaults: [PlatformRequest::ATTRIBUTE_NO_STORE => true], methods: ['POST'])]
+    public function linkSave(string $deepLinkCode, SalesChannelContext $context): Response
+    {
+        $row = $this->linkedOrder($deepLinkCode, $context);
+        if (!\is_array($row)) {
+            return $row;
+        }
+
+        $cart = $this->cartService->getCart($context->getToken(), $context);
+        $this->beipack->select($cart, (string) $row['id'], 'code');
+        $cart = $this->cartService->recalculate($cart, $context);
+
+        $methodId = $this->beipack->methodId($context->getSalesChannelId());
+        if ($methodId !== null) {
+            $this->contextSwitch->switchContext(new RequestDataBag([SalesChannelContextService::SHIPPING_METHOD_ID => $methodId]), $context);
+        }
+
+        $this->addFlash(self::SUCCESS, $this->trans('novaVersandkosten.beipack.linked', ['%number%' => (string) $row['order_number']]));
+
+        return $this->redirectToRoute($cart->getLineItems()->count() > 0 ? 'frontend.checkout.cart.page' : 'frontend.home.page');
+    }
+
+    /**
+     * Bestellung zum Link prüfen; bei Fehler Hinweis + Weiterleitung zur Startseite.
+     *
+     * @return array<string, mixed>|Response
+     */
+    private function linkedOrder(string $deepLinkCode, SalesChannelContext $context): array|Response
     {
         $orderId = $this->beipack->findByDeepLinkCode($deepLinkCode, $context->getSalesChannelId());
         $row = $orderId === null ? null : $this->beipack->load($orderId);
@@ -62,18 +115,7 @@ class BeipackController extends StorefrontController
             return $this->redirectToRoute('frontend.home.page');
         }
 
-        $cart = $this->cartService->getCart($context->getToken(), $context);
-        $this->beipack->select($cart, (string) $row['id'], 'code');
-        $cart = $this->cartService->recalculate($cart, $context);
-
-        $methodId = $this->beipack->methodId($context->getSalesChannelId());
-        if ($methodId !== null) {
-            $this->contextSwitch->switchContext(new RequestDataBag([SalesChannelContextService::SHIPPING_METHOD_ID => $methodId]), $context);
-        }
-
-        $this->addFlash(self::SUCCESS, $this->trans('novaVersandkosten.beipack.linked', ['%number%' => (string) $row['order_number']]));
-
-        return $this->redirectToRoute($cart->getLineItems()->count() > 0 ? 'frontend.checkout.cart.page' : 'frontend.home.page');
+        return $row;
     }
 
     #[Route(path: '/nova-versandkosten/beipacken-auswahl', name: 'frontend.nova_versandkosten.beipack.select', defaults: [PlatformRequest::ATTRIBUTE_LOGIN_REQUIRED => true, PlatformRequest::ATTRIBUTE_LOGIN_REQUIRED_ALLOW_GUEST => true], methods: ['POST'])]

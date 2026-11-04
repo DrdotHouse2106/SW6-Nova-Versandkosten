@@ -45,7 +45,7 @@ estimated delivery date and notes.
   been shipped yet and only pay the difference in shipping costs.
 - **Shipping costs on request** (new in 1.1.0): order without a shipping price; the shop enters the
   shipping costs afterwards, the customer receives the total and a payment link by e-mail; unpaid
-  requests are cancelled after X days.
+  priced, unpaid requests are cancelled X days after the price was entered.
 - **Own delivery tours** (new in 1.2.0): routes with variants and waypoints, tour dates (with/without
   trailer, order deadline), shipping method “Lieferung mit unserer Tour” only for addresses close to
   the route, price by category and deviation, date choice at checkout, list “tour deliveries” for
@@ -153,8 +153,15 @@ Shipping method `nova_versandkosten_beipack` (“Zu meiner Bestellung beipacken�
 customers choose from their orders at checkout; guests use the link from the order confirmation
 (Shopware's secret `deepLinkCode`) or enter order number + e-mail + postcode (max. 5 attempts per hour
 and IP). The order must be open: delivery state “open”, not cancelled/completed, not older than X days
-(default 14), same sales channel and delivery country. Everything is checked again when the order is
-placed.
+(default 14), same sales channel and delivery country, not a tour or collection order. Since 1.4.0 the
+old order's shipping must be **secured**: paid, partially paid, authorised or in progress – or a payment
+method that pays after shipping (invoice, direct debit, cash on delivery); unpaid prepayment/online
+orders only with the setting “Also add to unpaid prepayment/online orders”. Logged-in customers: only
+orders of their account (same customer ID; an equal e-mail address is no longer enough). Everything is
+checked again when the order is placed. The link from the order confirmation opens a page with a
+button – only the button stores the order and preselects the shipping method. If the old order is
+cancelled after an add-on, the add-on orders get an internal comment and the administration a
+notification.
 
 **Price** = shipping for (items of the old order + earlier add-on orders + cart) with the same option
 as the old order (if it no longer fits or is unknown: the cheapest matching one) **minus** shipping
@@ -195,7 +202,11 @@ will be calculated afterwards. Your order only becomes binding once you pay the 
   costs → *Apply shipping costs and notify customer*. The plugin creates a version of the order, sets
   the shipping costs as manual price, recalculates the order (taxes from the positions), merges the
   version and adjusts the open payment amount. The customer gets the mail with total and payment link.
-- **Auto-cancel:** unpaid request orders are cancelled after X days (default 14, 0 = off).
+- **Auto-cancel:** priced, unpaid request orders are cancelled X days after the price was entered
+  (default 14, 0 = off). Requests without a price and orders already shipped are never cancelled
+  automatically (since 1.4.0; before, the order date counted).
+- **Payment check when ordering** (since 1.4.0): the payment method is also validated server-side, so a
+  request order cannot be placed with an immediately charging method, not even via the Store API.
 - Snippet for the order confirmation mail:
   `{% if order.customFields.nova_versandkosten_anfrage|default(false) %}…{% endif %}`
 - **Terms and conditions:** such an order is only a request until the total is paid. *Nova
@@ -242,7 +253,10 @@ their price.
 Settings* · *Tours → Routes → New route* (waypoints via “postcode or place” search, ↑/↓ to reorder) · *Tours → Tour dates → New tour date*
 (route or own waypoints, date, deadline, trailer, optional price profile; one-off trips can be saved as
 route template) · role permissions under *Orders → Tours* (price profiles: view/edit/delete with the
-same roles; existing roles are extended on the update to 1.2.1).
+same roles; existing roles are extended on the update to 1.2.1). For “tour deliveries” the role also
+needs **“View orders”** – since 1.4.0 the role “view tours” no longer grants a blanket `order:read`
+(which allowed reading all orders via the admin API). Existing roles keep their stored privileges until
+they are saved again.
 
 **Checkout:** shown only if at least one open/fixed date fits (deadline not passed, deviation within
 limits, trailer for freight, country allowed, postcode known). The customer must choose the date
@@ -346,6 +360,17 @@ README (section “Tarifformat”); the field names are English. Convert without
 ## Privacy
 
 - The calculation runs in the shop; tariffs and settings are stored in the shop database.
+- Customers only see sale prices: the cart extension `novaVersandkosten` (also via the Store API)
+  contains display data only since 1.4.0 (available, price, hints, delivery, parcel count) – no
+  purchase prices, tariff lines, tariff products or internal reasons; tour data without variant and
+  deviation. The purchase price per order is stored in the table `nova_vk_order_cost`, no longer in
+  the order's custom fields (which the Store API returns to the customer). The order card “Shipping
+  costs” reads it via `GET /api/_action/nova-versandkosten/order/{id}` (field `cost`). The update to
+  1.4.0 moves the purchase data of existing orders into the table (`nova_versandkosten_purchase_net`,
+  `purchaseNet` per parcel, `freightQuotationId` are removed from the custom fields; dimensions,
+  weights, parcels, sale and “dimensions missing” stay for ERP and delivery notes).
+- Without a valid tariff file all parcel shipping methods of the plugin are blocked (fail closed)
+  instead of selling at the placeholder price 0.00.
 - Only for **freight goods** and only with an API key the plugin asks Cargoboard. Transmitted:
   postcode and country of sender and recipient, weights, dimensions, load carrier, private customer
   yes/no, outside the EU the goods value (customs). **No name, no street, no e-mail.**
@@ -358,7 +383,11 @@ README (section “Tarifformat”); the field names are English. Convert without
 - Tour notification: e-mail, postcode (with place and centre), for customers the link to account and
   address, source, timestamps (sign-up, confirmation, last activity), language, sales channel and
   which date e-mails were sent. The confirmation token is stored as a hash only. Legal basis: consent
-  (Art. 6(1)(a) GDPR), withdrawal at any time via the unsubscribe link or in the account.
+  (Art. 6(1)(a) GDPR), withdrawal at any time via the unsubscribe link or in the account. Links in the
+  e-mails (confirm, unsubscribe, keep) open a page with a button since 1.4.0 – only the click changes
+  something, link previews and mail scanners trigger nothing.
+- Attempt limits (add to order, tour notification) count per IP address. Behind a proxy/CDN Shopware
+  must know the real visitor IP (`TRUSTED_PROXIES` in `.env`), otherwise all visitors share one quota.
 
 ## Planned
 
@@ -377,7 +406,9 @@ php scripts/testfaelle.php           # example test cases (expected/actual table
 NOVA_VK_TARIFE=/path/tariffs.json NOVA_VK_FAELLE=/path/cases.json php scripts/testfaelle.php
 ```
 
-The administration is checked in pre-built under `src/Resources/public/administration`; rebuild it
+The administration is checked in pre-built (without source map) under
+`src/Resources/public/administration`; in 1.4.0 three small changes were applied directly to the built
+bundle and to the sources alike. Rebuild it
 after changes as described in the German README (the build needs `examples/` next to `src/`, the
 tariff templates are bundled from there).
 

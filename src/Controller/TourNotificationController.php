@@ -21,7 +21,7 @@ use Symfony\Component\Routing\Attribute\Route;
  *   Double-Opt-in-Mail. Schutz: Shopware-Captchas (Route-Attribut _captcha wie beim Kontaktformular, damit
  *   auch Nova Captcha greift), Honeypot, Herkunftsprüfung (Origin/Referer), RateLimiter je IP und Kanal.
  *   Antwortformat wie beim Kontaktformular (FormCmsHandler).
- * - Links aus den Mails: bestätigen, abmelden, weiter benachrichtigen.
+ * - Links aus den Mails: bestätigen, abmelden, weiter benachrichtigen (Zwischenseite, Aktion erst per POST).
  * - Kundenkonto: Schalter je Lieferadresse (Seite „Tour-Benachrichtigung“).
  */
 #[Route(defaults: [PlatformRequest::ATTRIBUTE_ROUTE_SCOPE => ['storefront']])]
@@ -69,7 +69,19 @@ class TourNotificationController extends StorefrontController
         };
     }
 
+    /*
+     * Links aus den Mails: GET zeigt nur eine Zwischenseite mit Knopf, erst POST ändert etwas (seit 1.4.0).
+     * Mail-Sicherheitsscanner und Link-Vorschauen rufen Links automatisch ab – sie lösen so weder eine
+     * Bestätigung (Double-Opt-in-Nachweis) noch eine Abmeldung aus.
+     */
+
     #[Route(path: '/nova-versandkosten/tour-benachrichtigung/bestaetigen/{token}', name: 'frontend.nova_versandkosten.tour_notify.confirm', requirements: ['token' => '[A-Za-z0-9_\-]{40,64}'], defaults: [PlatformRequest::ATTRIBUTE_NO_STORE => true], methods: ['GET'])]
+    public function confirmPage(string $token, Request $request, SalesChannelContext $context): Response
+    {
+        return $this->actionPage($request, $context, 'confirm', $this->generateUrl('frontend.nova_versandkosten.tour_notify.confirm.save', ['token' => $token]));
+    }
+
+    #[Route(path: '/nova-versandkosten/tour-benachrichtigung/bestaetigen/{token}', name: 'frontend.nova_versandkosten.tour_notify.confirm.save', requirements: ['token' => '[A-Za-z0-9_\-]{40,64}'], defaults: [PlatformRequest::ATTRIBUTE_NO_STORE => true], methods: ['POST'])]
     public function confirm(string $token): Response
     {
         $ok = $this->notifications->confirm($token);
@@ -79,6 +91,12 @@ class TourNotificationController extends StorefrontController
     }
 
     #[Route(path: '/nova-versandkosten/tour-benachrichtigung/abmelden/{id}/{signature}', name: 'frontend.nova_versandkosten.tour_notify.unsubscribe', requirements: ['id' => '[0-9a-f]{32}', 'signature' => '[0-9a-f]{32}'], defaults: [PlatformRequest::ATTRIBUTE_NO_STORE => true], methods: ['GET'])]
+    public function unsubscribePage(string $id, string $signature, Request $request, SalesChannelContext $context): Response
+    {
+        return $this->actionPage($request, $context, 'unsubscribe', $this->generateUrl('frontend.nova_versandkosten.tour_notify.unsubscribe.save', ['id' => $id, 'signature' => $signature]));
+    }
+
+    #[Route(path: '/nova-versandkosten/tour-benachrichtigung/abmelden/{id}/{signature}', name: 'frontend.nova_versandkosten.tour_notify.unsubscribe.save', requirements: ['id' => '[0-9a-f]{32}', 'signature' => '[0-9a-f]{32}'], defaults: [PlatformRequest::ATTRIBUTE_NO_STORE => true], methods: ['POST'])]
     public function unsubscribe(string $id, string $signature): Response
     {
         $ok = $this->notifications->unsubscribe($id, $signature);
@@ -88,12 +106,31 @@ class TourNotificationController extends StorefrontController
     }
 
     #[Route(path: '/nova-versandkosten/tour-benachrichtigung/behalten/{id}/{signature}', name: 'frontend.nova_versandkosten.tour_notify.renew', requirements: ['id' => '[0-9a-f]{32}', 'signature' => '[0-9a-f]{32}'], defaults: [PlatformRequest::ATTRIBUTE_NO_STORE => true], methods: ['GET'])]
+    public function renewPage(string $id, string $signature, Request $request, SalesChannelContext $context): Response
+    {
+        return $this->actionPage($request, $context, 'renew', $this->generateUrl('frontend.nova_versandkosten.tour_notify.renew.save', ['id' => $id, 'signature' => $signature]));
+    }
+
+    #[Route(path: '/nova-versandkosten/tour-benachrichtigung/behalten/{id}/{signature}', name: 'frontend.nova_versandkosten.tour_notify.renew.save', requirements: ['id' => '[0-9a-f]{32}', 'signature' => '[0-9a-f]{32}'], defaults: [PlatformRequest::ATTRIBUTE_NO_STORE => true], methods: ['POST'])]
     public function renew(string $id, string $signature): Response
     {
         $ok = $this->notifications->renew($id, $signature);
         $this->addFlash($ok ? self::SUCCESS : self::DANGER, $this->trans($ok ? 'novaVersandkosten.tourNotify.renewed' : 'novaVersandkosten.tourNotify.linkInvalid'));
 
         return $this->redirectToRoute('frontend.home.page');
+    }
+
+    private function actionPage(Request $request, SalesChannelContext $context, string $action, string $url): Response
+    {
+        return $this->renderStorefront('@NovaVersandkosten/storefront/nova-versandkosten/confirm-action.html.twig', [
+            'page' => $this->pageLoader->load($request, $context),
+            'novaAction' => [
+                'title' => 'novaVersandkosten.tourNotify.' . $action . 'Title',
+                'text' => 'novaVersandkosten.tourNotify.' . $action . 'Text',
+                'button' => 'novaVersandkosten.tourNotify.' . $action . 'Button',
+                'action' => $url,
+            ],
+        ]);
     }
 
     #[Route(path: '/account/tour-benachrichtigung', name: 'frontend.nova_versandkosten.tour_notify.account', defaults: [PlatformRequest::ATTRIBUTE_LOGIN_REQUIRED => true, PlatformRequest::ATTRIBUTE_NO_STORE => true], methods: ['GET'])]

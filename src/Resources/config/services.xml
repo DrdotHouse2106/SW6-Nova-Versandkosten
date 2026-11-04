@@ -12,6 +12,8 @@
         <service id="Nova\Versandkosten\Service\TariffStore">
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
             <argument type="service" id="logger"/>
+            <argument type="service" id="Shopware\Core\Framework\Notification\NotificationService"/>
+            <argument type="service" id="cache.object"/>
             <tag name="kernel.reset" method="reset"/>
         </service>
 
@@ -61,6 +63,11 @@
             <argument type="service" id="Shopware\Core\Framework\Notification\NotificationService"/>
             <argument type="service" id="Shopware\Core\Content\Mail\Service\MailService"/>
             <argument type="service" id="logger"/>
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+        </service>
+
+        <!-- Einkauf je Bestellung (eigene Tabelle, nicht Store-API-sichtbar, 1.4.0) -->
+        <service id="Nova\Versandkosten\Service\OrderCostRepository">
             <argument type="service" id="Doctrine\DBAL\Connection"/>
         </service>
 
@@ -157,10 +164,17 @@
             <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
             <argument type="service" id="Nova\Versandkosten\Service\BeipackService"/>
             <argument type="service" id="Nova\Versandkosten\Service\Tour\TourService"/>
+            <argument type="service" id="Nova\Versandkosten\Checkout\InternalQuoteStore"/>
             <tag name="shopware.cart.processor" priority="-5050"/>
         </service>
 
+        <!-- Vollständiges Rechenergebnis nur im Speicher der Anfrage (nie am Warenkorb, 1.4.0) -->
+        <service id="Nova\Versandkosten\Checkout\InternalQuoteStore">
+            <tag name="kernel.reset" method="reset"/>
+        </service>
+
         <service id="Nova\Versandkosten\Checkout\ShippingCartValidator">
+            <argument type="service" id="Nova\Versandkosten\Service\Settings"/>
             <tag name="shopware.cart.validator"/>
         </service>
 
@@ -192,6 +206,18 @@
             <argument type="service" id="Nova\Versandkosten\Service\RequestOrderService"/>
             <argument type="service" id="order.repository"/>
             <argument type="service" id="Nova\Versandkosten\Service\Tour\TourRepository"/>
+            <argument type="service" id="Nova\Versandkosten\Checkout\InternalQuoteStore"/>
+            <argument type="service" id="Nova\Versandkosten\Service\OrderCostRepository"/>
+            <tag name="kernel.event_subscriber"/>
+            <tag name="kernel.reset" method="reset"/>
+        </service>
+
+        <!-- Beipacken: Storno der Ursprungsbestellung an den Beipack-Bestellungen vermerken (1.4.0) -->
+        <service id="Nova\Versandkosten\Checkout\BeipackCancelSubscriber">
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <argument type="service" id="Nova\Versandkosten\Service\BeipackService"/>
+            <argument type="service" id="Shopware\Core\Framework\Notification\NotificationService"/>
+            <argument type="service" id="logger"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 
@@ -227,6 +253,7 @@
             <argument type="service" id="Nova\Versandkosten\Service\RequestOrderService"/>
             <argument type="service" id="Nova\Versandkosten\Service\Tour\TourRepository"/>
             <argument type="service" id="Nova\Versandkosten\Service\Tour\PostcodeDirectory"/>
+            <argument type="service" id="Nova\Versandkosten\Service\OrderCostRepository"/>
         </service>
 
         <service id="Nova\Versandkosten\Controller\TourAdminController" public="true">
@@ -272,6 +299,7 @@
             <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
             <argument type="service" id="Shopware\Core\System\SalesChannel\SalesChannel\ContextSwitchRoute"/>
             <argument type="service" id="Nova\Versandkosten\Service\AttemptLimiter"/>
+            <argument type="service" id="Shopware\Storefront\Page\GenericPageLoader"/>
             <call method="setContainer">
                 <argument type="service" id="service_container"/>
             </call>

@@ -35,7 +35,24 @@ final class ShippingResult
         return $this->packaging->dimsMissing;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Nur Anzeige-Daten (Warenkorb-Erweiterung, Store-API): Modus und je Option toPublicArray().
+     *
+     * @return array<string, mixed>
+     */
+    public function toPublicArray(): array
+    {
+        return [
+            'mode' => $this->mode,
+            'options' => array_map(static fn (OptionResult $o) => $o->toPublicArray(), $this->options),
+        ];
+    }
+
+    /**
+     * Vollständiges Ergebnis (intern) – nie an den Kunden ausliefern.
+     *
+     * @return array<string, mixed>
+     */
     public function toArray(): array
     {
         return [

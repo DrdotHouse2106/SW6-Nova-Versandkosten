@@ -2,6 +2,7 @@
 
 namespace Nova\Versandkosten\Service\Tour;
 
+use Nova\Versandkosten\Calculator\CsvCell;
 use Doctrine\DBAL\Connection;
 use Nova\Versandkosten\Calculator\Tour\GeoPoint;
 use Nova\Versandkosten\Calculator\Tour\TourDate;
@@ -414,6 +415,15 @@ class TourNotificationService
                 ++$failed;
                 continue;
             }
+            // Erst „reservieren“, dann senden: Zwei gleichzeitige Aufrufe (Doppelklick, zwei Admins) schreiben
+            // denselben Abonnenten so nur einmal an. Scheitert die Mail, wird die Reservierung zurückgenommen.
+            $claimed = (int) $this->connection->executeStatement(
+                'INSERT IGNORE INTO nova_vk_tour_notification (tour_date_id, subscriber_id, sent_at) VALUES (:d, :s, :now)',
+                ['d' => Uuid::fromHexToBytes($dateId), 's' => Uuid::fromHexToBytes($subscriber['id']), 'now' => self::now()]
+            );
+            if ($claimed !== 1) {
+                continue;
+            }
             $german = $this->isGerman($languageId);
             $ok = $this->sendTemplate(MailTemplateInstaller::TYPE_TOUR_NOTIFY, $subscriber['email'], $salesChannelId, $languageId, [
                 'date' => $german ? TourText::longDate($date->date) : TourText::date($date->date, 'en'),
@@ -426,13 +436,13 @@ class TourNotificationService
                 'unsubscribeUrl' => $this->url($salesChannelId, $languageId, self::PATH_UNSUBSCRIBE . $subscriber['id'] . '/' . TourToken::sign($subscriber['id'], TourToken::ACTION_UNSUBSCRIBE, $this->secret)),
             ]);
             if (!$ok) {
+                $this->connection->executeStatement(
+                    'DELETE FROM nova_vk_tour_notification WHERE tour_date_id = :d AND subscriber_id = :s',
+                    ['d' => Uuid::fromHexToBytes($dateId), 's' => Uuid::fromHexToBytes($subscriber['id'])]
+                );
                 ++$failed;
                 continue;
             }
-            $this->connection->executeStatement(
-                'INSERT IGNORE INTO nova_vk_tour_notification (tour_date_id, subscriber_id, sent_at) VALUES (:d, :s, :now)',
-                ['d' => Uuid::fromHexToBytes($dateId), 's' => Uuid::fromHexToBytes($subscriber['id']), 'now' => self::now()]
-            );
             ++$sent;
         }
         if ($sent > 0) {
@@ -482,18 +492,18 @@ class TourNotificationService
         foreach ($rows as $row) {
             fputcsv($out, [
                 $row['type'] === 'customer' ? 'Kunde' : 'Gast',
-                (string) ($row['customer_number'] ?? ''),
-                (string) ($row['name'] ?? ''),
+                self::csvSafe((string) ($row['customer_number'] ?? '')),
+                self::csvSafe((string) ($row['name'] ?? '')),
                 self::csvSafe((string) $row['email']),
-                (string) $row['postcode'],
+                self::csvSafe((string) $row['postcode']),
                 self::csvSafe((string) ($row['place'] ?? '')),
-                (string) $row['country'],
-                (string) $row['source'],
-                (string) $row['status'],
-                (string) $row['created_at'],
-                (string) ($row['confirmed_at'] ?? ''),
-                (string) ($row['last_activity_at'] ?? ''),
-                (string) $row['notifications'],
+                self::csvSafe((string) $row['country']),
+                self::csvSafe((string) $row['source']),
+                self::csvSafe((string) $row['status']),
+                self::csvSafe((string) $row['created_at']),
+                self::csvSafe((string) ($row['confirmed_at'] ?? '')),
+                self::csvSafe((string) ($row['last_activity_at'] ?? '')),
+                self::csvSafe((string) $row['notifications']),
                 $row['km'] === null ? '' : number_format((float) $row['km'], 1, ',', ''),
             ], ';', '"', '');
         }
@@ -504,10 +514,10 @@ class TourNotificationService
         return $csv;
     }
 
-    /** Formeln in Excel verhindern (Werte, die mit = + - @ beginnen) */
-    private static function csvSafe(string $value): string
+    /** Formeln in Excel/LibreOffice verhindern – für jede Textspalte (Name und Kundennummer setzt der Kunde selbst) */
+    public static function csvSafe(string $value): string
     {
-        return $value !== '' && \in_array($value[0], ['=', '+', '-', '@'], true) ? "'" . $value : $value;
+        return CsvCell::safe($value);
     }
 
     /**

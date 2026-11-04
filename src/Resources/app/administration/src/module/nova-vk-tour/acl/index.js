@@ -1,5 +1,8 @@
 /**
  * Rollen unter Einstellungen → Benutzer & Rechte → Bestellungen → Touren.
+ *
+ * Seit 1.4.0 ohne pauschales „order:read“: Das gab über die generische Admin-API Lesezugriff auf ALLE
+ * Bestellungen. Für den Reiter „Tour-Lieferungen“ braucht die Rolle zusätzlich „Bestellungen ansehen“.
  */
 Shopware.Service('privileges').addPrivilegeMappingEntry({
     category: 'permissions',
@@ -13,7 +16,6 @@ Shopware.Service('privileges').addPrivilegeMappingEntry({
                 'nova_vk_tour_date:read',
                 'nova_vk_tour_subscriber:read',
                 'nova_vk_tour_price_profile:read',
-                'order:read',
             ],
             dependencies: [],
         },

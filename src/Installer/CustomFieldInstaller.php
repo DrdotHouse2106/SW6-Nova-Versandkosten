@@ -11,8 +11,9 @@ use Shopware\Core\System\CustomField\CustomFieldTypes;
 /**
  * Zusatzfelder:
  * - Produkt: „Versandeinordnung“ und „Sperrgut-Packart“ (Auswahlfelder)
- * - Bestellung: Ergebnis der Versandberechnung (Dienstleister, Produkt, Pakete, Einkauf, Verkauf, Maße fehlen),
- *   Beipacken, Versandkosten auf Anfrage und eigene Tour (Termin, Variante, Abweichung)
+ * - Bestellung: Ergebnis der Versandberechnung (Dienstleister, Produkt, Pakete, Verkauf, Maße fehlen),
+ *   Beipacken, Versandkosten auf Anfrage und eigene Tour (Termin, Variante, Abweichung). Der Einkauf
+ *   steht seit 1.4.0 nicht mehr in Zusatzfeldern (Store-API), sondern in der Tabelle nova_vk_order_cost.
  *
  * Fehlt ein Set, wird es angelegt. Bei vorhandenen Sets werden nur fehlende Felder ergänzt (Update auf
  * eine neue Version) und bei „Versandeinordnung“ fehlende Auswahlwerte angehängt; Bezeichnungen und
@@ -31,7 +32,6 @@ final class CustomFieldInstaller
     public const ORDER_OPTION = 'nova_versandkosten_option';
     public const ORDER_PACKAGES = 'nova_versandkosten_packages';
     public const ORDER_PACKAGE_COUNT = 'nova_versandkosten_package_count';
-    public const ORDER_PURCHASE = 'nova_versandkosten_purchase_net';
     public const ORDER_SALE = 'nova_versandkosten_sale';
     public const ORDER_SALE_NET = 'nova_versandkosten_sale_net';
     public const ORDER_DIMS_MISSING = 'nova_versandkosten_dims_missing';
@@ -231,7 +231,6 @@ final class CustomFieldInstaller
                 $field(self::ORDER_CARRIER, CustomFieldTypes::TEXT, 'Dienstleister', 'Carrier', 1),
                 $field(self::ORDER_PRODUCT, CustomFieldTypes::TEXT, 'Versandprodukt', 'Shipping product', 2),
                 $field(self::ORDER_PACKAGE_COUNT, CustomFieldTypes::INT, 'Anzahl Pakete', 'Number of parcels', 3),
-                $field(self::ORDER_PURCHASE, CustomFieldTypes::FLOAT, 'Einkauf netto (geschätzt)', 'Purchase net (estimated)', 4),
                 $field(self::ORDER_SALE, CustomFieldTypes::FLOAT, 'Verkauf (Versandkosten)', 'Sale (shipping costs)', 5),
                 $field(self::ORDER_DIMS_MISSING, CustomFieldTypes::BOOL, 'Maße fehlen', 'Dimensions missing', 6),
                 $field(self::ORDER_DELIVERY, CustomFieldTypes::TEXT, 'Zustellung voraussichtlich', 'Estimated delivery', 7),

@@ -46,7 +46,7 @@ gehen – mit Preis, voraussichtlichem Zustelldatum und Hinweisen.
   noch nicht versendeten Bestellung; berechnet wird nur die Differenz der Versandkosten.
 - **Versandkosten auf Anfrage** (neu in 1.1.0): Bestellung ohne Versandpreis, der Shop trägt die
   Versandkosten nachträglich ein, der Kunde bekommt Gesamtbetrag und Bezahl-Link per E-Mail;
-  unbezahlte Anfragen werden nach X Tagen storniert.
+  bepreiste, unbezahlte Anfragen werden X Tage nach der Preisangabe storniert.
 - **Eigene Touren** (neu in 1.2.0): Strecken mit Varianten und Wegpunkten, Tourtermine (mit/ohne
   Hänger, Bestellschluss), Versandart „Lieferung mit unserer Tour“ nur für Adressen nahe der Strecke,
   Preis nach Einordnung und Abweichung, Termin-Auswahl in der Kasse, Liste „Tour-Lieferungen“ zum
@@ -381,7 +381,20 @@ Artikel und zahlt nur die Differenz der Versandkosten.
   Bestellungen werden nie angezeigt; Fehlermeldungen verraten nicht, welche Angabe nicht passte.
 - Die Bestellung muss **offen** sein: Lieferstatus „offen“ (nicht versendet, nicht teilweise
   versendet), nicht storniert oder abgeschlossen, nicht älter als X Tage (Einstellung, Standard 14),
-  gleicher Verkaufskanal, gleiches Lieferland. Beipack-Bestellungen selbst können kein Ziel sein.
+  gleicher Verkaufskanal, gleiches Lieferland. Beipack-Bestellungen selbst können kein Ziel sein,
+  ebenso Tour- und Abholbestellungen.
+- Die Versandkosten der alten Bestellung müssen **gesichert** sein (ab 1.4.0): Zahlung bezahlt,
+  teilweise bezahlt, autorisiert oder in Bearbeitung – oder eine Zahlart, die erst nach dem Versand
+  zahlt (Rechnung, Lastschrift, Nachnahme). Unbezahlte Vorkasse- oder Online-Bestellungen nur mit der
+  Einstellung „Auch zu unbezahlten Vorkasse-/Online-Bestellungen beipacken“.
+- Kunden mit Konto: nur Bestellungen ihres Kontos (gleiche Kunden-ID). Eine gleiche E-Mail-Adresse
+  reicht seit 1.4.0 nicht mehr; Gastbestellungen gehen über Link oder Bestellnummer + E-Mail + PLZ.
+- Der **Link** aus der Bestellbestätigung öffnet eine Seite mit Knopf „Ja, zu Bestellung beipacken“ –
+  erst der Knopf merkt die Bestellung und wählt die Versandart vor (Link-Vorschauen und Mail-Scanner
+  ändern nichts).
+- Wird die alte Bestellung **nach** dem Beipacken storniert, bekommen die Beipack-Bestellungen einen
+  internen Kommentar („… geht allein raus – Versandkosten prüfen bzw. nachfordern“) und die
+  Administration eine Benachrichtigung.
 - Beim **Abschluss** prüft das Plugin alles erneut (Shopware rechnet beim Bestellen neu). Wurde die
   alte Bestellung inzwischen versendet oder storniert, ist die Versandart gesperrt und Shopware
   wechselt auf eine andere.
@@ -473,8 +486,13 @@ beim Bestellen sofort den Betrag ohne Versand abbuchen. Bezahlt wird später so,
 3. Der Kunde bekommt die E-Mail „Nova Versandkosten: Versandkosten nachberechnet“ mit Gesamtbetrag und
    Bezahl-Link (anpassbar unter *Einstellungen → E-Mail-Vorlagen*). Die Karte zeigt den Link ebenfalls
    und kann die E-Mail erneut senden.
-4. Ohne Zahlung storniert die geplante Aufgabe `nova_versandkosten.request_cancel` die Bestellung nach
-   X Tagen (Einstellung, Standard 14, 0 = aus) – Bestellung, offene Zahlung und Lieferung.
+4. Ohne Zahlung storniert die geplante Aufgabe `nova_versandkosten.request_cancel` die Bestellung
+   X Tage **nach der Preisangabe** (Einstellung, Standard 14, 0 = aus) – Bestellung, offene Zahlung und
+   Lieferung. Anfragen ohne eingetragenen Preis und bereits versendete Bestellungen werden nie
+   automatisch storniert (ab 1.4.0; vorher zählte das Bestelldatum).
+5. Beim Bestellen prüft das Plugin die Zahlart auch serverseitig (ab 1.4.0): Mit einer sofort
+   abbuchenden Zahlart (PayPal, Karte …) lässt sich „Versandkosten auf Anfrage“ auch per Store-API
+   nicht bestellen.
 
 **Hinweis in der Bestellbestätigung (empfohlen):** in die Vorlage „Bestellbestätigung“ einfügen:
 
@@ -570,7 +588,10 @@ Profil B 290 €.
    sich mit „Als Strecken-Vorlage speichern“ für später sichern. Optional: **Preisprofil** wählen
    (wer fährt, siehe oben).
 5. Rechte: *Einstellungen → Benutzer & Rechte → Rollen → Bestellungen → Touren* (ansehen, bearbeiten,
-   anlegen, löschen). Für „Tour-Lieferungen“ braucht die Rolle zusätzlich Bestellungen lesen.
+   anlegen, löschen). Für „Tour-Lieferungen“ braucht die Rolle zusätzlich **„Bestellungen ansehen“** –
+   die Rolle „Touren ansehen“ gibt seit 1.4.0 kein pauschales `order:read` mehr (das erlaubte über die
+   Admin-API das Lesen aller Bestellungen). Bestehende Rollen behalten ihre gespeicherten Rechte, bis
+   sie neu gespeichert werden.
    Preisprofile: ansehen mit „ansehen“, anlegen/ändern mit „bearbeiten“, löschen mit „löschen“
    (bestehende Rollen werden beim Update auf 1.2.1 ergänzt).
 
@@ -693,13 +714,12 @@ Versandkosten → Zuschläge & Energie → Jetzt abrufen* lesen die öffentliche
 |---|---|
 | `nova_versandkosten_option` | `warenpost`, `kleinpaket`, `dpd`, `dhl`, `spedition`, `abholung` |
 | `nova_versandkosten_carrier`, `nova_versandkosten_product` | Dienstleister, Versandprodukt |
-| `nova_versandkosten_packages` | Liste `{weightKg, lengthCm, widthCm, heightCm, bulky, tier, purchaseNet, sale}` |
+| `nova_versandkosten_packages` | Liste `{weightKg, lengthCm, widthCm, heightCm, bulky, tier, sale}` |
 | `nova_versandkosten_package_count` | Anzahl Pakete |
-| `nova_versandkosten_purchase_net` | Einkauf netto (geschätzt) |
 | `nova_versandkosten_sale`, `nova_versandkosten_sale_net` | Versandkosten wie berechnet (brutto bzw. netto) |
 | `nova_versandkosten_dims_missing` | Maße/Gewicht fehlten an mindestens einem Artikel |
 | `nova_versandkosten_delivery` | „Di, 04.11. – Mi, 05.11.“ |
-| `nova_versandkosten_details` | Warenwert, Modus, Hinweise, Cargoboard-Angebots-ID, bei Beipack Grundlage (zusammen/bezahlt) |
+| `nova_versandkosten_details` | Warenwert, Modus, Hinweise, bei Beipack Grundlage (zusammen/bezahlt) |
 | `nova_versandkosten_beipack_zu`, `nova_versandkosten_beipack_zu_nr` | Beipack: ID/Nummer der Bestellung, zu der beigepackt wird |
 | `nova_versandkosten_beipack_bestellungen` | an der alten Bestellung: Liste `{id, orderNumber, date}` der Beipack-Bestellungen |
 | `nova_versandkosten_anfrage`, `nova_versandkosten_anfrage_status`, `nova_versandkosten_anfrage_preis_am` | Versandkosten auf Anfrage: Kennzeichen, `open`/`priced`, Zeitpunkt |
@@ -709,6 +729,18 @@ Versandkosten → Zuschläge & Energie → Jetzt abrufen* lesen die öffentliche
 
 Bei Beipack-Bestellungen steht in `nova_versandkosten_option` die Option, nach der gerechnet wurde
 (z. B. `dpd`), und in `nova_versandkosten_sale` die Nachzahlung.
+
+**Einkauf nicht in Zusatzfeldern (ab 1.4.0):** Zusatzfelder einer Bestellung liefert die Store-API dem
+Kunden mit (`GET /store-api/order`). Der geschätzte Einkauf (gesamt und je Paket), die Tarifzeilen, das
+Tarifprodukt und die Cargoboard-Angebots-ID stehen deshalb in der eigenen Tabelle `nova_vk_order_cost`
+(keine Entität, weder per Store-API noch per generischer Admin-API lesbar). Die Karte „Versandkosten“
+an der Bestellung zeigt den Einkauf wie bisher – sie liest ihn über
+`GET /api/_action/nova-versandkosten/order/{id}` (Feld `cost`, Recht `order:read`). Beim Update auf
+1.4.0 verschiebt eine Migration den Einkauf aller Bestandsbestellungen in die Tabelle und entfernt ihn
+aus den Zusatzfeldern (`nova_versandkosten_purchase_net`, `purchaseNet` je Paket,
+`freightQuotationId`). Maße, Gewichte, Pakete, Verkauf und „Maße fehlen“ bleiben für Warenwirtschaft
+und Lieferschein in den Zusatzfeldern. Wer den Einkauf bisher aus `nova_versandkosten_purchase_net`
+gelesen hat (z. B. eine Warenwirtschaft), liest ihn jetzt über die Admin-Route.
 
 ## Google / Produktexport
 
@@ -727,6 +759,11 @@ Artikel aus dem Feed lassen; `abholung`-Artikel nicht in den Feed).
 ## Datenschutz
 
 - Die Berechnung läuft im Shop; Tarife und Einstellungen liegen in der Shop-Datenbank.
+- Kunden sehen nur Verkaufspreise: Die Warenkorb-Erweiterung `novaVersandkosten` (auch über die
+  Store-API) enthält ab 1.4.0 nur Anzeige-Daten (verfügbar, Preis, Hinweise, Zustellung, Paketanzahl) –
+  keinen Einkauf, keine Tarifzeilen, keine Tarifprodukte, keine internen Gründe; Tour-Daten ohne
+  Variante und Abweichung. Der Einkauf je Bestellung liegt in `nova_vk_order_cost`, nicht in den
+  Zusatzfeldern der Bestellung.
 - Nur für **Speditionsware** und nur mit eingetragenem API-Schlüssel fragt das Plugin Cargoboard an.
   Übertragen werden: PLZ und Land von Absender und Empfänger, Gewichte, Maße, Ladungsträger,
   Privatkunde ja/nein, außerhalb der EU der Warenwert (Zoll). **Kein Name, keine Straße, keine
@@ -743,6 +780,11 @@ Artikel aus dem Feed lassen; `abholung`-Artikel nicht in den Feed).
   Aktivität), Sprache, Verkaufskanal und welche Termin-Mails versendet wurden. Der Bestätigungs-Token
   liegt nur als Hash vor; für die Mengenbegrenzung ein Hash der IP (Cache). Rechtsgrundlage
   Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), Widerruf jederzeit über den Abmelde-Link oder im Konto.
+  Links aus den Mails (bestätigen, abmelden, weiter benachrichtigen) öffnen ab 1.4.0 eine Seite mit
+  Knopf – erst der Klick ändert etwas, Link-Vorschauen und Mail-Scanner lösen nichts aus.
+- Versuchsbegrenzungen (Beipacken, Tour-Benachrichtigung) zählen je IP-Adresse. Hinter einem Proxy oder
+  CDN muss Shopware die echte Besucher-IP kennen (`TRUSTED_PROXIES` in der `.env`), sonst teilen sich
+  alle Besucher ein Kontingent.
 
 ## Geplant
 
@@ -780,10 +822,15 @@ Termin-Auswahl), `nova_versandkosten_tour_notify` (`nova-versandkosten/tour-noti
 `nova_versandkosten_account_tour` (Kundenkonto), `nova_versandkosten_finish` (Abschlussseite). Versandarten-Erweiterung
 `shippingMethod.extensions.novaVersandkosten` (auch in der Store-API): `price`, `vatIncluded`,
 `packageCount`, `delivery`, `hints`, `recommended`. Warenkorb-Erweiterung `novaVersandkosten`:
-alle Optionen mit Paketen.
+`mode` und je Option nur Anzeige-Daten (`available`, `sale`, `vatIncluded`, `hints`, `packageCount`,
+`deliveryFrom`/`deliveryTo`, `recommended`, `carrierName`, `reasonCode`, `meta`); ohne gültige Tarife
+nur `noTariffs: true`. Das vollständige Ergebnis (Einkauf, Pakete, Tarifzeilen) gibt es nur im Speicher
+der Anfrage (`InternalQuoteStore`) und für die Bestellung in `nova_vk_order_cost`.
 
 Die Administration liegt fertig gebaut unter `src/Resources/public/administration` (wird
-eingecheckt). Nach Änderungen an `src/Resources/app/administration` neu bauen – innerhalb einer
+eingecheckt, ohne Source-Map). In 1.4.0 wurden drei kleine Änderungen (Einkauf in der Bestellkarte,
+Rolle „Touren ansehen“, Texte zu fehlenden Tarifen) direkt im gebauten Bundle nachgezogen; die
+Quellen unter `src/Resources/app/administration` enthalten dieselben Änderungen. Nach Änderungen an `src/Resources/app/administration` neu bauen – innerhalb einer
 Shopware-Installation mit `bin/build-administration.sh`, oder nur dieses Plugin mit dem
 Administration-Quellcode von Shopware 6.7:
 
@@ -802,8 +849,10 @@ Kein eigenes Storefront-JavaScript.
 
 ### Die Versandarten erscheinen nicht in der Kasse
 
-**Ursache:** Versandart inaktiv, nicht dem Verkaufskanal zugeordnet, keine Tarifdatei importiert oder
-für Land/Warenkorb gibt es keinen passenden Tarif.
+**Ursache:** Versandart inaktiv, nicht dem Verkaufskanal zugeordnet, keine (gültige) Tarifdatei
+importiert oder für Land/Warenkorb gibt es keinen passenden Tarif. Ohne gültige Tarifdatei sind seit
+1.4.0 alle Paket-Versandarten des Plugins gesperrt („fail closed“ statt Versand zu 0,00 €); die Übersicht
+zeigt eine Warnung, bei einer ungültigen gespeicherten Datei kommt zusätzlich eine Benachrichtigung.
 
 **Lösung:** Schritte 1–4 der Einrichtung prüfen; *Preisprüfung* zeigt, ob die Tarife geladen sind.
 
@@ -834,7 +883,8 @@ mit der Einordnung (Standardwerte). Das kostet nichts extra.
 ### „Zu meiner Bestellung beipacken“ erscheint nicht
 
 **Ursache:** Versandart inaktiv/nicht zugeordnet, keine offene Bestellung (versendet, storniert, älter
-als die eingestellten Tage, anderes Lieferland), oder für Gäste ist das Formular ausgeschaltet.
+als die eingestellten Tage, anderes Lieferland, Tour/Abholung, noch nicht bezahlte Vorkasse), oder für
+Gäste ist das Formular ausgeschaltet.
 
 **Lösung:** Versandart prüfen; Gäste nutzen den Link aus der Bestellbestätigung.
 

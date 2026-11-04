@@ -17,6 +17,19 @@ final class Beipack
     /** Bestellungen, die älter sind, werden nicht angeboten (Standard der Einstellung) */
     public const DEFAULT_MAX_AGE_DAYS = 14;
 
+    /** Zahlungsstatus, bei denen die Versandkosten der alten Bestellung als bezahlt bzw. gesichert gelten */
+    public const SECURED_PAYMENT_STATES = ['paid', 'paid_partially', 'authorized', 'in_progress'];
+
+    /** Zahlarten, bei denen erst nach dem Versand gezahlt wird (Rechnung, Lastschrift, Nachnahme) */
+    public const PAY_LATER_HANDLERS = [
+        'Shopware\\Core\\Checkout\\Payment\\Cart\\PaymentHandler\\InvoicePayment',
+        'Shopware\\Core\\Checkout\\Payment\\Cart\\PaymentHandler\\DebitPayment',
+        'Shopware\\Core\\Checkout\\Payment\\Cart\\PaymentHandler\\CashPayment',
+    ];
+
+    /** Zu diesen Versandoptionen der alten Bestellung wird nicht beigepackt (Tour, Abholung) */
+    public const EXCLUDED_OPTIONS = [OptionResult::TOUR, OptionResult::PICKUP];
+
     /**
      * @param ShippingResult $combined Rechenergebnis für alte + neue Artikel (Lieferadresse der alten Bestellung)
      * @param string|null $previousOption Versandoption der alten Bestellung (Zusatzfeld), null = unbekannt
@@ -90,10 +103,14 @@ final class Beipack
      *     orderDate: \DateTimeImmutable,
      *     salesChannelId: string,
      *     country: string,
-     *     isBeipack: bool
+     *     isBeipack: bool,
+     *     option?: string|null,
+     *     paymentState?: string|null,
+     *     paymentHandler?: string|null
      * } $order
+     * @param bool $allowUnpaid Einstellung „auch zu unbezahlten Bestellungen beipacken“
      */
-    public static function ineligibleReason(array $order, string $salesChannelId, string $country, \DateTimeImmutable $now, int $maxAgeDays): ?string
+    public static function ineligibleReason(array $order, string $salesChannelId, string $country, \DateTimeImmutable $now, int $maxAgeDays, bool $allowUnpaid = false): ?string
     {
         if (strtolower($order['salesChannelId']) !== strtolower($salesChannelId)) {
             return 'Bestellung gehört zu einem anderen Verkaufskanal';
@@ -113,8 +130,31 @@ final class Beipack
         if ($country !== '' && strtoupper($order['country']) !== strtoupper($country)) {
             return 'Lieferland weicht von der Bestellung ab';
         }
+        if (\in_array($order['option'] ?? null, self::EXCLUDED_OPTIONS, true)) {
+            return 'Zu Tour- oder Abholbestellungen kann nicht beigepackt werden';
+        }
+        if (\array_key_exists('paymentState', $order) && !$allowUnpaid && !self::isPaymentSecured($order['paymentState'] ?? null, $order['paymentHandler'] ?? null)) {
+            return 'Bestellung ist noch nicht bezahlt';
+        }
 
         return null;
+    }
+
+    /**
+     * Gelten die Versandkosten der alten Bestellung als gesichert? Bezahlt/autorisiert – oder eine Zahlart,
+     * bei der erst nach dem Versand gezahlt wird. Unbezahlte Vorkasse- oder Online-Bestellungen nicht:
+     * würde die alte Bestellung storniert, ginge die Beipack-Bestellung sonst ohne Versandkosten raus.
+     */
+    public static function isPaymentSecured(?string $paymentState, ?string $paymentHandler): bool
+    {
+        if ($paymentState !== null && \in_array($paymentState, self::SECURED_PAYMENT_STATES, true)) {
+            return true;
+        }
+        if ($paymentState !== null && \in_array($paymentState, ['cancelled', 'failed', 'refunded', 'refunded_partially', 'chargeback'], true)) {
+            return false;
+        }
+
+        return $paymentHandler !== null && \in_array(ltrim($paymentHandler, '\\'), self::PAY_LATER_HANDLERS, true);
     }
 
     /**

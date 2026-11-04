@@ -102,7 +102,38 @@ final class OptionResult
         return Money::toCents($this->purchaseNet);
     }
 
-    /** @return array<string, mixed> */
+    /** Zusatzangaben, die der Kunde sehen darf (Beipack: Grundlage und bereits bezahlt) */
+    public const PUBLIC_META = ['basedOn', 'combinedSale', 'paid', 'orderNumber'];
+
+    /**
+     * Nur Anzeige-Daten für Warenkorb, Versandarten und Store-API – ohne Einkauf, Tarifprodukt,
+     * Paketdetails und interne Gründe.
+     *
+     * @return array<string, mixed>
+     */
+    public function toPublicArray(): array
+    {
+        return [
+            'key' => $this->key,
+            'available' => $this->available,
+            'reasonCode' => $this->reasonCode,
+            'carrierName' => $this->carrierName,
+            'packageCount' => \count($this->packages),
+            'sale' => $this->saleCents / 100,
+            'vatIncluded' => $this->vatIncluded,
+            'hints' => array_map(static fn (array $h) => ['code' => (string) $h['code'], 'carrier' => (string) ($h['carrier'] ?? '')], $this->hints),
+            'deliveryFrom' => $this->deliveryFrom?->format('Y-m-d'),
+            'deliveryTo' => $this->deliveryTo?->format('Y-m-d'),
+            'recommended' => $this->recommended,
+            'meta' => array_intersect_key($this->meta, array_flip(self::PUBLIC_META)),
+        ];
+    }
+
+    /**
+     * Vollständiges Ergebnis (intern: Bestellung, Admin, Preisprüfung) – nie an den Kunden ausliefern.
+     *
+     * @return array<string, mixed>
+     */
     public function toArray(): array
     {
         return [

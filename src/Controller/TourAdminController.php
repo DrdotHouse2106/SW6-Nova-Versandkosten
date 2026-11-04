@@ -2,6 +2,7 @@
 
 namespace Nova\Versandkosten\Controller;
 
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Nova\Versandkosten\Calculator\Tour\TourDate;
 use Nova\Versandkosten\Calculator\Tour\TourInput;
@@ -187,6 +188,19 @@ class TourAdminController
 
         $existing = $this->connection->fetchFirstColumn('SELECT LOWER(HEX(id)) FROM nova_vk_tour_variant WHERE route_id = :r', ['r' => Uuid::fromHexToBytes($id)]);
         $removed = array_values(array_diff(array_map('strval', $existing), array_column($variants, 'id')));
+        if ($removed !== []) {
+            // Eine Variante, auf die ein Termin festgelegt ist, nicht löschen – der Termin bliebe sonst
+            // „festgelegt“ ohne Variante und Kunden beider Seiten könnten buchen
+            $fixed = $this->connection->fetchFirstColumn(
+                'SELECT DATE_FORMAT(tour_date, \'%d.%m.%Y\') FROM nova_vk_tour_date
+                  WHERE status = :fixed AND variant_id IN (:ids) ORDER BY tour_date',
+                ['fixed' => TourDate::STATUS_FIXED, 'ids' => array_map(static fn (string $v) => Uuid::fromHexToBytes($v), $removed)],
+                ['ids' => ArrayParameterType::BINARY]
+            );
+            if ($fixed !== []) {
+                return self::error('Eine entfernte Variante ist an Terminen festgelegt (' . implode(', ', array_map('strval', $fixed)) . '). Bitte zuerst den Termin ändern.');
+            }
+        }
 
         $this->routes->upsert([[
             'id' => $id,

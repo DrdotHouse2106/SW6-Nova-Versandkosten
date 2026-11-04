@@ -42,7 +42,7 @@ class QuoteService implements ResetInterface
         }
 
         $salesChannelId = $context->getSalesChannelId();
-        $items = $this->classifier->itemsFromCart($lineItems, $salesChannelId);
+        $items = $this->classifier->itemsFromCart($lineItems, $salesChannelId, $context->getLanguageId());
         $location = $context->getShippingLocation();
 
         return $this->calculateItems(
