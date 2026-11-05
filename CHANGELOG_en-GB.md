@@ -1,3 +1,7 @@
+# 1.5.3
+
+- Clearer: the notice for “add to my order” in the cart now says where to choose the order (“Review & order” page under “Shipping method”)
+
 # 1.5.2
 
 - Fixed: `GET/POST /store-api/shipping-method` failed with “Invalid struct: Entity at index …” as soon as the plugin hid unsuitable shipping methods (the search result was only cleaned halfway). Affected apps and headless frontends, not the storefront

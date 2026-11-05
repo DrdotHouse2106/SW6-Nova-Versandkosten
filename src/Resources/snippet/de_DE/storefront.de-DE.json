@@ -100,7 +100,7 @@
         }
     },
     "checkout": {
-        "nova-versandkosten-beipack-select": "Bitte wählen Sie die Bestellung, zu der beigepackt werden soll.",
+        "nova-versandkosten-beipack-select": "Bitte wählen Sie auf der Seite „Prüfen & bestellen“ unter „Versandart“ die Bestellung, zu der beigepackt werden soll („Zur Kasse“).",
         "nova-versandkosten-tour-select": "Bitte wählen Sie den Termin für die Lieferung mit unserer Tour.",
         "nova-versandkosten-tour-invalid": "Der gewählte Tourtermin ist nicht mehr verfügbar. Bitte wählen Sie einen anderen Termin."
     }

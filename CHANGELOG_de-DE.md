@@ -1,3 +1,7 @@
+# 1.5.3
+
+- Klarer: Der Hinweis bei „Zu meiner Bestellung beipacken“ im Warenkorb sagt jetzt, wo die Bestellung gewählt wird (Seite „Prüfen & bestellen“ unter „Versandart“)
+
 # 1.5.2
 
 - Behoben: `GET/POST /store-api/shipping-method` brach mit „Invalid struct: Entity at index …“ ab, sobald das Plugin unpassende Versandarten ausblendete (das Suchergebnis wurde nur zur Hälfte bereinigt). Betraf Apps und Headless-Frontends, nicht die Storefront

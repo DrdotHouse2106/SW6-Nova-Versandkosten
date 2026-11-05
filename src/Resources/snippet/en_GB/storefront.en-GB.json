@@ -100,7 +100,7 @@
         }
     },
     "checkout": {
-        "nova-versandkosten-beipack-select": "Please choose the order to which the items should be added.",
+        "nova-versandkosten-beipack-select": "Please choose the order to add the items to on the “Review & order” page under “Shipping method” (“Proceed to checkout”).",
         "nova-versandkosten-tour-select": "Please choose the date for the delivery with our own tour.",
         "nova-versandkosten-tour-invalid": "The chosen tour date is no longer available. Please choose another date."
     }
