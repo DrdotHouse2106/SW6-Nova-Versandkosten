@@ -1,3 +1,7 @@
+# 1.5.0
+
+- New: **letter parcel / small parcel by shipping property.** New setting “Values for letter parcel / small parcel” (product data tab, default: Warenpost, Kleinpaket, BüWa, Brief). If a product has values in the property but none of these, letter parcel and small parcel are not offered for the whole cart – not via “small shipment without dimensions” either. Products without the property are not affected; an empty field switches the rule off
+
 # 1.4.1
 
 - Fixed: the plugin shipping methods carried the description “Price calculated by Nova Versandkosten.” since installation – it showed in checkout and in the order confirmation. The update removes exactly this default text (custom descriptions stay), new installations no longer set a description

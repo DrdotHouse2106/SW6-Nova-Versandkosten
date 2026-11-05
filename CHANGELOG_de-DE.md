@@ -1,3 +1,7 @@
+# 1.5.0
+
+- Neu: **Warenpost/Kleinpaket nach Eigenschaft „Versandart“.** Neue Einstellung „Werte für Warenpost/Kleinpaket“ (Reiter Artikeldaten, Standard: Warenpost, Kleinpaket, BüWa, Brief). Hat ein Artikel Werte in der Eigenschaft, aber keinen davon, werden Warenpost und Kleinpaket für den ganzen Warenkorb nicht angeboten – auch nicht über „Kleinsendung ohne Maße“. Verhindert z. B. eine Hutablage im Kleinpaket. Artikel ohne die Eigenschaft sind nicht betroffen; leeres Feld schaltet die Regel ab
+
 # 1.4.1
 
 - Behoben: Die Plugin-Versandarten trugen seit der Installation die Beschreibung „Preis berechnet Nova Versandkosten.“ – sie erschien in der Kasse und in der Bestellbestätigung. Das Update entfernt genau diesen Standardtext (eigene Beschreibungen bleiben), neue Installationen legen keine Beschreibung mehr an

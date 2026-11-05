@@ -39,6 +39,8 @@ final class Item
         public readonly bool $free = false,
         /** Frühester Versandtag (z. B. Erscheinungsdatum), null = sofort */
         public readonly ?\DateTimeImmutable $availableFrom = null,
+        /** false = laut Eigenschaft „Versandart“ nicht als Warenpost/Kleinpaket (z. B. große, leichte Teile) */
+        public readonly bool $smallAllowed = true,
     ) {
         if (!\in_array($category, self::CATEGORIES, true)) {
             throw new \InvalidArgumentException(\sprintf('Unbekannte Versandeinordnung „%s“', $category));

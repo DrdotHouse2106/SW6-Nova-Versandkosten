@@ -81,11 +81,11 @@ class ProductClassifier implements ResetInterface
             }
             $product = $products[strtolower((string) $lineItem->getReferencedId())] ?? null;
             if ($product !== null) {
-                [$category, $packing] = $this->classify($product['customFields'], $product['propertyIds'], $salesChannelId);
+                [$category, $packing, $smallAllowed] = $this->classify($product['customFields'], $product['propertyIds'], $salesChannelId);
                 $free = self::isFree($product['manufacturerId'], $product['tagIds'], $freeManufacturers, $freeTags);
             } else {
                 // Keine Produktdaten (fremder Positionstyp): Standardeinordnung, nie versandkostenfrei
-                [$category, $packing] = [Item::PARCEL, Item::PACK_SINGLE];
+                [$category, $packing, $smallAllowed] = [Item::PARCEL, Item::PACK_SINGLE, true];
                 $free = false;
             }
 
@@ -114,6 +114,7 @@ class ProductClassifier implements ResetInterface
                 $unitPrice,
                 $free,
                 $availableFrom,
+                $smallAllowed,
             );
         }
 
@@ -287,7 +288,7 @@ class ProductClassifier implements ResetInterface
                 $manufacturerId = (string) ($payload['manufacturerId'] ?? '');
                 $tagIds = array_values(array_map('strval', (array) ($payload['tagIds'] ?? [])));
             }
-            [$category, $packing] = $this->classify($customFields, $propertyIds, $salesChannelId);
+            [$category, $packing, $smallAllowed] = $this->classify($customFields, $propertyIds, $salesChannelId);
 
             $free = self::isFree($manufacturerId, $tagIds, $freeManufacturers, $freeTags);
 
@@ -305,6 +306,8 @@ class ProductClassifier implements ResetInterface
                 max(1, (int) $row['quantity']),
                 (float) $row['unit_price'],
                 $free,
+                null,
+                $smallAllowed,
             );
         }
 
@@ -315,18 +318,16 @@ class ProductClassifier implements ResetInterface
      * @param array<mixed> $customFields
      * @param array<mixed> $propertyIds
      *
-     * @return array{0: string, 1: string}
+     * Einordnung, Packart und ob Warenpost/Kleinpaket erlaubt sind. Steht in der Eigenschaft „Versandart“
+     * mindestens ein Wert, aber keiner aus „Werte für Warenpost/Kleinpaket“, sind beide gesperrt.
+     *
+     * @return array{0: string, 1: string, 2: bool}
      */
     public function classify(array $customFields, array $propertyIds, ?string $salesChannelId): array
     {
         $packing = (string) ($customFields[CustomFieldInstaller::PRODUCT_PACKING] ?? '');
         if (!\in_array($packing, [Item::PACK_SINGLE, Item::PACK_COMBINABLE], true)) {
             $packing = Item::PACK_SINGLE;
-        }
-
-        $category = (string) ($customFields[CustomFieldInstaller::PRODUCT_CATEGORY] ?? '');
-        if (\in_array($category, Item::CATEGORIES, true)) {
-            return [$category, $packing];
         }
 
         $this->loadOptionNames(array_values(array_map('strval', $propertyIds)));
@@ -339,9 +340,6 @@ class ProductClassifier implements ResetInterface
                 }
             }
         }
-        if ($values === []) {
-            return [Item::PARCEL, $packing];
-        }
 
         $match = function (string $key) use ($values, $salesChannelId): bool {
             $configured = array_map('mb_strtolower', $this->settings->lines($key, $salesChannelId));
@@ -349,23 +347,30 @@ class ProductClassifier implements ResetInterface
             return array_intersect($values, $configured) !== [];
         };
 
-        if ($match('valuesParcel')) {
-            return [Item::PARCEL, $packing];
+        // Leere Liste = Regel aus
+        $smallAllowed = $values === [] || $this->settings->lines('valuesSmall', $salesChannelId) === [] || $match('valuesSmall');
+
+        $category = (string) ($customFields[CustomFieldInstaller::PRODUCT_CATEGORY] ?? '');
+        if (\in_array($category, Item::CATEGORIES, true)) {
+            return [$category, $packing, $smallAllowed];
         }
-        if ($match('valuesBulky')) {
-            return [Item::BULKY, $packing];
-        }
-        if ($match('valuesFreight')) {
-            return [Item::FREIGHT, $packing];
-        }
-        if ($match('valuesPickup')) {
-            return [Item::PICKUP_ONLY, $packing];
-        }
-        if ($match('valuesRequest')) {
-            return [Item::ON_REQUEST, $packing];
+        if ($values === []) {
+            return [Item::PARCEL, $packing, true];
         }
 
-        return [Item::PARCEL, $packing];
+        foreach ([
+            'valuesParcel' => Item::PARCEL,
+            'valuesBulky' => Item::BULKY,
+            'valuesFreight' => Item::FREIGHT,
+            'valuesPickup' => Item::PICKUP_ONLY,
+            'valuesRequest' => Item::ON_REQUEST,
+        ] as $key => $result) {
+            if ($match($key)) {
+                return [$result, $packing, $smallAllowed];
+            }
+        }
+
+        return [Item::PARCEL, $packing, $smallAllowed];
     }
 
     public static function mmToCm(?float $mm): ?float

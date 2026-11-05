@@ -143,6 +143,26 @@ final class CalculatorTest extends TestCase
         self::assertFalse(Countries::isEu('CH'));
     }
 
+    public function testShippingPropertyWithoutSmallValueBlocksLetterAndSmallParcel(): void
+    {
+        $rules = new ChannelRules(smallNoDims: ChannelRules::SMALL_WARENPOST);
+        // Leicht, ohne Maße, aber laut Versandart nur Paket (z. B. Hutablage)
+        $shelf = $this->calc([new Item('h', 'Hutablage', 0.4, null, null, null, unitPriceGross: 35.95, smallAllowed: false)], 'DE', $rules);
+        self::assertFalse($shelf->option('warenpost')?->available);
+        self::assertFalse($shelf->option('kleinpaket')?->available);
+        self::assertTrue($shelf->option('dpd')?->available);
+
+        // Ein solcher Artikel sperrt die Kleinsendung für den ganzen Warenkorb
+        $mixed = $this->calc([
+            new Item('a', 'Dichtung', 0.05, null, null, null, unitPriceGross: 6.95),
+            new Item('h', 'Hutablage', 0.4, null, null, null, unitPriceGross: 9.95, smallAllowed: false),
+        ], 'DE', $rules);
+        self::assertFalse($mixed->option('kleinpaket')?->available);
+
+        $ok = $this->calc([new Item('a', 'Dichtung', 0.05, null, null, null, unitPriceGross: 6.95)], 'DE', $rules);
+        self::assertTrue($ok->option('warenpost')?->available);
+    }
+
     public function testSmallShipmentWithoutDimensions(): void
     {
         $small = [new Item('a', 'Dichtung', 0.3, null, null, null, unitPriceGross: 6.95)];

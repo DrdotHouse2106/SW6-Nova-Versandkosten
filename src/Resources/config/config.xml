@@ -387,6 +387,18 @@ auf Anfrage
 nur auf Anfrage</defaultValue>
         </input-field>
 
+        <input-field type="textarea">
+            <name>valuesSmall</name>
+            <label>Values for letter parcel / small parcel</label>
+            <label lang="de-DE">Werte für Warenpost/Kleinpaket</label>
+            <helpText>One value per line. If a product has values in the property but none of these, letter parcel and small parcel are not offered (e.g. large but light parts). Products without the property are not affected. Empty = rule off.</helpText>
+            <helpText lang="de-DE">Ein Wert je Zeile. Hat ein Artikel Werte in der Eigenschaft, aber keinen davon, werden Warenpost und Kleinpaket nicht angeboten (z. B. große, leichte Teile wie Hutablagen). Artikel ohne die Eigenschaft sind nicht betroffen. Leer = Regel aus.</helpText>
+            <defaultValue>Warenpost
+Kleinpaket
+BüWa
+Brief</defaultValue>
+        </input-field>
+
         <input-field type="text">
             <name>defaultDimsParcel</name>
             <label>Default dimensions parcel (cm)</label>

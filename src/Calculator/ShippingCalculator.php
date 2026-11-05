@@ -33,8 +33,10 @@ final class ShippingCalculator
         $goodsValue = 0.0;
         $allFree = $items !== [];
         $availableFrom = null;
+        $smallAllowed = true;
         foreach ($items as $item) {
             $goodsValue += $item->unitPriceGross * $item->quantity;
+            $smallAllowed = $smallAllowed && $item->smallAllowed;
             $allFree = $allFree && $item->free;
             if ($item->availableFrom !== null && ($availableFrom === null || $item->availableFrom > $availableFrom)) {
                 $availableFrom = $item->availableFrom;
@@ -52,6 +54,10 @@ final class ShippingCalculator
             }
             if (!$countryAllowed) {
                 $options[$key] = OptionResult::unavailable($key, 'Land nicht freigeschaltet');
+                continue;
+            }
+            if (!$smallAllowed && \in_array($key, [OptionResult::WARENPOST, OptionResult::KLEINPAKET], true)) {
+                $options[$key] = OptionResult::unavailable($key, 'Artikel laut Versandart nicht als Warenpost/Kleinpaket');
                 continue;
             }
             $options[$key] = $this->parcelOption($key, $packaging, $destination, $rules, $tariffs, $now, $goodsValue, $domestic, $isEu, $free);
