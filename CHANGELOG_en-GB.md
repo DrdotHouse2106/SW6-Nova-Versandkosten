@@ -1,3 +1,7 @@
+# 1.5.2
+
+- Fixed: `GET/POST /store-api/shipping-method` failed with “Invalid struct: Entity at index …” as soon as the plugin hid unsuitable shipping methods (the search result was only cleaned halfway). Affected apps and headless frontends, not the storefront
+
 # 1.5.1
 
 - Fixed: preselection kept a pickup (0.00) the customer had not chosen, “pickup at events” or a third-party default method – the cart started with pickup. Without the customer’s own choice the cheapest possible parcel option is now always preselected. Methods the customer chose (including pickup, add-on, tour) stay

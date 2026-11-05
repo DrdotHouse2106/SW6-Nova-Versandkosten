@@ -69,7 +69,7 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
             }
             $state = $this->tourState($cart, $context);
             if ($state === null) {
-                $methods->remove((string) $id);
+                self::removeMethod($response, (string) $id);
                 continue;
             }
             $method->addExtension(ShippingCostProcessor::EXTENSION, new ArrayStruct($state));
@@ -87,7 +87,7 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
                     continue;
                 }
                 if ($noTariffs || \in_array($key, [OptionResult::BEIPACK, OptionResult::REQUEST], true)) {
-                    $methods->remove((string) $id);
+                    self::removeMethod($response, (string) $id);
                 }
             }
 
@@ -103,7 +103,7 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
             if ($key === OptionResult::BEIPACK) {
                 $state = $this->beipackState($options[$key] ?? null, $data instanceof ArrayStruct ? $data->get('beipack') : null, $cart, $context);
                 if ($state === null) {
-                    $methods->remove((string) $id);
+                    self::removeMethod($response, (string) $id);
                     continue;
                 }
                 $method->addExtension(ShippingCostProcessor::EXTENSION, new ArrayStruct($state));
@@ -111,7 +111,7 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
             }
             $option = $options[$key] ?? null;
             if (!\is_array($option) || empty($option['available'])) {
-                $methods->remove((string) $id);
+                self::removeMethod($response, (string) $id);
                 continue;
             }
             $method->addExtension(ShippingCostProcessor::EXTENSION, new ArrayStruct(OptionPresenter::present($option, $context, $showEstimate)));
@@ -192,5 +192,16 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
         }
 
         return $this->settings->bool('beipackGuestForm', $context->getSalesChannelId(), true) ? $base + ['orderNumber' => null] : null;
+    }
+
+    /**
+     * Entfernt eine Versandart aus der Antwort. Das Suchergebnis führt die Elemente doppelt (als eigene
+     * Collection und in getEntities()); beide müssen gleich sein, sonst bricht die Store-API beim Kodieren ab
+     * („Invalid struct: Entity at index …“).
+     */
+    private static function removeMethod(ShippingMethodRouteResponse $response, string $id): void
+    {
+        $response->getShippingMethods()->remove($id);
+        $response->getObject()->remove($id);
     }
 }

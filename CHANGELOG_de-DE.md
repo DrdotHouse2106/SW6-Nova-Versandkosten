@@ -1,3 +1,7 @@
+# 1.5.2
+
+- Behoben: `GET/POST /store-api/shipping-method` brach mit „Invalid struct: Entity at index …“ ab, sobald das Plugin unpassende Versandarten ausblendete (das Suchergebnis wurde nur zur Hälfte bereinigt). Betraf Apps und Headless-Frontends, nicht die Storefront
+
 # 1.5.1
 
 - Behoben: Die Vorauswahl ließ eine nicht selbst gewählte Abholung (0 €), „Abholung auf Treffen“ oder eine fremde Standard-Versandart stehen – der Warenkorb startete so mit Abholung. Jetzt wird ohne eigene Wahl des Kunden immer die günstigste mögliche Paket-Versandart vorgewählt. Selbst gewählte Versandarten (auch Abholung, Beipacken, Tour) bleiben
