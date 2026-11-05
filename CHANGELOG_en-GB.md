@@ -1,3 +1,7 @@
+# 1.4.1
+
+- Fixed: the plugin shipping methods carried the description “Price calculated by Nova Versandkosten.” since installation – it showed in checkout and in the order confirmation. The update removes exactly this default text (custom descriptions stay), new installations no longer set a description
+
 # 1.4.0
 
 Security release (review of 3 Nov 2026). **After the update:** update the plugin (the migration runs), clear the cache, check the order card “Shipping costs” on an older order. Anyone who read the purchase price from the custom field `nova_versandkosten_purchase_net` now reads it via the admin route (see README).

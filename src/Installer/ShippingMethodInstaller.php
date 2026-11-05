@@ -78,15 +78,15 @@ final class ShippingMethodInstaller
      *
      * @param array<string, string> $languages Sprach-ID → Locale
      *
-     * @return array<string, array{name: string, description: string}>
+     * Ohne Beschreibung: Shopware zeigt sie in Kasse und Bestellbestätigung an.
+     *
+     * @return array<string, array{name: string}>
      */
     private function translations(array $languages, string $nameDe, string $nameEn): array
     {
-        $out = [Defaults::LANGUAGE_SYSTEM => ['name' => $nameDe, 'description' => 'Preis berechnet Nova Versandkosten.']];
+        $out = [Defaults::LANGUAGE_SYSTEM => ['name' => $nameDe]];
         foreach ($languages as $id => $locale) {
-            $out[$id] = str_starts_with($locale, 'de')
-                ? ['name' => $nameDe, 'description' => 'Preis berechnet Nova Versandkosten.']
-                : ['name' => $nameEn, 'description' => 'Price calculated by Nova Versandkosten.'];
+            $out[$id] = ['name' => str_starts_with($locale, 'de') ? $nameDe : $nameEn];
         }
 
         return $out;

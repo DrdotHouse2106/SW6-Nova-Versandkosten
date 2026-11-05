@@ -1,3 +1,7 @@
+# 1.4.1
+
+- Behoben: Die Plugin-Versandarten trugen seit der Installation die Beschreibung „Preis berechnet Nova Versandkosten.“ – sie erschien in der Kasse und in der Bestellbestätigung. Das Update entfernt genau diesen Standardtext (eigene Beschreibungen bleiben), neue Installationen legen keine Beschreibung mehr an
+
 # 1.4.0
 
 Sicherheits-Release (Prüfung vom 03.11.2026). **Nach dem Update:** Plugin aktualisieren (die Migration läuft dabei), Cache leeren, Karte „Versandkosten“ an einer älteren Bestellung prüfen. Wer den Einkauf bisher aus dem Zusatzfeld `nova_versandkosten_purchase_net` gelesen hat, liest ihn jetzt über die Admin-Route (siehe README „Zusatzfelder an der Bestellung“).
