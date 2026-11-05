@@ -9,10 +9,10 @@ use Nova\Versandkosten\Calculator\OptionResult;
  *
  * - Ist die gewählte Versandart gesperrt, wird auf die günstigste mögliche Paket-Versandart gewechselt
  *   (Warenpost, Kleinpaket, DPD, DHL, Spedition); gibt es keine, auf „Versandkosten auf Anfrage“.
- * - Ist eine Paket-Versandart des Plugins gewählt, die der Kunde nicht selbst ausgesucht hat, wird auf
- *   die günstigste gewechselt. Eine selbst gewählte Versandart bleibt, solange sie möglich ist.
- * - Fremde Versandarten (Abholung, alte Versandarten …) werden nur angefasst, wenn sie gesperrt sind
- *   und es eine passende Plugin-Versandart gibt – sonst entscheidet Shopware.
+ * - Hat der Kunde die Versandart nicht selbst ausgesucht, wird auf die günstigste Paket-Versandart
+ *   gewechselt – auch von Abholung, Abholung auf Treffen oder einer fremden Standard-Versandart aus
+ *   (Abholung kostet 0 € und würde sonst immer „gewinnen“).
+ * - Eine selbst gewählte Versandart (auch Abholung, Beipacken, Tour) bleibt, solange sie möglich ist.
  */
 final class AutoSelectDecision
 {
@@ -32,8 +32,12 @@ final class AutoSelectDecision
             return $target !== null && $target !== $currentId ? $target : null;
         }
 
-        if ($manual || $best === null || $currentKey === null || !\in_array($currentKey, OptionResult::SHIPPING, true)) {
+        if ($manual || $best === null) {
             return null;
+        }
+        // Nicht selbst gewählt und keine Paket-Versandart (Abholung, fremde Standard-Versandart, …): günstigstes Paket
+        if ($currentKey === null || !\in_array($currentKey, OptionResult::SHIPPING, true)) {
+            return $best !== $currentId ? $best : null;
         }
 
         $currentPrice = $candidates[$currentKey]['price'] ?? null;

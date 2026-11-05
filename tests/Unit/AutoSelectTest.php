@@ -53,16 +53,20 @@ final class AutoSelectTest extends TestCase
         self::assertSame('wp', D::choose('dhl', 'dhl', true, false, $c));
     }
 
-    public function testForeignMethodUntouchedUnlessBlocked(): void
+    public function testNotChosenPickupOrForeignSwitchesToCheapestParcel(): void
     {
-        self::assertNull(D::choose(null, 'abholung-treffen', false, false, self::SMALL));
+        // Abholung kostet 0 € – ohne eigene Wahl trotzdem das günstigste Paket vorwählen
+        self::assertSame('wp', D::choose('abholung', 'pickup', false, false, self::SMALL));
+        self::assertSame('wp', D::choose(null, 'abholung-treffen', false, false, self::SMALL));
         self::assertSame('wp', D::choose(null, 'alt-standard', true, false, self::SMALL));
     }
 
-    public function testSpecialMethodsUntouched(): void
+    public function testManuallyChosenSpecialMethodsStay(): void
     {
-        self::assertNull(D::choose('beipack', 'bp', false, false, self::SMALL));
-        self::assertNull(D::choose('anfrage', 'req', false, false, self::SMALL));
+        self::assertNull(D::choose('abholung', 'pickup', false, true, self::SMALL));
+        self::assertNull(D::choose(null, 'abholung-treffen', false, true, self::SMALL));
+        self::assertNull(D::choose('beipack', 'bp', false, true, self::SMALL));
+        self::assertNull(D::choose('anfrage', 'req', false, true, self::SMALL));
     }
 
     public function testNothingPossible(): void

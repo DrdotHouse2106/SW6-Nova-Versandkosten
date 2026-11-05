@@ -113,8 +113,8 @@ class AutoSelectSubscriber implements EventSubscriberInterface
         $blockedError = $this->blockedError($cart, $current->getId());
         $blocked = $blockedError !== null;
 
-        // Beipacken, Tour, Abholung: nur bei Sperre eingreifen
-        if (!$blocked && $currentKey !== null && !\in_array($currentKey, OptionResult::SHIPPING, true)) {
+        // Selbst gewählt und möglich: nichts tun (auch Abholung, Beipacken, Tour)
+        if (!$blocked && $manual) {
             return;
         }
 

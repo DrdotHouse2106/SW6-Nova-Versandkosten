@@ -1,3 +1,7 @@
+# 1.5.1
+
+- Behoben: Die Vorauswahl ließ eine nicht selbst gewählte Abholung (0 €), „Abholung auf Treffen“ oder eine fremde Standard-Versandart stehen – der Warenkorb startete so mit Abholung. Jetzt wird ohne eigene Wahl des Kunden immer die günstigste mögliche Paket-Versandart vorgewählt. Selbst gewählte Versandarten (auch Abholung, Beipacken, Tour) bleiben
+
 # 1.5.0
 
 - Neu: **Warenpost/Kleinpaket nach Eigenschaft „Versandart“.** Neue Einstellung „Werte für Warenpost/Kleinpaket“ (Reiter Artikeldaten, Standard: Warenpost, Kleinpaket, BüWa, Brief). Hat ein Artikel Werte in der Eigenschaft, aber keinen davon, werden Warenpost und Kleinpaket für den ganzen Warenkorb nicht angeboten – auch nicht über „Kleinsendung ohne Maße“. Verhindert z. B. eine Hutablage im Kleinpaket. Artikel ohne die Eigenschaft sind nicht betroffen; leeres Feld schaltet die Regel ab

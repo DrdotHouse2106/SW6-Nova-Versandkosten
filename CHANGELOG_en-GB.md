@@ -1,3 +1,7 @@
+# 1.5.1
+
+- Fixed: preselection kept a pickup (0.00) the customer had not chosen, “pickup at events” or a third-party default method – the cart started with pickup. Without the customer’s own choice the cheapest possible parcel option is now always preselected. Methods the customer chose (including pickup, add-on, tour) stay
+
 # 1.5.0
 
 - New: **letter parcel / small parcel by shipping property.** New setting “Values for letter parcel / small parcel” (product data tab, default: Warenpost, Kleinpaket, BüWa, Brief). If a product has values in the property but none of these, letter parcel and small parcel are not offered for the whole cart – not via “small shipment without dimensions” either. Products without the property are not affected; an empty field switches the rule off
