@@ -1,3 +1,7 @@
+# 1.6.0
+
+- Neu: **Paketdienst aus Versandart.** Nennt die Eigenschaft „Versandart“ einen Paketdienst (z. B. „DHL Sperrgut“), wird nur dieser angeboten – eine Tür mit „DHL Sperrgut, Kurier“ bekommt kein DPD mehr. Werte ohne Paketdienst (Kurier, Warenpost) schränken nicht ein; im Warenkorb gelten nur Paketdienste, die für alle Artikel erlaubt sind. Schalter „Paketdienst aus Versandart“ im Reiter Artikeldaten (Standard an)
+
 # 1.5.3
 
 - Klarer: Der Hinweis bei „Zu meiner Bestellung beipacken“ im Warenkorb sagt jetzt, wo die Bestellung gewählt wird (Seite „Prüfen & bestellen“ unter „Versandart“)

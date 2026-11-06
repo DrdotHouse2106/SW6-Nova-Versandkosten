@@ -24,6 +24,9 @@ final class Item
     /** Sperrgut: mehrere Stücke gleicher Art teilen sich ein Paket */
     public const PACK_COMBINABLE = 'zusammen';
 
+    /**
+     * @param list<string>|null $carriers
+     */
     public function __construct(
         public readonly string $id,
         public readonly string $label,
@@ -41,6 +44,8 @@ final class Item
         public readonly ?\DateTimeImmutable $availableFrom = null,
         /** false = laut Eigenschaft „Versandart“ nicht als Warenpost/Kleinpaket (z. B. große, leichte Teile) */
         public readonly bool $smallAllowed = true,
+        /** Paketdienste laut Eigenschaft „Versandart“ (z. B. ['dhl'] bei „DHL Sperrgut“), null = keine Einschränkung */
+        public readonly ?array $carriers = null,
     ) {
         if (!\in_array($category, self::CATEGORIES, true)) {
             throw new \InvalidArgumentException(\sprintf('Unbekannte Versandeinordnung „%s“', $category));
@@ -59,5 +64,26 @@ final class Item
     public function hasWeight(): bool
     {
         return $this->weightKg !== null && $this->weightKg > 0;
+    }
+
+    /**
+     * Paketdienste, die in den Eigenschaftswerten genannt sind (Kleinbuchstaben), null = keiner genannt.
+     *
+     * @param list<string> $values
+     *
+     * @return list<string>|null
+     */
+    public static function carriersFromValues(array $values): ?array
+    {
+        $found = [];
+        foreach ($values as $value) {
+            foreach (['dpd', 'dhl'] as $carrier) {
+                if (preg_match('/\\b' . $carrier . '\\b/u', mb_strtolower($value)) === 1) {
+                    $found[$carrier] = true;
+                }
+            }
+        }
+
+        return $found === [] ? null : array_keys($found);
     }
 }

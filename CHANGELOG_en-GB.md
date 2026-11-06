@@ -1,3 +1,7 @@
+# 1.6.0
+
+- New: **Parcel carrier from shipping property.** If the property names a carrier (e.g. “DHL Sperrgut”), only that carrier is offered – a door with “DHL Sperrgut, Kurier” no longer gets DPD. Values without a carrier (courier, letter parcel) do not restrict; in the cart only carriers allowed for all products remain. Switch “Parcel carrier from property values” (product data tab, default on)
+
 # 1.5.3
 
 - Clearer: the notice for “add to my order” in the cart now says where to choose the order (“Review & order” page under “Shipping method”)

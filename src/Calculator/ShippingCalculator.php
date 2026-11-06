@@ -34,7 +34,12 @@ final class ShippingCalculator
         $allFree = $items !== [];
         $availableFrom = null;
         $smallAllowed = true;
+        /** @var list<string>|null $carriers erlaubte Paketdienste (Schnittmenge), null = alle */
+        $carriers = null;
         foreach ($items as $item) {
+            if ($item->carriers !== null) {
+                $carriers = $carriers === null ? $item->carriers : array_values(array_intersect($carriers, $item->carriers));
+            }
             $goodsValue += $item->unitPriceGross * $item->quantity;
             $smallAllowed = $smallAllowed && $item->smallAllowed;
             $allFree = $allFree && $item->free;
@@ -58,6 +63,10 @@ final class ShippingCalculator
             }
             if (!$smallAllowed && \in_array($key, [OptionResult::WARENPOST, OptionResult::KLEINPAKET], true)) {
                 $options[$key] = OptionResult::unavailable($key, 'Artikel laut Versandart nicht als Warenpost/Kleinpaket');
+                continue;
+            }
+            if ($carriers !== null && \in_array($key, [OptionResult::DPD, OptionResult::DHL], true) && !\in_array($key, $carriers, true)) {
+                $options[$key] = OptionResult::unavailable($key, 'Artikel laut Versandart nicht mit diesem Paketdienst');
                 continue;
             }
             $options[$key] = $this->parcelOption($key, $packaging, $destination, $rules, $tariffs, $now, $goodsValue, $domestic, $isEu, $free);

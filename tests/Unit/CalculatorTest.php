@@ -163,6 +163,34 @@ final class CalculatorTest extends TestCase
         self::assertTrue($ok->option('warenpost')?->available);
     }
 
+    public function testCarrierFromShippingPropertyRestrictsParcelCarriers(): void
+    {
+        self::assertSame(['dhl'], Item::carriersFromValues(['dhl sperrgut', 'kurier']));
+        self::assertSame(['dpd', 'dhl'], Item::carriersFromValues(['dpd paket', 'dhl paket', 'warenpost']));
+        self::assertNull(Item::carriersFromValues(['kurier', 'warenpost']));
+        self::assertNull(Item::carriersFromValues([]));
+
+        // Tür: laut Versandart nur DHL Sperrgut → kein DPD
+        $door = $this->calc([new Item('t', 'Tür', 12.0, 110.0, 80.0, 15.0, Item::BULKY, unitPriceGross: 319.5, carriers: ['dhl'])]);
+        self::assertFalse($door->option('dpd')?->available);
+        self::assertTrue($door->option('dhl')?->available);
+
+        // Gemischt: Artikel ohne Einschränkung ändert nichts, widersprüchliche Dienste → kein Paket
+        $mixed = $this->calc([
+            new Item('t', 'Tür', 12.0, 110.0, 80.0, 15.0, Item::BULKY, unitPriceGross: 319.5, carriers: ['dhl']),
+            new Item('a', 'Dichtung', 0.3, 10.0, 10.0, 5.0, unitPriceGross: 6.95),
+        ]);
+        self::assertFalse($mixed->option('dpd')?->available);
+        self::assertTrue($mixed->option('dhl')?->available);
+
+        $none = $this->calc([
+            new Item('t', 'Tür', 12.0, 110.0, 80.0, 15.0, Item::BULKY, unitPriceGross: 319.5, carriers: ['dhl']),
+            new Item('d', 'DPD-Teil', 2.0, 30.0, 20.0, 10.0, unitPriceGross: 20.0, carriers: ['dpd']),
+        ]);
+        self::assertFalse($none->option('dpd')?->available);
+        self::assertFalse($none->option('dhl')?->available);
+    }
+
     public function testSmallShipmentWithoutDimensions(): void
     {
         $small = [new Item('a', 'Dichtung', 0.3, null, null, null, unitPriceGross: 6.95)];

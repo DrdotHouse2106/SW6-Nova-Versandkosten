@@ -95,7 +95,7 @@ costs*). Tab and sub-tab are part of the address, so bookmarks work
 | Prices | fixed prices (each with optional “applies up to X kg”), surcharge abroad, pass on bulky, goods value limits, maximum weight, VAT, home country, preselect the cheapest possible shipping method |
 | Surcharges & energy | current energy surcharges (*Fetch now*), peak/peak-in-peak, energy surcharge automatic/manual |
 | Countries & delivery time | allowed countries, free shipping, DPD outside the EU, delivery date |
-| Product data | property and value names of the category, default dimensions/weight, small shipment without dimensions |
+| Product data | property and value names of the category, default dimensions/weight, small shipment without dimensions, parcel carrier from property values (e.g. “DHL Sperrgut” → DHL only) |
 | Freight | Cargoboard |
 | Request & add-on | shipping costs on request, add to an open order, “request delivery by tour” button |
 | Tours | sub-tabs tour dates, routes, price profiles, tour deliveries, notification, settings |

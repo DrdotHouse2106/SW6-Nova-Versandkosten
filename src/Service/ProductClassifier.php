@@ -81,11 +81,11 @@ class ProductClassifier implements ResetInterface
             }
             $product = $products[strtolower((string) $lineItem->getReferencedId())] ?? null;
             if ($product !== null) {
-                [$category, $packing, $smallAllowed] = $this->classify($product['customFields'], $product['propertyIds'], $salesChannelId);
+                [$category, $packing, $smallAllowed, $carriers] = $this->classify($product['customFields'], $product['propertyIds'], $salesChannelId);
                 $free = self::isFree($product['manufacturerId'], $product['tagIds'], $freeManufacturers, $freeTags);
             } else {
                 // Keine Produktdaten (fremder Positionstyp): Standardeinordnung, nie versandkostenfrei
-                [$category, $packing, $smallAllowed] = [Item::PARCEL, Item::PACK_SINGLE, true];
+                [$category, $packing, $smallAllowed, $carriers] = [Item::PARCEL, Item::PACK_SINGLE, true, null];
                 $free = false;
             }
 
@@ -115,6 +115,7 @@ class ProductClassifier implements ResetInterface
                 $free,
                 $availableFrom,
                 $smallAllowed,
+                $carriers,
             );
         }
 
@@ -288,7 +289,7 @@ class ProductClassifier implements ResetInterface
                 $manufacturerId = (string) ($payload['manufacturerId'] ?? '');
                 $tagIds = array_values(array_map('strval', (array) ($payload['tagIds'] ?? [])));
             }
-            [$category, $packing, $smallAllowed] = $this->classify($customFields, $propertyIds, $salesChannelId);
+            [$category, $packing, $smallAllowed, $carriers] = $this->classify($customFields, $propertyIds, $salesChannelId);
 
             $free = self::isFree($manufacturerId, $tagIds, $freeManufacturers, $freeTags);
 
@@ -308,6 +309,7 @@ class ProductClassifier implements ResetInterface
                 $free,
                 null,
                 $smallAllowed,
+                $carriers,
             );
         }
 
@@ -320,8 +322,10 @@ class ProductClassifier implements ResetInterface
      *
      * Einordnung, Packart und ob Warenpost/Kleinpaket erlaubt sind. Steht in der Eigenschaft „Versandart“
      * mindestens ein Wert, aber keiner aus „Werte für Warenpost/Kleinpaket“, sind beide gesperrt.
+     * Nennen Werte einen Paketdienst („DHL Sperrgut“, „DPD Paket“), sind nur diese Paketdienste erlaubt
+     * (Einstellung „Paketdienst aus Versandart“); Werte ohne Paketdienst (Kurier, Warenpost) schränken nicht ein.
      *
-     * @return array{0: string, 1: string, 2: bool}
+     * @return array{0: string, 1: string, 2: bool, 3: list<string>|null}
      */
     public function classify(array $customFields, array $propertyIds, ?string $salesChannelId): array
     {
@@ -349,13 +353,14 @@ class ProductClassifier implements ResetInterface
 
         // Leere Liste = Regel aus
         $smallAllowed = $values === [] || $this->settings->lines('valuesSmall', $salesChannelId) === [] || $match('valuesSmall');
+        $carriers = $this->settings->bool('carrierFromValues', $salesChannelId, true) ? Item::carriersFromValues($values) : null;
 
         $category = (string) ($customFields[CustomFieldInstaller::PRODUCT_CATEGORY] ?? '');
         if (\in_array($category, Item::CATEGORIES, true)) {
-            return [$category, $packing, $smallAllowed];
+            return [$category, $packing, $smallAllowed, $carriers];
         }
         if ($values === []) {
-            return [Item::PARCEL, $packing, true];
+            return [Item::PARCEL, $packing, true, null];
         }
 
         foreach ([
@@ -366,11 +371,11 @@ class ProductClassifier implements ResetInterface
             'valuesRequest' => Item::ON_REQUEST,
         ] as $key => $result) {
             if ($match($key)) {
-                return [$result, $packing, $smallAllowed];
+                return [$result, $packing, $smallAllowed, $carriers];
             }
         }
 
-        return [Item::PARCEL, $packing, $smallAllowed];
+        return [Item::PARCEL, $packing, $smallAllowed, $carriers];
     }
 
     public static function mmToCm(?float $mm): ?float

@@ -399,6 +399,15 @@ BüWa
 Brief</defaultValue>
         </input-field>
 
+        <input-field type="bool">
+            <name>carrierFromValues</name>
+            <label>Parcel carrier from property values</label>
+            <label lang="de-DE">Paketdienst aus Versandart</label>
+            <helpText>If property values name a carrier (e.g. “DHL Sperrgut”, “DPD Paket”), only these carriers are offered for DPD/DHL parcels. Values without a carrier (courier, letter parcel) do not restrict. Mixed carts: only carriers allowed for all products.</helpText>
+            <helpText lang="de-DE">Nennen die Werte der Eigenschaft einen Paketdienst (z. B. „DHL Sperrgut“, „DPD Paket“), werden nur diese Paketdienste angeboten. Werte ohne Paketdienst (Kurier, Warenpost) schränken nicht ein. Bei gemischtem Warenkorb gelten nur Paketdienste, die für alle Artikel erlaubt sind.</helpText>
+            <defaultValue>true</defaultValue>
+        </input-field>
+
         <input-field type="text">
             <name>defaultDimsParcel</name>
             <label>Default dimensions parcel (cm)</label>

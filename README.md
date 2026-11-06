@@ -186,6 +186,12 @@ sonst einen „Sperrgut“-Wert (DHL Sperrgut, DPD Sperrgut, …) → Sperrgut; 
 → Spedition; sonst „Abholung“ → nur Abholung; sonst „Anfrage“/„auf Anfrage“ → nur auf Anfrage. Die
 Wertnamen sind je Kanal einstellbar. Ohne beides: Paket.
 
+**Paketdienst aus Versandart** (Standard an): Nennen die Werte einen Paketdienst, bietet das Plugin nur
+diesen an. Beispiel: Tür mit „DHL Sperrgut, Kurier“ → nur DHL Paket (mit Sperrgut-Zuschlag), kein DPD.
+„DPD Paket, DHL Paket“ → beide. Werte ohne Paketdienst (Kurier, Spedition, Warenpost) schränken nicht ein.
+Im Warenkorb gelten nur Paketdienste, die für alle Artikel erlaubt sind; passt keiner, bleibt Spedition
+bzw. „auf Anfrage“.
+
 **Maße und Gewicht:** In der Regel genügt das **Gewicht**. Maße (verpackt) lohnen sich nur für
 Grenzfälle – Artikel, die nahe an den Höchstmaßen liegen oder je nach Verpackung Sperrgut werden.
 Fehlen Maße, gilt die Einordnung: „Paket“ wird mit Standardmaßen innerhalb der normalen Grenzen
