@@ -149,6 +149,15 @@
             <defaultValue>19</defaultValue>
         </input-field>
 
+        <input-field type="bool">
+            <name>ossShippingVat</name>
+            <label>Shipping VAT by destination country (OSS)</label>
+            <label lang="de-DE">Versand-MwSt. nach Lieferland (OSS)</label>
+            <helpText>For gross-price customers in other EU countries, the shipping price is calculated from the net price with the VAT rate of the destination country (tax rule of the tax class with the shipping VAT rate). Off: the gross price stays the same.</helpText>
+            <helpText lang="de-DE">Für Privatkunden in anderen EU-Ländern wird der Versandpreis aus dem Nettopreis mit dem Steuersatz des Lieferlandes gebildet (Steuerregel der Steuerklasse mit dem Versand-Steuersatz, z. B. Österreich 20 %). Aus: Der Bruttopreis bleibt gleich. Passt zu Nova OSS-Preise.</helpText>
+            <defaultValue>false</defaultValue>
+        </input-field>
+
         <input-field type="text">
             <name>homeCountry</name>
             <label>Home country (ISO code)</label>

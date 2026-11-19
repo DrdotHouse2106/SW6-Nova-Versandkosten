@@ -1,3 +1,6 @@
+# 1.7.0
+- New: **shipping VAT by destination country (OSS)** (setting, default off): for gross-price customers in other EU countries the net shipping price stays the same and the gross price uses the destination VAT rate. Matches Nova OSS Prices
+
 # 1.6.0
 
 - New: **Parcel carrier from shipping property.** If the property names a carrier (e.g. “DHL Sperrgut”), only that carrier is offered – a door with “DHL Sperrgut, Kurier” no longer gets DPD. Values without a carrier (courier, letter parcel) do not restrict; in the cart only carriers allowed for all products remain. Switch “Parcel carrier from property values” (product data tab, default on)

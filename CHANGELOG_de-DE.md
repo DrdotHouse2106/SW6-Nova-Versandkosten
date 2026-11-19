@@ -1,3 +1,6 @@
+# 1.7.0
+- Neu: **Versand-MwSt. nach Lieferland (OSS)** (Einstellung, Standard aus). Für Privatkunden in anderen EU-Ländern bleibt der Netto-Versandpreis gleich und der Bruttopreis wird mit dem Steuersatz des Lieferlandes gebildet (Steuerregel der Steuerklasse mit dem Versand-Steuersatz). Passt zu Nova OSS-Preise
+
 # 1.6.0
 
 - Neu: **Paketdienst aus Versandart.** Nennt die Eigenschaft „Versandart“ einen Paketdienst (z. B. „DHL Sperrgut“), wird nur dieser angeboten – eine Tür mit „DHL Sperrgut, Kurier“ bekommt kein DPD mehr. Werte ohne Paketdienst (Kurier, Warenpost) schränken nicht ein; im Warenkorb gelten nur Paketdienste, die für alle Artikel erlaubt sind. Schalter „Paketdienst aus Versandart“ im Reiter Artikeldaten (Standard an)

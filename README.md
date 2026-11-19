@@ -234,6 +234,7 @@ rechnen unverändert mit den Standardmaßen; „Maße fehlen“ wird weiter gese
      Preisprüfung rechnet genauso.
    - Heimatland ohne Festpreis: Einkauf × MwSt.
    - Ausland EU: Einkauf × MwSt. + Aufschlag Ausland. Außerhalb der EU: Einkauf (ohne MwSt.) + Aufschlag.
+   - Ab 1.7.0 mit **„Versand-MwSt. nach Lieferland (OSS)“**: Für Privatkunden in anderen EU-Ländern bleibt der Nettobetrag gleich, der Bruttopreis wird mit dem Steuersatz des Lieferlandes gebildet (Steuerregel der Steuerklasse mit dem Versand-Steuersatz). Passt zu Nova OSS-Preise.
    - Sonderregel versandkostenfrei (alle Artikel passen, Land freigeschaltet): 0,00 €.
 5. **Rundung:** kaufmännisch auf Cent nach der MwSt. (intern ganzzahlig in 1/10.000 €).
 6. **Spedition:** Cargoboard-Preis netto × MwSt. (EU) + Aufschlag; Laufzeit von Cargoboard.
