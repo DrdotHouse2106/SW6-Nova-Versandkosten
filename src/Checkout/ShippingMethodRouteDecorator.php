@@ -114,7 +114,7 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
                 self::removeMethod($response, (string) $id);
                 continue;
             }
-            $method->addExtension(ShippingCostProcessor::EXTENSION, new ArrayStruct(OptionPresenter::present($option, $context, $showEstimate)));
+            $method->addExtension(ShippingCostProcessor::EXTENSION, new ArrayStruct(OptionPresenter::present($option, $context, $showEstimate, ShippingVat::factor($this->settings, $context, (bool) ($option['vatIncluded'] ?? true)))));
         }
 
         return $response;
@@ -167,7 +167,7 @@ class ShippingMethodRouteDecorator extends AbstractShippingMethodRoute
             if ($state === 'invalid' || empty($option['available'])) {
                 return null;
             }
-            $presented = OptionPresenter::present($option, $context, false);
+            $presented = OptionPresenter::present($option, $context, false, ShippingVat::factor($this->settings, $context, (bool) ($option['vatIncluded'] ?? true)));
             $presented['beipack'] = true;
             $presented['orderNumber'] = $info['orderNumber'] ?? null;
             if ($state === 'select') {

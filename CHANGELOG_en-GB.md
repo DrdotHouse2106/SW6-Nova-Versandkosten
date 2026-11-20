@@ -1,3 +1,6 @@
+# 1.7.1
+- Fixed: with “shipping VAT by destination country (OSS)” the shipping method list still showed the price with the domestic VAT rate, while the cart charged the correct amount. List and cart now share the same conversion; net-price customers see the net price in the list as in the cart
+
 # 1.7.0
 - New: **shipping VAT by destination country (OSS)** (setting, default off): for gross-price customers in other EU countries the net shipping price stays the same and the gross price uses the destination VAT rate. Matches Nova OSS Prices
 

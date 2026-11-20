@@ -186,42 +186,14 @@ class ShippingCostProcessor implements CartProcessorInterface
     }
 
     /**
-     * Brutto-Preis aus dem Kern in den Preis umrechnen, den Shopware für den Steuerstatus erwartet.
+     * Brutto-Preis aus dem Kern in den Preis umrechnen, den Shopware für den Steuerstatus erwartet
+     * (netto bzw. mit dem Steuersatz des Lieferlandes, siehe ShippingVat).
      */
     private function priceFor(int $saleCents, bool $vatIncluded, SalesChannelContext $context): float
     {
-        $price = Money::centsToFloat($saleCents);
-        $vat = $this->settings->rules($context->getSalesChannelId())->vatPercent;
-        if ($vatIncluded && $context->getTaxState() !== CartPrice::TAX_STATE_GROSS) {
-            $price = round($price / (1 + $vat / 100), 2);
-        } elseif ($vatIncluded && ($countryVat = $this->countryVat($vat, $context)) !== null) {
-            // OSS: Netto bleibt gleich, Brutto mit dem Steuersatz des Lieferlandes
-            $price = round($price / (1 + $vat / 100) * (1 + $countryVat / 100), 2);
-        }
+        $price = round(Money::centsToFloat($saleCents) * ShippingVat::factor($this->settings, $context, $vatIncluded), 2);
 
         return round($price * $context->getContext()->getCurrencyFactor(), 2);
-    }
-
-    /**
-     * Steuersatz des Lieferlandes für Versandkosten (Einstellung „Versand-MwSt. nach Lieferland (OSS)“):
-     * die Steuerregel der Steuerklasse mit dem Versand-Steuersatz für das Land des Kunden.
-     * null = Einstellung aus, keine Regel oder gleicher Satz.
-     */
-    private function countryVat(float $vat, SalesChannelContext $context): ?float
-    {
-        if (!$this->settings->bool('ossShippingVat', $context->getSalesChannelId())) {
-            return null;
-        }
-        foreach ($context->getTaxRules() as $tax) {
-            if (abs($tax->getTaxRate() - $vat) > 0.0001) {
-                continue;
-            }
-            $rate = $tax->getRules()?->first()?->getTaxRate();
-
-            return $rate !== null && abs($rate - $vat) > 0.0001 ? $rate : null;
-        }
-
-        return null;
     }
 
     /** Enthält der Warenkorb etwas, das verschickt wird (Position mit Lieferinformation)? */

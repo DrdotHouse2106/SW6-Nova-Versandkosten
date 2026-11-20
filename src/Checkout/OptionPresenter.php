@@ -12,10 +12,11 @@ final class OptionPresenter
 {
     /**
      * @param array<string, mixed> $option
+     * @param float $vatFactor Umrechnung wie im Warenkorb (ShippingVat::factor)
      *
      * @return array<string, mixed>
      */
-    public static function present(array $option, SalesChannelContext $context, bool $showEstimate): array
+    public static function present(array $option, SalesChannelContext $context, bool $showEstimate, float $vatFactor = 1.0): array
     {
         $locale = $context->getLanguageInfo()->localeCode;
         $delivery = null;
@@ -37,7 +38,7 @@ final class OptionPresenter
         return [
             'key' => (string) ($option['key'] ?? ''),
             'available' => (bool) ($option['available'] ?? false),
-            'price' => round((float) ($option['sale'] ?? 0) * $context->getContext()->getCurrencyFactor(), 2),
+            'price' => round(round((float) ($option['sale'] ?? 0) * $vatFactor, 2) * $context->getContext()->getCurrencyFactor(), 2),
             'vatIncluded' => (bool) ($option['vatIncluded'] ?? true),
             'packageCount' => (int) ($option['packageCount'] ?? 0),
             'delivery' => $delivery,

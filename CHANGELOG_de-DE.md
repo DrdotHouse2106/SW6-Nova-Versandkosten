@@ -1,3 +1,6 @@
+# 1.7.1
+- Behoben: In der Auswahl der Versandarten stand bei „Versand-MwSt. nach Lieferland (OSS)“ noch der Preis mit dem deutschen Steuersatz (z. B. Österreich DPD 20,06 €), berechnet wurde aber richtig 20,23 €. Anzeige und Warenkorb nutzen jetzt dieselbe Umrechnung; Kunden mit Nettopreisen sehen in der Auswahl den Nettopreis wie im Warenkorb
+
 # 1.7.0
 - Neu: **Versand-MwSt. nach Lieferland (OSS)** (Einstellung, Standard aus). Für Privatkunden in anderen EU-Ländern bleibt der Netto-Versandpreis gleich und der Bruttopreis wird mit dem Steuersatz des Lieferlandes gebildet (Steuerregel der Steuerklasse mit dem Versand-Steuersatz). Passt zu Nova OSS-Preise
 
